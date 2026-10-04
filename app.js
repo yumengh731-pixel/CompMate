@@ -60,10 +60,116 @@ function empty(a,b){return '<div class="panel empty"><h3>'+e(a)+'</h3><p>'+e(b)+
 function badges(arr){return arr.map(function(x){return '<span class="badge">'+e(x)+'</span>'}).join("")}
 
 function hall(p){
-  p.innerHTML=demoBar()+
-  '<div class="toolbar"><div class="segmented"><button class="'+(state.mode==="teams"?"active":"")+'" onclick="state.mode=\'teams\';render()">找队伍</button><button class="'+(state.mode==="people"?"active":"")+'" onclick="state.mode=\'people\';render()">找队友</button></div><input class="search" id="searchBox" placeholder="'+(state.mode==="teams"?"搜索竞赛、角色或任务":"搜索技能、专业或经历")+'" oninput="filterHall(this.value)"><button class="select" onclick="filterToggle(this)">同校优先</button><button class="select" onclick="filterToggle(this)">时间可行</button><button class="select" onclick="filterToggle(this)">更多筛选</button></div>'+
-  '<div class="heroNotice">'+(state.mode==="teams"?"主动浏览 / 筛选是主路径，推荐仅用于辅助发现，并明确展示推荐理由与风险。":"队长围绕具体招募缺口找人，不建立脱离任务场景的人才排行榜。")+'</div>'+
-  '<div id="hallList" class="grid2">'+(state.mode==="teams"?recruits.map(recruitCard).join(""):candidates.filter(function(c){return !state.blocked[c.id]}).map(candidateCard).join(""))+'</div>';
+  if(state.mode==="people"){ renderPeopleHall(p); return; }
+  var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
+  var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
+  var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
+  var recommended=recruits.filter(function(r){return r.status==="active"}).slice(0,3);
+  var featuredCandidates=candidates.filter(function(c){return !state.blocked[c.id]}).slice(0,3);
+
+  p.innerHTML=
+  '<section class="homeHero">'+
+    '<div class="homeHeroMain"><div class="homeKicker">COMPETITION TEAMING · GDUT ALPHA</div>'+
+    '<h2>找到真正适合一起打比赛的人</h2>'+
+    '<p>从“去哪找人”到“这个人值不值得聊”，CompMate 把竞赛组队拆成可搜索、可判断、可沟通、可确认的一条完整链路。</p>'+
+    '<div class="homeHeroActions"><button class="btn heroPrimary" onclick="jumpToRecruitList()">开始找队伍</button><button class="btn heroSecondary" onclick="state.mode=\'people\';render()">找队友</button><button class="btn heroSecondary" onclick="go(\'publish\')">发布招募</button></div></div>'+
+    '<div class="homeHeroSide"><div class="heroMetric"><span>当前可投入</span><b>'+Math.max(0,remaining())+'h</b><small>/ 周</small></div>'+
+    '<div class="heroMetricRow"><div><b>'+pending+'</b><span>待处理</span></div><div><b>'+communicating+'</b><span>待沟通</span></div><div><b>'+confirming+'</b><span>确认中</span></div></div>'+
+    '<div class="heroMiniNote">学校已认证 · 联系方式按次授权 · 不公开能力评分</div></div>'+
+  '</section>'+
+
+  '<section class="quickEntryGrid">'+
+    quickEntry("⌕","找队伍","按竞赛、角色、任务、时间筛选","jumpToRecruitList()","blue")+
+    quickEntry("◎","找队友","围绕具体招募缺口筛候选人","state.mode=\'people\';render()","green")+
+    quickEntry("+","发布招募","把“缺人”写成明确任务与条件","go(\'publish\')","purple")+
+    quickEntry("◫","处理申请","查看邀请、待沟通与正式确认","go(\'requests\')","amber")+
+  '</section>'+
+
+  '<div class="homeSectionHeader"><div><div class="homeSectionEyebrow">TO DO</div><h3>继续处理</h3></div><button class="btn text" onclick="go(\'requests\')">查看全部 →</button></div>'+
+  '<section class="continueGrid">'+
+    '<article class="continueCard urgent"><div class="continueIcon">!</div><div><b>你收到 1 条新邀请</b><p>正大杯 · 市场调研岗 · 来自许辰</p><span>对方希望进一步沟通，不会直接形成组队关系。</span></div><button class="btn primary" onclick="go(\'requests\')">处理邀请</button></article>'+
+    '<article class="continueCard"><div class="continueIcon chat">↗</div><div><b>有 1 条关系正在待沟通</b><p>挑战杯 · 数据分析岗 · 星火队</p><span>微信已授权，可以沟通任务、投入和目标后再决定是否确认。</span></div><button class="btn secondary" onclick="go(\'requests\')">继续处理</button></article>'+
+  '</section>'+
+
+  '<section class="homeSplit">'+
+    '<div>'+
+      '<div class="homeSectionHeader compact"><div><div class="homeSectionEyebrow">DISCOVER</div><h3>为你推荐的队伍</h3></div><button class="btn text" onclick="jumpToRecruitList()">全部招募 →</button></div>'+
+      '<div class="recommendList">'+recommended.map(homeRecruitCompact).join("")+'</div>'+
+    '</div>'+
+    '<aside>'+
+      '<div class="homeSectionHeader compact"><div><div class="homeSectionEyebrow">TIMELINE</div><h3>近期竞赛与节点</h3></div><span class="demoDataTag">Demo 数据</span></div>'+
+      '<div class="timelinePanel">'+
+        timelineRow("10/18","挑战杯组队截止","当前有 3 条相关招募","active")+
+        timelineRow("10/20","正大杯组队节点","市场调研类岗位较多","")+
+        timelineRow("10/28","CompMate 项目招募截止","你的招募仍在进行","")+
+        timelineRow("11 月","互联网+ 项目推进","可提前补齐技术角色","future")+
+      '</div>'+
+    '</aside>'+
+  '</section>'+
+
+  '<div class="homeSectionHeader"><div><div class="homeSectionEyebrow">FOR CAPTAINS</div><h3>可能适合你招募的同学</h3><p>围绕具体任务展示，不做“人才总榜”。</p></div><button class="btn text" onclick="state.mode=\'people\';render()">进入找队友 →</button></div>'+
+  '<section class="candidateStrip">'+featuredCandidates.map(homeCandidateCompact).join("")+'</section>'+
+
+  '<section class="categoryPanel">'+
+    '<div class="homeSectionHeader compact"><div><div class="homeSectionEyebrow">EXPLORE</div><h3>按竞赛方向探索</h3></div></div>'+
+    '<div class="categoryGrid">'+
+      categoryCard("创新创业","挑战杯 · 互联网+","产品 / 商业 / 技术")+
+      categoryCard("市场调研","正大杯 · 行业分析","访谈 / 数据 / 报告")+
+      categoryCard("科技科研","电子设计 · 科研项目","开发 / 实验 / 论文")+
+      categoryCard("数学建模","建模竞赛 · 数据竞赛","建模 / 编程 / 写作")+
+    '</div>'+
+  '</section>'+
+
+  '<section class="homeSplit lower">'+
+    '<div class="guidePanel"><div class="homeSectionHeader compact"><div><div class="homeSectionEyebrow">HOW IT WORKS</div><h3>第一次使用？4 步完成组队</h3></div></div>'+
+      '<div class="guideSteps">'+guideStep("01","完善档案","说明你能做什么、能投入多少时间",true)+guideStep("02","发现对象","主动搜索队伍或候选人",true)+guideStep("03","先沟通","双方同意后再开放联系方式",false)+guideStep("04","正式确认","重新检查时间和名额后形成队伍",false)+'</div>'+
+    '</div>'+
+    '<aside class="activityPanel"><div class="homeSectionHeader compact"><div><div class="homeSectionEyebrow">ACTIVITY</div><h3>最近动态</h3></div></div>'+
+      '<div class="activityList">'+
+        activityRow("刚刚","正大杯邀请","你收到一条市场调研岗邀请","new")+
+        activityRow("今天 00:42","挑战杯","与星火队进入待沟通","good")+
+        activityRow("昨天","互联网+","前端招募暂停接收新申请","")+
+      '</div>'+
+    '</aside>'+
+  '</section>'+
+
+  '<div id="recruitArea" class="homeSectionHeader recruitHeader"><div><div class="homeSectionEyebrow">TEAM LOBBY</div><h3>全部招募</h3><p>主动搜索与筛选仍然是主路径。</p></div></div>'+
+  '<div class="toolbar"><input class="search" id="searchBox" placeholder="搜索竞赛、角色或任务" oninput="filterHall(this.value)"><button class="select" onclick="filterToggle(this)">同校优先</button><button class="select" onclick="filterToggle(this)">时间可行</button><button class="select" onclick="filterToggle(this)">更多筛选</button></div>'+
+  '<div id="hallList" class="grid2">'+recruits.map(recruitCard).join("")+'</div>';
+}
+function renderPeopleHall(p){
+  p.innerHTML=
+  '<section class="peopleHero"><div><div class="homeKicker">CAPTAIN VIEW</div><h2>围绕具体缺口找队友</h2><p>先选择招募，再看候选人的任务能力、经历产出、时间和目标。推荐只是辅助，最终由队长自己判断。</p></div><button class="btn primary" onclick="go(\'publish\')">管理我的招募</button></section>'+
+  '<div class="captainContext"><div><span>当前筛选岗位</span><b>挑战杯 · 数据分析</b></div><div><span>最低投入</span><b>8h / 周</b></div><div><span>必需技能</span><b>Excel · 数据分析</b></div><button class="btn secondary" onclick="toast(\'Demo：切换其他招募缺口\')">切换岗位</button></div>'+
+  '<div class="toolbar"><div class="segmented"><button onclick="state.mode=\'teams\';render()">找队伍</button><button class="active">找队友</button></div><input class="search" id="searchBox" placeholder="搜索技能、专业或经历" oninput="filterHall(this.value)"><button class="select" onclick="filterToggle(this)">同校优先</button><button class="select" onclick="filterToggle(this)">时间可行</button><button class="select" onclick="filterToggle(this)">更多筛选</button></div>'+
+  '<div class="heroNotice">候选人只有满足不可绕过条件后才进入推荐；时间不足等风险会单独展示，不用一个综合分数掩盖差异。</div>'+
+  '<div id="hallList" class="grid2">'+candidates.filter(function(c){return !state.blocked[c.id]}).map(candidateCard).join("")+'</div>';
+}
+function quickEntry(icon,title,sub,action,tone){
+  return '<button class="quickEntry '+tone+'" onclick="'+action+'"><span class="quickIcon">'+icon+'</span><span><b>'+title+'</b><small>'+sub+'</small></span><em>→</em></button>';
+}
+function homeRecruitCompact(r){
+  var st=status(r.status),free=Math.max(0,r.role.capacity-r.role.formal-r.role.reserved);
+  return '<article class="homeRecruit" onclick="openRecruit('+r.id+')"><div class="homeRecruitTop"><div><span class="miniComp">'+e(r.comp)+'</span><b>'+e(r.title)+'</b></div><span class="status '+st[1]+'">'+st[0]+'</span></div><p>'+e(r.role.task)+'</p><div class="homeRecruitMeta"><span>'+e(r.role.name)+'</span><span>'+r.role.hours+'h / 周</span><span>余 '+free+' 名</span><span>'+e(r.campus)+'</span></div><div class="homeRecruitReason">推荐：'+r.reasons.join(" · ")+'</div></article>';
+}
+function homeCandidateCompact(c){
+  return '<article class="homeCandidate" onclick="openCandidate('+c.id+')"><div class="homeCandidateHead"><div class="miniAvatar">'+e(c.name.charAt(0))+'</div><div><b>'+e(c.name)+'</b><span>'+e(c.major)+'</span></div><span class="verifiedMini">已认证</span></div><div class="miniSkillRow">'+c.skills.slice(0,3).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div><p>'+e(c.exp)+'</p><div class="homeCandidateFoot"><span>'+c.hours+'h / 周</span><button class="miniAction" onclick="event.stopPropagation();invite('+c.id+')">邀请沟通</button></div></article>';
+}
+function timelineRow(date,title,sub,tone){
+  return '<div class="timelineRow '+(tone||"")+'"><div class="timelineDate">'+date+'</div><div class="timelineNode"></div><div><b>'+title+'</b><span>'+sub+'</span></div></div>';
+}
+function categoryCard(title,examples,roles){
+  return '<button class="categoryCard" onclick="jumpToRecruitList()"><b>'+title+'</b><span>'+examples+'</span><small>'+roles+'</small><em>浏览 →</em></button>';
+}
+function guideStep(n,title,sub,done){
+  return '<div class="guideStep '+(done?"done":"")+'"><span>'+n+'</span><div><b>'+title+'</b><small>'+sub+'</small></div>'+(done?'<i>✓</i>':'')+'</div>';
+}
+function activityRow(time,title,sub,tone){
+  return '<div class="activityRow"><span class="activityDot '+(tone||"")+'"></span><div><b>'+title+'</b><small>'+sub+'</small></div><time>'+time+'</time></div>';
+}
+function jumpToRecruitList(){
+  state.mode="teams"; if(state.route!=="hall"){state.route="hall";render()}
+  setTimeout(function(){var el=byId("recruitArea");if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},50);
 }
 function filterToggle(b){b.classList.toggle("on");b.classList.toggle("check");toast(b.textContent+(b.classList.contains("on")?" 已启用":" 已取消"))}
 function filterHall(q){q=q.toLowerCase();var box=byId("hallList");if(state.mode==="teams"){var x=recruits.filter(function(r){return JSON.stringify(r).toLowerCase().indexOf(q)>=0});box.innerHTML=x.map(recruitCard).join("")||empty("没有严格匹配结果","可以放宽非核心条件；硬条件仍保留。")}else{var y=candidates.filter(function(c){return !state.blocked[c.id]&&JSON.stringify(c).toLowerCase().indexOf(q)>=0});box.innerHTML=y.map(candidateCard).join("")||empty("没有合适候选人","调整任务、技能或校区条件后再试。")}}
