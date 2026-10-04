@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>竞旅 CompMate Demo</title>
+<style>
+:root{--bg:#f6f7f9;--panel:#fff;--ink:#17191d;--muted:#6f7580;--line:#e7e9ed;--blue:#2f6fed;--green:#197a55;--warn:#a86500;--r:16px}
+*{box-sizing:border-box}body{margin:0;font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--ink)}
+button,input{font:inherit}button{cursor:pointer}.app{display:grid;grid-template-columns:230px 1fr;min-height:100vh}
+aside{background:#17191d;color:#fff;padding:22px 16px;display:flex;flex-direction:column}.brand{font-weight:800;font-size:18px;padding:6px 8px 22px}.sub{font-size:12px;color:#9ea4ae;font-weight:400;margin-top:3px}
+nav{display:grid;gap:6px}.nav{border:0;background:transparent;color:#aeb4bd;padding:11px 12px;border-radius:10px;text-align:left}.nav.active,.nav:hover{background:#262930;color:#fff}
+.foot{margin-top:auto;font-size:12px;color:#c9ced5}.verified{padding:10px;background:#23262c;border-radius:10px}.main{padding:26px 32px 50px}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px}h1{margin:2px 0 0;font-size:29px}h2{margin:0 0 8px}.eyebrow{font-size:12px;color:var(--muted)}
+.primary,.secondary,.danger{border:0;border-radius:10px;padding:10px 14px;font-weight:700}.primary{background:#191b20;color:#fff}.secondary{background:#fff;border:1px solid var(--line)}.danger{background:#fff0f0;color:#a33}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px}.search,.filter{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 12px}.search{min-width:260px;flex:1}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.card,.panel{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:19px}.card:hover{box-shadow:0 10px 28px rgba(0,0,0,.06)}
+.meta{color:var(--muted);font-size:13px}.title{font-size:18px;font-weight:800;margin:6px 0}.badges{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.badge,.status{font-size:12px;padding:5px 8px;border-radius:8px;background:#f2f3f6}.badge.blue{background:#edf3ff;color:#2b5fc8}.status.good{background:#ecf8f2;color:var(--green)}.status.warn{background:#fff6e5;color:var(--warn)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.info{border-top:1px solid var(--line);padding-top:11px}.label{color:var(--muted);font-size:12px}.value{font-size:14px;font-weight:650;margin-top:4px}
+.reasons{background:#f7f9fc;border-radius:10px;padding:10px 11px;font-size:13px;margin-top:13px}.actions{display:flex;gap:9px;align-items:center;margin-top:16px}.actions .primary{margin-left:auto}
+.layout{display:grid;grid-template-columns:1.5fr .75fr;gap:16px}.section{border-top:1px solid var(--line);padding:18px 0}.section:first-child{border-top:0}.kv{display:grid;grid-template-columns:110px 1fr;gap:8px 16px;font-size:14px}.k{color:var(--muted)}
+.notice{background:#edf3ff;color:#365b9d;padding:11px 12px;border-radius:10px;font-size:13px}.list{display:grid;gap:11px}.request{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center}
+.statrow{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px}.stat{background:#f7f8fa;border-radius:12px;padding:13px}.stat strong{display:block;font-size:19px}.stat span{font-size:12px;color:var(--muted)}
+.hidden{display:none}.modalbg{position:fixed;inset:0;background:rgba(0,0,0,.4);display:grid;place-items:center;padding:18px}.modal{background:#fff;border-radius:18px;padding:22px;width:min(520px,100%)}.modalbg.hidden{display:none}.toast{position:fixed;right:24px;bottom:24px;background:#17191d;color:#fff;border-radius:10px;padding:11px 14px;opacity:0;transform:translateY(8px);transition:.2s}.toast.show{opacity:1;transform:none}
+@media(max-width:900px){.app{grid-template-columns:1fr}aside{display:none}.main{padding:20px}.grid,.layout{grid-template-columns:1fr}}@media(max-width:560px){.row2,.statrow{grid-template-columns:1fr}.top{align-items:flex-start;gap:12px;flex-direction:column}.request{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <div class="brand">竞旅 CompMate<div class="sub">轻量竞赛组队平台</div></div>
+  <nav>
+    <button class="nav active" data-route="hall">组队大厅</button>
+    <button class="nav" data-route="people">找队友</button>
+    <button class="nav" data-route="requests">申请 / 邀请</button>
+    <button class="nav" data-route="team">我的队伍</button>
+    <button class="nav" data-route="profile">个人档案</button>
+  </nav>
+  <div class="foot"><div class="verified">广东工业大学 · 已认证</div></div>
+</aside>
+<main class="main">
+  <div class="top"><div><div class="eyebrow">Alpha Demo</div><h1 id="title">组队大厅</h1></div><button class="primary" onclick="publish()">+ 发布招募</button></div>
+  <div id="view"></div>
+</main>
+</div>
+<div class="modalbg hidden" id="modalbg"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+<script>
+const S={route:"hall",applied:false,confirming:false,joined:false,current:1};
+const R=[
+{id:1,comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学 · 龙洞校区",role:"数据分析",slots:"1 / 2",task:"问卷数据清洗、可视化与用户需求分析",skills:["Excel","数据分析","可视化"],time:"8h / 周",goal:"冲省奖",why:["相关任务经历","时间满足要求"],team:"现有 3 人 · 已完成初步选题",stage:"需求验证阶段"},
+{id:2,comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学 · 大学城校区",role:"市场调研",slots:"0 / 1",task:"设计访谈提纲、执行访谈并提炼关键洞察",skills:["用户访谈","问卷设计","报告写作"],time:"6h / 周",goal:"完整参赛",why:["有访谈经验","目标一致"],team:"现有 4 人 · 缺最后 1 名成员",stage:"前期调研"},
+{id:3,comp:"互联网+",title:"寻找前端开发同学",school:"广东工业大学 · 龙洞校区",role:"前端开发",slots:"2 / 2",task:"实现产品 Demo 与路演展示页面",skills:["JavaScript","React","HTML/CSS"],time:"10h / 周",goal:"冲校赛金奖",why:["技能匹配"],team:"现有 3 人",stage:"Demo 开发"}
+];
+const P=[
+{name:"林清禾",major:"数据科学与大数据技术",role:"数据分析 / 建模",time:"10h / 周",skills:["Python","SPSS","数据可视化"],exp:"正大杯校赛二等奖 · 负责数据清洗与可视化",why:["任务高度匹配","时间满足要求"]},
+{name:"陈予安",major:"计算机科学与技术",role:"前端开发 / 数据处理",time:"8h / 周",skills:["React","JavaScript","Python"],exp:"互联网+校赛项目 · 负责前端页面与接口",why:["技能匹配","有项目产出"]},
+{name:"周言",major:"工商管理",role:"商业分析 / 用户调研",time:"6h / 周",skills:["访谈","Excel","报告写作"],exp:"行业经济分析大赛 · 负责访谈与报告",why:["同校区","有访谈经验"]}
+];
+const V=document.querySelector("#view"),T=document.querySelector("#title"),M=document.querySelector("#modalbg"),MC=document.querySelector("#modal"),toast=document.querySelector("#toast");
+document.querySelectorAll(".nav").forEach(b=>b.onclick=()=>go(b.dataset.route));
+M.onclick=e=>{if(e.target===M)closeM()};
+function tip(x){toast.textContent=x;toast.classList.add("show");setTimeout(()=>toast.classList.remove("show"),1600)}
+function modal(h){MC.innerHTML=h;M.classList.remove("hidden")}function closeM(){M.classList.add("hidden")}
+function go(r,p){S.route=r;if(p)S.current=p;document.querySelectorAll(".nav").forEach(b=>b.classList.toggle("active",b.dataset.route===r));render()}
+function recCard(r){let left=+r.slots.split("/")[0];return `<article class="card" onclick="go('detail',${r.id})"><div class="meta">${r.comp}</div><div class="title">${r.title}</div><div class="badges"><span class="badge blue">${r.role}</span>${r.skills.slice(0,2).map(x=>'<span class="badge">'+x+'</span>').join("")}<span class="status ${left?'good':'warn'}">${left?'招募中':'名额确认中'}</span></div><div class="row2"><div class="info"><div class="label">具体任务</div><div class="value">${r.task}</div></div><div class="info"><div class="label">时间要求</div><div class="value">${r.time}</div></div></div><div class="reasons"><b>推荐理由：</b>${r.why.join(" · ")}</div><div class="actions"><span class="meta">剩余名额 ${r.slots}</span><button class="primary" onclick="event.stopPropagation();go('detail',${r.id})">查看详情</button></div></article>`}
+function hall(){T.textContent="组队大厅";V.innerHTML=`<div class="toolbar"><input class="search" placeholder="搜索竞赛、角色或任务…"><button class="filter">竞赛 ▾</button><button class="filter">任务 / 角色 ▾</button><button class="filter">校区 ▾</button><button class="filter">时间 ▾</button></div><div class="notice" style="margin-bottom:15px">单校 Alpha 试点：主动搜索为主，推荐只辅助发现，不替用户做最终决定。</div><div class="grid">${R.map(recCard).join("")}</div>`}
+function detail(){const r=R.find(x=>x.id===S.current)||R[0];T.textContent="招募详情";V.innerHTML=`<div class="layout"><div class="panel"><div class="meta">${r.comp} · ${r.school}</div><div class="title" style="font-size:25px">${r.title}</div><div class="badges"><span class="badge blue">${r.role}</span>${r.skills.map(x=>'<span class="badge">'+x+'</span>').join("")}</div><div class="section"><h2>队伍现状</h2><div class="kv"><div class="k">当前队伍</div><div>${r.team}</div><div class="k">当前阶段</div><div>${r.stage}</div><div class="k">参赛目标</div><div>${r.goal}</div></div></div><div class="section"><h2>角色缺口</h2><p>${r.task}</p><div class="kv"><div class="k">最低投入</div><div>${r.time}</div><div class="k">剩余名额</div><div>${r.slots}</div></div></div><div class="section"><h2>协作预期</h2><div class="meta">每周至少同步 1 次；关键节点无法按时完成时提前说明。</div></div></div><aside class="panel"><h2>匹配情况</h2><div class="reasons"><b>为什么推荐给你</b><br>${r.why.join(" · ")}</div><div class="statrow"><div class="stat"><strong>12h</strong><span>你当前剩余</span></div><div class="stat"><strong>${r.time.split(" ")[0]}</strong><span>最低要求</span></div><div class="stat"><strong>${r.slots}</strong><span>剩余名额</span></div></div><div class="notice" style="margin-top:14px">申请只代表沟通意向，不会直接加入队伍。</div><div class="actions"><button class="secondary" onclick="tip('招募文本已复制')">复制分享</button><button class="primary" onclick="apply(${r.id})">${S.applied?'查看申请':'申请加入'}</button></div></aside></div>`}
+function people(){T.textContent="找队友";V.innerHTML=`<div class="toolbar"><button class="filter">挑战杯 · 数据分析岗 ▾</button><input class="search" placeholder="搜索技能、专业或经历…"></div><div class="grid">${P.map(p=>`<article class="card"><div class="title">${p.name}</div><div class="meta">广东工业大学 · ${p.major} · 已认证</div><div class="badges">${p.skills.map(x=>'<span class="badge">'+x+'</span>').join("")}</div><div class="row2"><div class="info"><div class="label">希望承担</div><div class="value">${p.role}</div></div><div class="info"><div class="label">当前可投入</div><div class="value">${p.time}</div></div></div><div class="info" style="margin-top:12px"><div class="label">相关经历 / 具体产出</div><div class="value">${p.exp}</div></div><div class="reasons"><b>推荐理由：</b>${p.why.join(" · ")}</div><div class="actions"><button class="primary" onclick="tip('邀请已发送，等待对方处理')">邀请沟通</button></div></article>`).join("")}</div>`}
+function requests(){T.textContent="申请 / 邀请";V.innerHTML=`<div class="list"><div class="request"><div><b>挑战杯 · 数据分析岗</b><div class="meta">与「星火队」已进入待沟通 · 微信已授权</div><div class="badges"><span class="status good">待沟通</span></div></div><div><button class="secondary" onclick="tip('本次沟通已结束')">中止沟通</button> <button class="primary" onclick="formal()">发起正式确认</button></div></div><div class="request"><div><b>正大杯 · 市场调研岗</b><div class="meta">你收到一条队长邀请</div><div class="badges"><span class="status">请求待处理</span></div></div><div><button class="secondary" onclick="tip('已拒绝')">拒绝</button> <button class="primary" onclick="agree()">同意沟通</button></div></div>${S.confirming?`<div class="request"><div><b>挑战杯 · 正式组队确认</b><div class="meta">队长已为你临时预留「数据分析」名额 · 23:41 后释放</div><div class="badges"><span class="status warn">正式确认中</span></div></div><div><button class="secondary" onclick="S.confirming=false;tip('已拒绝，预留已释放');requests()">暂不加入</button> <button class="primary" onclick="join()">确认加入</button></div></div>`:''}</div>`}
+function team(){T.textContent="我的队伍";if(!S.joined){V.innerHTML='<div class="panel"><h2>还没有正式加入的队伍</h2><p class="meta">待沟通不等于正式组队。完成双向确认后才会出现在这里。</p><button class="primary" onclick="go(\'hall\')">去找队伍</button></div>';return}V.innerHTML=`<div class="panel"><div class="meta">挑战杯 · 大挑</div><div class="title" style="font-size:25px">星火队</div><div class="statrow"><div class="stat"><strong>4</strong><span>正式成员</span></div><div class="stat"><strong>1</strong><span>剩余缺口</span></div><div class="stat"><strong>8h</strong><span>你的当前投入</span></div></div><div class="section"><h2>成员与角色</h2><div class="list"><div class="request"><div>顾闻 · 队长 / 产品</div><span class="status">正式成员</span></div><div class="request"><div>林清禾 · 数据分析</div><span class="status">正式成员</span></div><div class="request"><div>你 · 数据分析</div><span class="status good">本人</span></div></div></div><div class="actions"><button class="danger" onclick="leave()">退出队伍</button></div></div>`}
+function profile(){T.textContent="个人档案";V.innerHTML=`<div class="layout"><div class="panel"><div class="title">黄同学</div><div class="meta">广东工业大学 · 国际经济与贸易 · 大二 · 已认证</div><div class="section"><h2>我能承担的任务</h2><div class="badges"><span class="badge blue">用户调研</span><span class="badge">商业分析</span><span class="badge">产品策划</span><span class="badge">Excel</span></div></div><div class="section"><h2>相关经历</h2><p>挑战杯 · 项目负责人：负责需求调研、方案设计、团队推进与成果整合。</p></div></div><aside class="panel"><h2>时间与目标</h2><div class="statrow"><div class="stat"><strong>20h</strong><span>每周总可投入</span></div><div class="stat"><strong>8h</strong><span>已正式承诺</span></div><div class="stat"><strong>12h</strong><span>当前剩余</span></div></div><div class="section"><div class="kv"><div class="k">参赛目标</div><div>优先冲奖</div><div class="k">协作方式</div><div>关键节点提前同步</div><div class="k">联系方式</div><div>微信 · 按次授权</div></div></div></aside></div>`}
+function apply(id){if(S.applied){go("requests");return}const r=R.find(x=>x.id===id);modal(`<h2>确认申请</h2><p class="meta">申请只代表愿意进一步沟通，不会直接加入队伍。</p><div class="notice">你当前还能投入 <b>12h / 周</b>；该角色要求 <b>${r.time}</b>，时间满足要求。</div><div class="actions"><button class="secondary" onclick="closeM()">取消</button><button class="primary" onclick="S.applied=true;closeM();tip('申请已提交');go('requests')">提交申请</button></div>`)}
+function agree(){modal('<h2>同意沟通</h2><p>进入待沟通后，双方才会看到本次已授权联系方式。</p><div class="notice">本次授权：微信 · wx_demo_2026</div><div class="actions"><button class="secondary" onclick="closeM()">取消</button><button class="primary" onclick="closeM();tip(\'已进入待沟通\')">确认并开放</button></div>')}
+function formal(){S.confirming=true;tip("已发起正式确认");requests()}function join(){S.confirming=false;S.joined=true;tip("正式组队成功");go("team")}
+function leave(){S.joined=false;tip("已退出队伍，名额与时间已释放");team()}
+function publish(){modal('<h2>发布招募</h2><p class="meta">结构化填写角色、任务、人数、时间和目标，避免只写“缺技术 / 缺商科”。</p><div class="kv"><div class="k">目标竞赛</div><div>挑战杯 · 大挑</div><div class="k">缺口角色</div><div>视觉设计 · 1 人</div><div class="k">最低投入</div><div>6h / 周</div><div class="k">具体任务</div><div>路演视觉、海报与展示物料</div></div><div class="actions"><button class="secondary" onclick="closeM()">取消</button><button class="primary" onclick="closeM();tip(\'招募已发布（Demo）\')">发布</button></div>')}
+function render(){({hall,people,detail,requests,team,profile}[S.route]||hall)()}window.go=go;window.publish=publish;window.apply=apply;window.agree=agree;window.formal=formal;window.join=join;window.leave=leave;window.closeM=closeM;render();
+</script>
+</body></html>
