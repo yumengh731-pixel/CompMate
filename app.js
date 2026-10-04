@@ -33,7 +33,7 @@ function modal(html){byId("modalRoot").innerHTML='<div class="modalBg" id="modal
 function closeModal(){byId("modalRoot").innerHTML=""}
 function navIcon(r){return {home:"⌂",teams:"◇",people:"⌕",requests:"◫",team:"◎",profile:"○"}[r]||"•"}
 function title(){return {home:"首页",teams:"找队伍",people:"找队友",detail:"招募详情",candidate:"候选人详情",requests:"申请 / 邀请",team:"我的队伍",profile:"个人档案",profileEdit:"编辑个人档案",publish:"发布 / 编辑招募",auth:"学校身份认证"}[state.route]||"竞旅 CompMate"}
-function activeRoute(){if(state.route==="detail")return"teams";if(state.route==="candidate")return"people";if(state.route==="profileEdit")return"profile";return state.route}
+function activeRoute(){if(state.route==="detail"||state.route==="candidate"||state.route==="teams"||state.route==="people")return"find";if(state.route==="profileEdit")return"profile";return state.route}
 function navButton(r,label,count){
   var on=activeRoute()===r;
   return '<button class="navBtn '+(on?"active":"")+'" onclick="navTo(\''+r+'\')"><span class="navIcon">'+navIcon(r)+'</span><span>'+label+'</span>'+(count?'<span class="navCount">'+count+'</span>':'')+'</button>'
@@ -43,13 +43,30 @@ function mNav(r,label){
   return '<button class="mNav '+(on?"active":"")+'" onclick="navTo(\''+r+'\')"><b>'+navIcon(r)+'</b><span>'+label+'</span></button>'
 }
 function shell(){
+  var ar=activeRoute();
   byId("app").innerHTML=
   '<div class="shell"><aside class="sidebar">'+
     '<div class="brand"><div class="brandMark">C</div><div><div class="brandName">竞旅 CompMate</div><div class="brandSub">大学生竞赛组队平台</div></div></div>'+
-    '<nav class="nav">'+navButton("home","首页")+navButton("teams","找队伍")+navButton("people","找队友")+navButton("requests","申请 / 邀请",2)+navButton("team","我的队伍")+navButton("profile","个人档案")+'</nav>'+
+    '<nav class="nav">'+
+      navButton("home","首页")+
+      '<button class="navBtn '+(ar==="find"?"active":"")+'" onclick="goFind()"><span class="navIcon">⌕</span><span>寻找</span></button>'+
+      navButton("requests","申请 / 邀请",2)+
+      navButton("team","我的队伍")+
+      navButton("profile","个人档案")+
+    '</nav>'+
     '<div class="sideBottom"><div class="identity"><span class="dot"></span>'+(state.verified?"广东工业大学 · 已认证":"学校身份未认证")+'<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div><button class="sideGhost" onclick="demoShare()">演示：外部分享进入</button></div>'+
   '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">Alpha Demo · PRD V1.6</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><div class="timePill"><span>当前可投入</span><b>'+Math.max(0,remaining())+'h</b></div><button class="btn primary" onclick="go(\'publish\')">+ 发布招募</button></div></header><div id="page"></div></main></div>'+
-  '<nav class="mobileNav">'+mNav("home","首页")+mNav("teams","队伍")+mNav("people","队友")+mNav("requests","申请")+mNav("profile","我的")+'</nav>';
+  '<nav class="mobileNav">'+
+    mNav("home","首页")+
+    '<button class="mNav '+(ar==="find"?"active":"")+'" onclick="goFind()"><b>⌕</b><span>寻找</span></button>'+
+    mNav("requests","申请")+
+    mNav("team","队伍")+
+    mNav("profile","我的")+
+  '</nav>';
+}
+function goFind(){
+  if(state.route!=="home"){state.route="home";render()}
+  setTimeout(function(){var el=byId("findSection");if(el)el.scrollIntoView({behavior:"smooth",block:"start"})},60);
 }
 function demoBar(){return '<div class="demoBar"><div><b>面试演示路径</b><br><small>主路径：发现 → 判断 → 沟通 → 正式确认 → 组队</small></div><div class="demoSteps"><button class="demoStep" onclick="go(\'teams\')">1 找队伍</button><button class="demoStep" onclick="openRecruit(1)">2 看详情</button><button class="demoStep" onclick="go(\'requests\')">3 沟通/确认</button><button class="demoStep" onclick="go(\'team\')">4 队伍页</button></div></div>'}
 function navTo(r){state.route=r;if(r==="teams")state.mode="teams";if(r==="people")state.mode="people";render()}
@@ -68,10 +85,30 @@ function hall(p){
   p.innerHTML=
   '<section class="brandBanner"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT Alpha · 双向选择 · 隐私联系方式</div></section>'+
 
-  '<div class="coreLabel"><span>核心功能</span><p>先解决“找到谁”，再解决“是否适合”。</p></div>'+
-  '<section class="coreActions">'+
-    '<article class="coreAction teamsCore" onclick="go(\'teams\')"><div class="coreActionTop"><span class="coreNumber">01</span><span class="coreArrow">↗</span></div><div class="coreIcon">◇</div><h2>找队伍</h2><p>看看哪些队伍正在缺你能做的事情。按竞赛、具体任务、时间和校区筛选。</p><div class="coreBullets"><span>查看真实任务</span><span>判断时间与目标</span><span>申请后再沟通</span></div><button class="coreButton">进入组队大厅</button></article>'+
-    '<article class="coreAction peopleCore" onclick="go(\'people\')"><div class="coreActionTop"><span class="coreNumber">02</span><span class="coreArrow">↗</span></div><div class="coreIcon">⌕</div><h2>找队友</h2><p>围绕你的具体招募缺口，找真正能承担任务、时间合适、目标相近的人。</p><div class="coreBullets"><span>看具体产出</span><span>显示风险而非打分</span><span>主动邀请沟通</span></div><button class="coreButton">浏览候选人</button></article>'+
+  '<section class="smartHomeGrid">'+
+    '<div class="smartRecommendPanel">'+
+      '<div class="smartPanelHead"><div><span>SMART RECOMMEND</span><h2>平台智能推荐</h2><p>根据你的任务经历、时间和参赛目标，优先推荐值得进一步了解的队伍。</p></div><button class="btn text" onclick="go(\'teams\')">查看全部 →</button></div>'+
+      '<div class="smartRecommendList">'+recommended.map(smartRecommendRow).join("")+'</div>'+
+      '<div class="recommendFoot"><span>推荐不等于自动组队</span><small>只展示可解释的匹配点与风险，最终由你自己决定。</small></div>'+
+    '</div>'+
+    '<aside class="competitionReminder">'+
+      '<div class="smartPanelHead compact"><div><span>COMPETITION CALENDAR</span><h2>竞赛时间提醒</h2><p>只保留与你当前组队相关的近期节点。</p></div></div>'+
+      '<div class="reminderTimeline">'+
+        reminderRow("10/18","挑战杯","组队截止","3 条相关招募","hot")+
+        reminderRow("10/20","正大杯","组队节点","市场调研岗活跃","")+
+        reminderRow("10/28","我的招募","招募截止","CompMate 项目","")+
+        reminderRow("11 月","互联网+","项目推进","可提前补齐技术角色","future")+
+      '</div>'+
+      '<button class="reminderAction" onclick="go(\'requests\')"><span><b>2 件组队事项待处理</b><small>1 条邀请 · 1 条待沟通</small></span><em>→</em></button>'+
+    '</aside>'+
+  '</section>'+
+
+  '<section class="findSection" id="findSection">'+
+    '<div class="findSectionHead"><div><span>FIND</span><h2>寻找</h2><p>根据你现在的需求，选择“加入一支队伍”或“为自己的队伍补齐成员”。</p></div></div>'+
+    '<div class="findChoiceGrid">'+
+      '<article class="findChoice teamChoice" onclick="go(\'teams\')"><div class="findChoiceIcon">◇</div><div class="findChoiceBody"><span>我要加入队伍</span><h3>找队伍</h3><p>浏览正在招募的队伍，先看具体任务，再判断时间、目标和团队状态。</p><div><i>竞赛筛选</i><i>具体任务</i><i>时间可行</i></div></div><em>进入找队伍 →</em></article>'+
+      '<article class="findChoice peopleChoice" onclick="go(\'people\')"><div class="findChoiceIcon">⌕</div><div class="findChoiceBody"><span>我的队伍还缺人</span><h3>找队友</h3><p>围绕一个明确的招募缺口，看候选人的任务能力、真实产出、时间与目标。</p><div><i>技能 / 任务</i><i>经历产出</i><i>风险提示</i></div></div><em>进入找队友 →</em></article>'+
+    '</div>'+
   '</section>'+
 
   '<section class="utilityRow">'+
@@ -81,21 +118,23 @@ function hall(p){
     '<button class="utilityCard" onclick="go(\'profile\')"><span class="utilityIcon">○</span><div><b>个人档案</b><small>当前还能投入 '+Math.max(0,remaining())+'h / 周</small></div><em>→</em></button>'+
   '</section>'+
 
-  '<section class="homeMainGrid"><div class="homePrimary">'+
-    '<div class="cleanSectionHead"><div><span>RECOMMENDED</span><h3>适合你的队伍</h3><p>优先显示具体任务和时间条件，而不是只看专业名称。</p></div><button class="btn text" onclick="go(\'teams\')">查看全部 →</button></div>'+
-    '<div class="cleanRecruitList">'+recommended.map(cleanRecruitRow).join("")+'</div>'+
-  '</div><aside class="homeAside">'+
-    '<div class="cleanSectionHead"><div><span>THIS WEEK</span><h3>近期节点</h3></div></div>'+
-    '<div class="simpleTimeline">'+simpleTime("10/18","挑战杯","组队截止 · 3 条相关招募","hot")+simpleTime("10/20","正大杯","市场调研岗位集中招募","")+simpleTime("10/28","我的招募","CompMate 项目招募截止","")+'</div>'+
-    '<button class="asideAction" onclick="go(\'requests\')"><span><b>还有事情需要处理</b><small>1 条邀请 + 1 条待沟通</small></span><em>→</em></button>'+
-  '</aside></section>'+
-
-  '<section class="exploreSection"><div class="cleanSectionHead"><div><span>EXPLORE</span><h3>按方向快速进入</h3></div></div><div class="exploreGrid">'+
+  '<section class="exploreSection"><div class="cleanSectionHead"><div><span>EXPLORE</span><h3>按竞赛方向快速进入</h3></div></div><div class="exploreGrid">'+
     exploreCard("创新创业","挑战杯 · 互联网+","产品 / 商业 / 技术")+
     exploreCard("市场调研","正大杯 · 行业分析","访谈 / 数据 / 报告")+
     exploreCard("科技科研","电子设计 · 科研项目","开发 / 实验 / 论文")+
     exploreCard("数学建模","建模 · 数据竞赛","建模 / 编程 / 写作")+
   '</div></section>';
+}
+function smartRecommendRow(r){
+  var ro=r.role,free=Math.max(0,ro.capacity-ro.formal-ro.reserved);
+  return '<article class="smartRecommendRow" onclick="openRecruit('+r.id+')">'+
+    '<div class="smartRecMain"><div class="smartRecMeta">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(ro.task)+'</p><div class="smartRecTags"><span>'+e(ro.name)+'</span><span>'+ro.hours+'h / 周</span><span>'+e(r.target)+'</span></div></div>'+
+    '<div class="smartRecReason"><span>推荐理由</span><b>'+r.reasons.join(" · ")+'</b><small>剩余 '+free+' 个可用名额</small></div>'+
+    '<span class="smartRecArrow">→</span>'+
+  '</article>';
+}
+function reminderRow(date,comp,label,sub,tone){
+  return '<div class="reminderRow '+(tone||"")+'"><div class="reminderDate">'+date+'</div><div class="reminderLine"><span></span></div><div class="reminderContent"><b>'+comp+'</b><strong>'+label+'</strong><small>'+sub+'</small></div></div>';
 }
 function teamsPage(p){
   state.mode="teams";
