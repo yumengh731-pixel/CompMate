@@ -158,3 +158,356 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 @media(max-width:520px){
   .brandBannerCopy b{font-size:16px}.brandBannerCopy span{font-size:10px}.coreLabel{align-items:flex-start;flex-direction:column;gap:3px}.coreAction{min-height:245px;border-radius:18px}.coreBullets{margin:13px 0}.utilityRow{grid-template-columns:1fr}.homeMainGrid{gap:14px}.cleanRecruit{grid-template-columns:1fr}.cleanRecruitSide{justify-items:start;text-align:left;border-top:1px solid var(--line);padding-top:9px}.exploreGrid{grid-template-columns:1fr 1fr}.listPageIntro h2{font-size:21px}.filterChips{display:grid;grid-template-columns:1fr 1fr}.teamResultFacts{grid-template-columns:1fr 1fr 1fr}.roleContext{grid-template-columns:1fr}.personIdentity{grid-template-columns:auto 1fr}
 }
+
+
+/* ===== V5 unified homepage discovery ===== */
+.smartHomeGrid{
+  display:grid;
+  grid-template-columns:minmax(0,1.65fr) minmax(300px,.65fr);
+  gap:16px;
+  margin-bottom:20px;
+}
+.smartRecommendPanel,
+.competitionReminder{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:18px;
+  min-width:0;
+}
+.smartRecommendPanel{
+  box-shadow:0 8px 28px rgba(18,25,35,.045);
+}
+.smartPanelHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  gap:14px;
+  margin-bottom:12px;
+}
+.smartPanelHead.compact{
+  align-items:flex-start;
+}
+.smartPanelHead span{
+  display:block;
+  font-size:9px;
+  letter-spacing:.13em;
+  color:#9198a4;
+  font-weight:800;
+}
+.smartPanelHead h2{
+  font-size:20px;
+  margin:3px 0 0;
+}
+.smartPanelHead p{
+  font-size:10px;
+  line-height:1.5;
+  color:var(--muted);
+  margin:5px 0 0;
+}
+.smartRecommendList{
+  display:grid;
+  gap:8px;
+}
+.smartRecommendRow{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 190px auto;
+  gap:14px;
+  align-items:center;
+  border:1px solid var(--line);
+  border-radius:14px;
+  padding:13px 14px;
+  background:#fbfcfd;
+  cursor:pointer;
+  transition:.16s;
+}
+.smartRecommendRow:hover{
+  background:#fff;
+  border-color:#d3d8e0;
+  transform:translateY(-1px);
+  box-shadow:0 7px 20px rgba(17,24,39,.045);
+}
+.smartRecMeta{
+  font-size:9px;
+  color:var(--muted);
+  margin-bottom:4px;
+}
+.smartRecMain>b{
+  font-size:13px;
+}
+.smartRecMain p{
+  margin:6px 0 8px;
+  font-size:10px;
+  line-height:1.5;
+  color:#5d6570;
+}
+.smartRecTags{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+}
+.smartRecTags span{
+  padding:4px 6px;
+  border-radius:6px;
+  background:#f0f2f5;
+  font-size:9px;
+}
+.smartRecReason{
+  display:grid;
+  gap:3px;
+  padding-left:12px;
+  border-left:1px solid var(--line);
+}
+.smartRecReason span{
+  font-size:8px;
+  color:var(--muted);
+}
+.smartRecReason b{
+  font-size:10px;
+  line-height:1.45;
+  color:#3f547e;
+}
+.smartRecReason small{
+  font-size:8px;
+  color:#858d99;
+}
+.smartRecArrow{
+  color:#8e96a2;
+  font-size:16px;
+}
+.recommendFoot{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-top:10px;
+  padding:9px 11px;
+  border-radius:10px;
+  background:#f6f8fb;
+}
+.recommendFoot span{
+  font-size:9px;
+  font-weight:800;
+  color:#465777;
+}
+.recommendFoot small{
+  font-size:9px;
+  color:#7a828d;
+}
+.competitionReminder{
+  display:flex;
+  flex-direction:column;
+}
+.reminderTimeline{
+  display:grid;
+  margin-top:2px;
+}
+.reminderRow{
+  display:grid;
+  grid-template-columns:46px 16px 1fr;
+  gap:7px;
+  min-height:62px;
+  position:relative;
+}
+.reminderDate{
+  font-size:9px;
+  color:#8b929d;
+  padding-top:2px;
+}
+.reminderLine{
+  position:relative;
+}
+.reminderLine span{
+  display:block;
+  width:9px;
+  height:9px;
+  border-radius:50%;
+  border:2px solid #c5cad2;
+  background:#fff;
+  position:relative;
+  z-index:1;
+}
+.reminderRow:not(:last-child) .reminderLine:after{
+  content:"";
+  position:absolute;
+  top:10px;
+  bottom:-3px;
+  left:4px;
+  width:1px;
+  background:#e1e4e9;
+}
+.reminderRow.hot .reminderLine span{
+  border-color:var(--blue);
+  background:var(--blue);
+}
+.reminderRow.future{
+  opacity:.58;
+}
+.reminderContent{
+  display:grid;
+  align-content:start;
+  gap:2px;
+}
+.reminderContent b{
+  font-size:11px;
+}
+.reminderContent strong{
+  font-size:9px;
+  font-weight:700;
+  color:#4b5360;
+}
+.reminderContent small{
+  font-size:8px;
+  color:var(--muted);
+}
+.reminderAction{
+  width:100%;
+  margin-top:auto;
+  border:1px solid var(--line);
+  background:#f9fafb;
+  border-radius:12px;
+  padding:11px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  align-items:center;
+  text-align:left;
+}
+.reminderAction b{
+  display:block;
+  font-size:10px;
+}
+.reminderAction small{
+  display:block;
+  margin-top:2px;
+  font-size:8px;
+  color:var(--muted);
+}
+.reminderAction em{
+  font-style:normal;
+  color:#9299a4;
+}
+.findSection{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:20px;
+  padding:18px;
+  margin-bottom:14px;
+  scroll-margin-top:92px;
+}
+.findSectionHead{
+  display:flex;
+  justify-content:space-between;
+  align-items:end;
+  margin-bottom:12px;
+}
+.findSectionHead span{
+  display:block;
+  font-size:9px;
+  letter-spacing:.13em;
+  color:#949ba6;
+  font-weight:800;
+}
+.findSectionHead h2{
+  font-size:20px;
+  margin:3px 0 0;
+}
+.findSectionHead p{
+  font-size:10px;
+  color:var(--muted);
+  margin:5px 0 0;
+}
+.findChoiceGrid{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:12px;
+}
+.findChoice{
+  border:1px solid var(--line);
+  border-radius:17px;
+  background:#fbfcfd;
+  padding:17px;
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:14px;
+  align-items:center;
+  cursor:pointer;
+  transition:.16s;
+}
+.findChoice:hover{
+  background:#fff;
+  transform:translateY(-1px);
+  box-shadow:0 8px 24px rgba(17,24,39,.05);
+}
+.findChoiceIcon{
+  width:48px;
+  height:48px;
+  border-radius:14px;
+  display:grid;
+  place-items:center;
+  font-size:21px;
+  font-weight:800;
+}
+.teamChoice .findChoiceIcon{
+  background:var(--blue2);
+  color:var(--blue);
+}
+.peopleChoice .findChoiceIcon{
+  background:var(--green2);
+  color:var(--green);
+}
+.findChoiceBody>span{
+  font-size:8px;
+  color:#8d95a0;
+}
+.findChoiceBody h3{
+  margin:2px 0 5px;
+  font-size:17px;
+}
+.findChoiceBody p{
+  margin:0;
+  font-size:10px;
+  line-height:1.5;
+  color:#5d6570;
+}
+.findChoiceBody>div{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  margin-top:9px;
+}
+.findChoiceBody i{
+  font-style:normal;
+  font-size:8px;
+  padding:4px 6px;
+  border-radius:6px;
+  background:#f0f2f5;
+  color:#616873;
+}
+.findChoice>em{
+  font-style:normal;
+  font-size:9px;
+  color:#6d7682;
+  white-space:nowrap;
+}
+
+/* Unified "寻找" in nav; result pages remain separate destinations */
+@media(max-width:1100px){
+  .smartHomeGrid{grid-template-columns:1fr}
+  .smartRecommendRow{grid-template-columns:1fr 170px auto}
+}
+@media(max-width:820px){
+  .smartRecommendRow{grid-template-columns:1fr auto}
+  .smartRecReason{grid-column:1/-1;border-left:0;border-top:1px solid var(--line);padding:8px 0 0}
+  .findChoiceGrid{grid-template-columns:1fr}
+  .findChoice{grid-template-columns:auto 1fr}
+  .findChoice>em{grid-column:2}
+}
+@media(max-width:520px){
+  .brandBanner{margin-bottom:14px}
+  .smartRecommendPanel,.competitionReminder,.findSection{padding:14px;border-radius:17px}
+  .smartPanelHead{align-items:flex-start}
+  .smartPanelHead .btn.text{padding-right:0}
+  .smartRecommendRow{padding:12px}
+  .recommendFoot{align-items:flex-start;flex-direction:column;gap:2px}
+  .findChoice{padding:14px}
+  .findChoiceIcon{width:42px;height:42px}
+}
