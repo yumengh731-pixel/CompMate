@@ -180,6 +180,9 @@ function candidateSkillGap(c,r){
 function skillGapCopy(missing){
   return missing&&missing.length?"档案未标注："+missing.join("、")+"。技能标签仅用于匹配提示，不作为系统硬性拦截；请在沟通中确认实际能力。":"";
 }
+function skillGapShort(missing){
+  return missing&&missing.length?"技能标签待确认："+missing.join("、")+"（不阻止沟通）":"";
+}
 function captureContactGrant(x){
   if(!x)return;
   if(!x.selfContactSnapshot&&hasUserContact())x.selfContactSnapshot=state.userContact;
@@ -365,7 +368,7 @@ function renderHome(p){
     '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 隐私联系方式</div></section>'+
       '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的真实任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
     '<section class="homeWorkbench">'+
-      '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、当前可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
+      '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
       '<div class="smartRecommendList">'+recommended.map(smartRecommendRow).join("")+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
       '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><span>MY DEADLINES</span><h2>与你相关的竞赛节点</h2><p>只展示正在找队、已组队或已发布招募的近期节点。</p></div></div>'+
       '<div class="reminderTimeline">'+reminderRow("10/18","挑战杯","组队截止","你正在沟通 1 个岗位","hot")+reminderRow("10/20","正大杯","组队节点","你有 1 条待处理邀请","")+reminderRow("10/28","CompMate 项目","招募截止","你的视觉设计岗仍在招募","")+reminderRow("11 月","互联网+","项目推进","相关招募已暂停接收","future")+'</div></aside>'+
@@ -557,7 +560,7 @@ function teamResultRow(r){
 function personResultRow(c){
   var r=activeManagedRecruit(),fit=candidateFit(c,r),hard=candidateMeetsHardRules(c,r),gap=candidateSkillGap(c,r),existing=activeInviteForCandidate(r.id,c.id);
   var action=existing?"state.progressView='relations';go('progress')":"inviteCandidate("+c.id+")";
-  return '<article class="personResult" onclick="openCandidate('+c.id+')"><div class="personIdentity"><div class="personAvatar">'+e(c.name.charAt(0))+'</div><div><h3>'+e(c.name)+'</h3><span>'+e(c.grade)+' · '+e(c.major)+'</span><small>'+e(c.campus)+' · 学校已认证</small></div></div><div class="personCapability"><span>可承担</span><b>'+e(c.roles.join(" / "))+'</b><div class="resultTags">'+c.skills.slice(0,4).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div><p>'+e(c.exp)+'</p></div><div class="personFit"><div><span>该周期可投入</span><b>'+fit.available+'h / 周</b></div><div><span>目标</span><b>'+e(c.target)+'</b></div><div class="matchBox"><b>针对 '+e(r.role.name)+'</b><small>'+fit.dims.join(" · ")+'</small>'+(!fit.timeOk?'<small class="riskText">低于岗位要求 '+r.role.hours+'h / 周</small>':'')+(gap.length?'<small class="riskText">'+e(skillGapCopy(gap))+'</small>':'')+(!hard.ok?'<small class="riskText">'+e(hard.reason)+'</small>':'')+'</div><button class="btn primary" '+((hard.ok||existing)?'':'disabled')+' onclick="event.stopPropagation();'+action+'">'+(existing?"查看进度":hard.ok?"邀请沟通":"不可邀请")+'</button></div></article>';
+  return '<article class="personResult" onclick="openCandidate('+c.id+')"><div class="personIdentity"><div class="personAvatar">'+e(c.name.charAt(0))+'</div><div><h3>'+e(c.name)+'</h3><span>'+e(c.grade)+' · '+e(c.major)+'</span><small>'+e(c.campus)+' · 学校已认证</small></div></div><div class="personCapability"><span>可承担</span><b>'+e(c.roles.join(" / "))+'</b><div class="resultTags">'+c.skills.slice(0,4).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div><p>'+e(c.exp)+'</p></div><div class="personFit"><div><span>该周期可投入</span><b>'+fit.available+'h / 周</b></div><div><span>目标</span><b>'+e(c.target)+'</b></div><div class="matchBox"><b>针对 '+e(r.role.name)+'</b><small>'+fit.dims.join(" · ")+'</small>'+(!fit.timeOk?'<small class="riskText">低于岗位要求 '+r.role.hours+'h / 周</small>':'')+(gap.length?'<small class="riskText">'+e(skillGapShort(gap))+'</small>':'')+(!hard.ok?'<small class="riskText">'+e(hard.reason)+'</small>':'')+'</div><button class="btn primary" '+((hard.ok||existing)?'':'disabled')+' onclick="event.stopPropagation();'+action+'">'+(existing?"查看进度":hard.ok?"邀请沟通":"不可邀请")+'</button></div></article>';
 }
 
 /* RECRUITMENT DETAIL / APPLY */
@@ -742,7 +745,7 @@ function blockUser(id){
       x.expiresAt=null;
     }
   });
-  closeModal();toast("已拉黑，未完成关系与临时预留已释放");state.mode="people";go("explore");
+  closeModal();toast("已拉黑，未完成关系与确认中暂占已释放");state.mode="people";go("explore");
 }
 function openReport(kind,id,label){
   modal('<h2>举报 / 反馈</h2><p class="subtitle">对象：'+e(label)+'</p><div class="field"><label>举报原因</label><select class="select" id="reportReason"><option>虚假招募 / 经历</option><option>骚扰</option><option>诱导站外支付</option><option>疑似不当索取成果</option><option>其他</option></select></div><div class="field" style="margin-top:10px"><label>补充说明（可选）</label><textarea class="textarea" id="reportNote"></textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitReport(\''+kind+'\','+id+')">提交举报</button></div>');
@@ -788,7 +791,7 @@ function refreshRelationExpiry(x){
 }
 function progressRelations(){
   state.relationships.forEach(refreshRelationExpiry);
-  var tabs=[["all","全部"],["pending","待处理"],["communication","待沟通"],["confirming","正式确认中"],["joined","已组队"],["ended","已结束"]];
+  var tabs=[["all","全部"],["pending","待处理"],["communication","待沟通"],["confirming","确认中"],["joined","已组队"],["ended","已结束"]];
   var rs=state.relationships.filter(function(x){return state.tab==="all"||x.status===state.tab});
   return '<div class="tabs">'+tabs.map(function(t){return '<button class="tab '+(state.tab===t[0]?"active":"")+'" onclick="state.tab=\''+t[0]+'\';render()">'+t[1]+'</button>'}).join("")+'</div><div class="list">'+(rs.map(requestCard).join("")||empty("当前没有该状态记录","切换其他状态查看。"))+'</div>';
 }
@@ -931,10 +934,10 @@ function releaseReservation(x){
 function candidateStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!currentUserIsCandidate(x)){toast("当前视角是队长，请使用发起确认");return}
-  if(x.status!=="communication"){toast("当前关系不能发起正式确认");return}
-  var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能发起正式确认："+eligibility.reason);return}
+  if(x.status!=="communication"){toast("当前关系不能进入组队确认");return}
+  var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能进入组队确认："+eligibility.reason);return}
   if(remainingFor(r)<0){toast("你当前承诺时间已超出声明总时间，请先调整");return}
-  if(remainingFor(r)<r.role.hours){toast("当前可投入时间低于最新岗位要求，请先更新真实可投入时间");return}
+  if(remainingFor(r)<r.role.hours){toast("该项目周期可投入时间低于最新岗位要求，请先更新真实可投入时间");return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("该角色当前已无法继续正式确认");return}
   var skillGap=userSkillGap(r);
   modal('<h2>确认加入意向</h2><p class="subtitle">你先确认愿意按以下条件加入；队长确认后才正式组队。此时不会占用角色名额。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">该周期剩余</div><div>'+remainingLabel(remainingFor(r))+' / 周</div></div>'+(skillGap.length?'<div class="notice warn" style="margin-top:10px">'+e(skillGapCopy(skillGap))+'</div>':'')+'<div class="notice" style="margin-top:10px">确认意向最长保留 24 小时；队长确认时仍会重新检查名额和时间。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="confirmCandidateStart('+id+')">确认加入意向</button></div>');
@@ -945,7 +948,7 @@ function confirmCandidateStart(id){
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能发起正式确认："+eligibility.reason);render();return}
   if(r.role.formal>=r.role.capacity){closeModal();toast("该角色已正式招满");render();return}
   if(remainingFor(r)<r.role.hours){closeModal();toast("当前可投入时间低于最新岗位要求，请先更新真实可投入时间");render();return}
-  x.status="confirming";x.initiator="candidate";x.time="刚刚 · 等待队长最终确认";x.expiresAt=Date.now()+config.formalConfirmMs;x.conditionUpdated=false;
+  x.status="confirming";x.initiator="candidate";x.time="刚刚 · 等待队长确认";x.expiresAt=Date.now()+config.formalConfirmMs;x.conditionUpdated=false;
   closeModal();toast("加入意向已确认，等待队长确认");render();
 }
 function captainStartConfirm(id){
@@ -956,7 +959,7 @@ function captainStartConfirm(id){
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("角色已正式招满或招募已结束");return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("名额正在被其他候选人确认");return}
   var candidateAvailable=relationCandidateAvailable(x);
-  if(candidateAvailable<r.role.hours){toast("候选人当前可投入时间不足，不能创建正式确认");return}
+  if(candidateAvailable<r.role.hours){toast("候选人在项目周期内的可投入时间不足，不能发送正式加入邀请");return}
   var candidate=relationCandidate(x),skillGap=candidateSkillGap(candidate,r);
   modal('<h2>邀请正式加入</h2><p class="subtitle">你先确认愿意接纳该候选人；发送后会为其确认中暂占 1 个角色名额，最长 24 小时。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">候选人该周期可投入</div><div>'+candidateAvailable+'h / 周</div></div>'+(skillGap.length?'<div class="notice warn" style="margin-top:10px">'+e(skillGapCopy(skillGap))+'</div>':'')+'<div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="confirmCaptainStart('+id+')">发送正式加入邀请</button></div>');
 }
@@ -985,12 +988,12 @@ function openLeaderFinalizeCandidateConfirm(id){
 }
 function leaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
-  if(!canManageRecruit(r)){toast("只有当前队长可以完成最终确认");return}
+  if(!canManageRecruit(r)){toast("只有当前队长可以确认组队");return}
   if(x.status!=="confirming"||x.initiator!=="candidate"){toast("当前不是候选人发起的确认");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){x.status="communication";x.initiator=null;x.expiresAt=null;toast("最终校验失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){x.status="ended";x.reason="角色已正式招满";x.expiresAt=null;toast("最终校验失败：角色已正式招满");render();return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("名额正在与其他候选人确认中，请稍后重试");return}
-  if(relationCandidateAvailable(x)<r.role.hours){x.status="communication";x.initiator=null;x.expiresAt=null;toast("最终校验失败：候选人当前可投入时间不足，已回到待沟通");render();return}
+  if(relationCandidateAvailable(x)<r.role.hours){x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败：候选人在项目周期内的可投入时间不足，已回到待沟通");render();return}
   finishJoin(x,r,r.role.hours);
 }
 function openCandidateAcceptCaptainConfirm(id){
@@ -1000,7 +1003,7 @@ function openCandidateAcceptCaptainConfirm(id){
 }
 function candidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
-  if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("该临时预留已失效");return}
+  if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("该确认中暂占已失效");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){releaseReservation(x);x.status="ended";x.reason="角色已正式招满";x.expiresAt=null;toast("确认失败：角色已正式招满");render();return}
   var available=currentUserIsCandidate(x)?remainingFor(r)+(x.reservedOnCurrentUser?(x.reservedHours||0):0):relationCandidateAvailable(x);
@@ -1089,7 +1092,7 @@ function managedOtherCount(){
 }
 function renderManagedTeam(){
   var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),addedItems=managedJoinedCandidates();
-  if(state.teamDissolved)return '<div class="panel empty"><h3>队伍已解散</h3><p>未完成招募和请求已关闭，相关临时预留已释放。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
+  if(state.teamDissolved)return '<div class="panel empty"><h3>队伍已解散</h3><p>未完成招募和请求已关闭，相关确认中暂占已释放。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
   if(!state.managedMemberActive)return '<div class="panel empty"><h3>你已退出该队伍</h3><p>队长权限已转交，退出后不再显示成员管理操作。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
   var gaps=[];
   group.forEach(function(g){
@@ -1212,7 +1215,7 @@ function dissolveManagedTeam(){
   });
   group.forEach(function(g){g.status="ended"});
   state.teamDissolved=true;state.managedMemberActive=false;state.committed=Math.max(0,state.committed-state.managedStageHours);state.managedStageHours=0;
-  closeModal();toast("队伍已解散，全部角色招募、未完成请求与临时预留已关闭");render();
+  closeModal();toast("队伍已解散，全部角色招募、未完成请求与确认中暂占已关闭");render();
 }
 function resolveMemberHours(){
   if(!state.managedCaptain){toast("只有当前队长可以处理成员投入变化");return}
@@ -1443,7 +1446,7 @@ function renderPublish(p){
     '<div class="field full"><label>协作预期</label><input class="input" id="pubCollab" value="'+e(r.collab)+'" placeholder="同步频率、关键节点沟通等"></div>'+
     '</div>'+
     '<div class="actions"><button class="btn secondary" onclick="previewRecruit()">预览</button><button class="btn primary push" onclick="saveRecruit()">'+((r.isDraft||r.isDraftRole)?"保存并发布":"保存修改")+'</button></div></div>'+
-    '<aside class="panel sticky"><h3 class="sectionTitle">招募生命周期</h3><div class="list" style="margin-top:12px"><button class="btn secondary" onclick="pauseRecruit()">'+(managedGroupPaused(r)?"恢复接收申请":"暂停接收新申请")+'</button><button class="btn secondary" onclick="coreChange()">修改核心条件说明</button><button class="btn danger" onclick="endRecruit()">结束本轮招募</button></div><div class="section"><div class="notice">暂停仅停止新的加入申请；截止前且未主动结束时仍可主动邀请。结束招募会关闭尚未组队的关系并释放临时预留。</div></div><div class="section"><div class="meta">招募人数必须是正整数，且不得低于“正式成员 + 当前有效预留”。</div></div></aside></div>';
+    '<aside class="panel sticky"><h3 class="sectionTitle">招募生命周期</h3><div class="list" style="margin-top:12px"><button class="btn secondary" onclick="pauseRecruit()">'+(managedGroupPaused(r)?"恢复接收申请":"暂停接收新申请")+'</button><button class="btn secondary" onclick="coreChange()">修改核心条件说明</button><button class="btn danger" onclick="endRecruit()">结束本轮招募</button></div><div class="section"><div class="notice">暂停仅停止新的加入申请；截止前且未主动结束时仍可主动邀请。结束招募会关闭尚未组队的关系并释放确认中暂占。</div></div><div class="section"><div class="meta">招募人数必须是正整数，且不得低于“正式成员 + 当前确认中暂占名额”。</div></div></aside></div>';
 }
 function previewRecruit(){
   var title=String(byId("pubTitle").value||"").trim(),comp=normalizeCompetitionName(byId("pubComp").value),role=String(byId("pubRole").value||"").trim();
@@ -1477,7 +1480,7 @@ function saveRecruit(){
   var confirming=state.relationships.filter(function(x){
     return x.status==="confirming"&&((roleCoreChanged&&x.recruitId===r.id)||(commonCoreChanged&&groupIds.indexOf(x.recruitId)>=0));
   })[0];
-  if(coreChanged&&confirming){toast(commonCoreChanged?"同一招募中存在正式确认中关系，请先结束或撤回确认":"该岗位存在正式确认中关系，请先结束或撤回当前确认");return}
+  if(coreChanged&&confirming){toast(commonCoreChanged?"同一招募中存在双方确认中的关系，请先结束或撤回确认":"该岗位存在双方确认中的关系，请先结束或撤回当前确认");return}
   group.forEach(function(g){
     g.comp=comp;g.title=title;g.team=team;g.progress=progress;g.collab=collab;g.target=target;g.period=newPeriod;g.periodStart=start;g.periodEnd=end;g.deadline=newDeadline;g.deadlineAt=deadline;g.hard=hard;g.category=r.category;
   });
@@ -1538,7 +1541,7 @@ function endRecruit(){
 function coreChange(){
   var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以修改核心条件");return}
   var confirming=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status==="confirming"})[0];
-  if(confirming){toast("当前存在正式确认中关系，必须先结束或撤回确认");return}
+  if(confirming){toast("当前存在双方确认中的关系，必须先结束或撤回确认");return}
   modal('<h2>条件修改规则</h2><p class="subtitle">目标竞赛、角色 / 人数、具体任务、最低投入、项目周期、参赛目标和硬性校区属于组队核心条件，确认中不能静默修改。关键技能标签用于匹配提示：修改后会通知待处理 / 待沟通候选人，但不会单独阻止组队确认。</p><div class="notice warn">已经形成的正式成员约定不会被招募编辑自动改写；需要在队伍内另行协商确认。</div><div class="modalFoot"><button class="btn primary" onclick="closeModal()">知道了</button></div>');
 }
 
