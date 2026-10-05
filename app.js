@@ -14,7 +14,8 @@ var state={
   joined:false,
   joinedRecruitId:null,
   teamView:"managed",
-  currentStageHours:8,
+  managedStageHours:8,
+  joinedStageHours:0,
   blocked:{},
   ownStatus:"active",
   activeRoleRecruitId:901,
@@ -516,7 +517,7 @@ function finishJoin(x,r,hours){
   r.role.formal=Math.min(r.role.capacity,r.role.formal+1);
   if(asCandidate){
     state.committed+=hours;
-    state.currentStageHours=hours;
+    state.joinedStageHours=hours;
     state.joined=true;state.joinedRecruitId=r.id;state.teamView="joined";
   }else{
     state.teamView="managed";
@@ -555,7 +556,7 @@ function renderJoinedTeam(){
   var r=findRecruit(state.joinedRecruitId)||recruits[0];
   return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我加入的队伍</div><div class="bigTitle">星火队</div><div class="subtitle">成员视角：查看角色任务、阶段投入、队伍缺口与退出操作。</div></div><span class="status green">已组队</span></div>'+
     '<div class="stats"><div class="stat"><b>4</b><span>正式成员</span></div><div class="stat"><b>1</b><span>剩余角色缺口</span></div><div class="stat"><b>'+state.currentStageHours+'h</b><span>我的当前投入</span></div></div>'+
-    (state.currentStageHours<r.role.hours?'<div class="notice warn" style="margin-top:12px">当前投入低于原约定 '+r.role.hours+'h / 周，请与队长继续协商新的投入安排。</div>':'')+
+    (state.joinedStageHours<r.role.hours?'<div class="notice warn" style="margin-top:12px">当前投入低于原约定 '+r.role.hours+'h / 周，请与队长继续协商新的投入安排。</div>':'')+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
       teamMember("顾闻","队长 / 产品","负责产品方案与整体推进",false,false)+
       teamMember("林清禾","数据分析","当前阶段投入 10h / 周",false,false)+
@@ -576,7 +577,7 @@ function removeMemberDemo(){
 function confirmRemoveMember(){state.memberRemoved=true;closeModal();toast("成员已移除，前端开发角色恢复为空缺");render()}
 function simulateTeam(){
   var r=recruits[0];
-  state.joined=true;state.joinedRecruitId=r.id;state.teamView="joined";state.currentStageHours=r.role.hours;
+  state.joined=true;state.joinedRecruitId=r.id;state.teamView="joined";state.joinedStageHours=r.role.hours;state.committed+=r.role.hours;
   if(r.role.formal<r.role.capacity)r.role.formal=r.role.capacity;
   r.status="full";
   if(!state.relationships.some(function(x){return x.status==="joined"&&x.recruitId===r.id})){
@@ -585,13 +586,15 @@ function simulateTeam(){
   state.progressView="team";render();
 }
 function editHours(){
-  var r=state.teamView==="joined"?(findRecruit(state.joinedRecruitId)||recruits[0]):managedRecruitments[0];
-  modal('<h2>更新当前阶段投入</h2><p class="subtitle">实际投入变化会立即影响后续匹配；低于原约定时会提示继续协商。</p><div class="field"><label>当前阶段预计投入（h / 周）</label><input class="input" id="stageHours" type="number" min="0" value="'+state.currentStageHours+'"></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveStageHours()">保存</button></div>');
+  var joinedView=state.teamView==="joined",r=joinedView?(findRecruit(state.joinedRecruitId)||recruits[0]):managedRecruitments[0];
+  var current=joinedView?state.joinedStageHours:state.managedStageHours;
+  modal('<h2>更新当前阶段投入</h2><p class="subtitle">实际投入变化会立即影响后续匹配；低于原约定时会提示继续协商。</p><div class="field"><label>当前阶段预计投入（h / 周）</label><input class="input" id="stageHours" type="number" min="0" value="'+current+'"></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveStageHours()">保存</button></div>');
 }
 function saveStageHours(){
-  var r=state.teamView==="joined"?(findRecruit(state.joinedRecruitId)||recruits[0]):managedRecruitments[0];
-  var v=Math.max(0,Number(byId("stageHours").value)||0),delta=v-state.currentStageHours;
-  state.currentStageHours=v;
+  var joinedView=state.teamView==="joined",r=joinedView?(findRecruit(state.joinedRecruitId)||recruits[0]):managedRecruitments[0];
+  var old=joinedView?state.joinedStageHours:state.managedStageHours;
+  var v=Math.max(0,Number(byId("stageHours").value)||0),delta=v-old;
+  if(joinedView)state.joinedStageHours=v;else state.managedStageHours=v;
   state.committed=Math.max(0,state.committed+delta);
   closeModal();toast(v<r.role.hours?"已更新：当前投入低于原约定，请继续协商":"阶段投入已更新");render();
 }
@@ -600,9 +603,9 @@ function leaveTeam(){
 }
 function confirmLeave(){
   var x=state.relationships.filter(function(a){return a.status==="joined"&&(state.joinedRecruitId==null||a.recruitId===state.joinedRecruitId)})[0],r=x?relationRecruit(x):findRecruit(state.joinedRecruitId);
-  var h=r?r.role.hours:0;
+  var h=state.joinedStageHours;
   if(r){r.role.formal=Math.max(0,r.role.formal-1);if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="active"}
-  state.committed=Math.max(0,state.committed-h);state.joined=false;state.joinedRecruitId=null;
+  state.committed=Math.max(0,state.committed-h);state.joined=false;state.joinedRecruitId=null;state.joinedStageHours=0;state.teamView="managed";
   if(x){x.status="ended";x.reason="你已退出队伍"}
   closeModal();toast("已退出，名额和时间已释放");render();
 }
