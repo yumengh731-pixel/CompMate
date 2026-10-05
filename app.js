@@ -51,14 +51,21 @@ var state={
   demoPageState:"normal",
   reports:[],
   evidenceUrl:"https://example.com/compmate-output",
-  teamFilters:{campus:false,time:false,active:true,award:false,category:""},
-  peopleFilters:{time:false,output:false,campus:false,target:false,capability:""},
+  teamFilters:{campus:false,time:false,active:true,award:false,category:"",query:""},
+  peopleFilters:{time:false,output:false,campus:false,target:false,capability:"",query:""},
   relationships:[
     {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
     {id:202,type:"invitation",direction:"incoming",recruitId:2,title:"正大杯 · 市场调研岗",party:"许辰",role:"市场调研",status:"pending",time:"2 小时前",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"xuchen_demo",expiresAt:Date.now()+6*24*60*60*1000},
-    {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:14,title:"挑战杯 · 视觉设计岗",party:"宋禾",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"song_demo",expiresAt:Date.now()+7*24*60*60*1000},
+    {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:14,title:"挑战杯 · 视觉设计岗",party:"宋禾",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"song_demo",expiresAt:Date.now()+config.pendingRequestMs},
     {id:203,type:"application",direction:"outgoing",recruitId:3,title:"互联网+ · 前端开发",party:"陈屿",role:"前端开发",status:"ended",time:"昨天",reason:"对方已暂停并结束本次请求",contact:false,initiator:null,reserved:false,reservedHours:0}
   ]
+};
+
+var config={
+  pendingRequestMs:7*24*60*60*1000,
+  formalConfirmMs:24*60*60*1000,
+  contactUnlockWindowMs:10*60*1000,
+  contactUnlockLimit:5
 };
 
 var recruits=[
@@ -186,9 +193,9 @@ function formatExpiry(x){
 function normalizeCompetitionName(v){return String(v||"").trim().replace(/\s+/g," ").replace(/[＋+]/g,"+")}
 function unsafePublicText(v){return /(微信号\s*[:：]?\s*[A-Za-z0-9_-]{4,}|(?:vx|wechat)\s*[:：]?\s*[A-Za-z0-9_-]{4,}|qq\s*[:：]?\s*\d{5,}|手机号\s*[:：]?\s*1[3-9]\d{9}|1[3-9]\d{9}|加我(?:微信|QQ)|私聊付款|先转账|代刷)/i.test(String(v||""))}
 function registerContactUnlock(){
-  var now=Date.now(),windowMs=10*60*1000;
+  var now=Date.now(),windowMs=config.contactUnlockWindowMs;
   state.contactUnlockEvents=state.contactUnlockEvents.filter(function(t){return now-t<windowMs});
-  if(state.contactUnlockEvents.length>=5)return false;
+  if(state.contactUnlockEvents.length>=config.contactUnlockLimit)return false;
   state.contactUnlockEvents.push(now);return true;
 }
 function toast(msg){var t=byId("toast");if(!t)return;t.textContent=msg;t.classList.add("show");clearTimeout(state.toastTimer);state.toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
@@ -346,8 +353,8 @@ function renderExplore(p){
     (isTeams?renderTeamSearch():renderPeopleSearch(r));
 }
 function renderTeamSearch(){
-  var list=filteredTeams("");
-  return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div><div class="filterChips">'+
+  var list=filteredTeams(state.teamFilters.query||"");
+  return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.teamFilters.query||"")+'" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div><div class="filterChips">'+
     filterButton("team","campus","同校 / 同校区",state.teamFilters.campus)+filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
     '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("team","innovation","创新创业")+categoryButton("team","market","市场调研")+categoryButton("team","tech","科技科研")+categoryButton("team","math","数学建模")+'</div>'+
     '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div><span>任务、时间和风险分开呈现</span></div>'+
@@ -355,9 +362,9 @@ function renderTeamSearch(){
 }
 function renderPeopleSearch(r){
   if(!r||!canManageRecruit(r))return '<div class="panel empty"><h3>当前没有可管理的招募缺口</h3><p>只有当前队长可以筛选候选人和处理邀请。你仍可发布一条新的招募。</p><button class="btn primary" onclick="beginPublish(true)">发布招募</button></div>';
-  var list=filteredCandidates("");
+  var list=filteredCandidates(state.peopleFilters.query||"");
   return '<section class="roleContext"><div class="roleContextMain"><span>当前招募岗位</span><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><small>'+e(r.role.task)+' · 最低 '+r.role.hours+'h / 周</small></div><div class="roleRequirement"><span>必需技能</span><b>'+e(r.role.skills.join(" · "))+'</b></div><button class="btn secondary" onclick="openRolePicker()">切换岗位</button></section>'+
-    '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div><div class="filterChips">'+
+    '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.peopleFilters.query||"")+'" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div><div class="filterChips">'+
     filterButton("people","time","时间满足",state.peopleFilters.time)+filterButton("people","output","有相关产出",state.peopleFilters.output)+filterButton("people","campus","同校区",state.peopleFilters.campus)+filterButton("people","target","目标一致",state.peopleFilters.target)+'</div></section>'+
     '<div class="categoryRibbon"><span>按能力：</span>'+categoryButton("people","data","数据分析")+categoryButton("people","front","前端开发")+categoryButton("people","research","用户调研")+categoryButton("people","design","视觉设计")+'</div>'+
     '<div class="resultsHead"><div><b>候选人</b><span id="resultCount">'+list.length+' 人</span></div><span>学校认证 ≠ 能力认证</span></div>'+
@@ -449,6 +456,7 @@ function filteredCandidates(q){
 }
 function applyExploreFilters(){
   var q=byId("searchBox")?byId("searchBox").value:"";
+  if(state.mode==="people")state.peopleFilters.query=q;else state.teamFilters.query=q;
   var box=byId("hallList");
   if(!box)return;
   if(state.mode==="people"){
@@ -471,14 +479,14 @@ function relaxFilters(kind){
     if(state.teamFilters.time)relaxed.push("时间可行");
     if(state.teamFilters.award)relaxed.push("冲奖目标");
     if(state.teamFilters.category)relaxed.push("竞赛方向");
-    state.teamFilters={campus:false,time:false,active:true,award:false,category:""};
+    state.teamFilters={campus:false,time:false,active:true,award:false,category:"",query:state.teamFilters.query||""};
   }else{
     if(state.peopleFilters.time)relaxed.push("时间满足");
     if(state.peopleFilters.output)relaxed.push("成果产出");
     if(state.peopleFilters.campus)relaxed.push("同校区");
     if(state.peopleFilters.target)relaxed.push("目标一致");
     if(state.peopleFilters.capability)relaxed.push("能力方向");
-    state.peopleFilters={time:false,output:false,campus:false,target:false,capability:""};
+    state.peopleFilters={time:false,output:false,campus:false,target:false,capability:"",query:state.peopleFilters.query||""};
   }
   toast(relaxed.length?"已放宽："+relaxed.join("、")+"；不可放宽条件仍保留":"当前没有可继续放宽的非核心条件");
   render();
@@ -547,6 +555,7 @@ function renderDetail(p){
 function applyRecruit(id){
   var r=findRecruit(id);
   if(!r)return;
+  if(canManageRecruit(r)){toast("不能申请自己发布的招募");return}
   if(r.status!=="active"){toast("该招募当前不接收新的申请");return}
   if(deadlinePassed(r)){toast("该招募已过截止时间，不能新增申请");return}
   if(r.role.formal>=r.role.capacity){toast("角色已正式招满");return}
@@ -576,7 +585,7 @@ function submitApplication(id){
   }
   var hard=userMeetsRecruitHardRules(r);if(!hard.ok){closeModal();toast(hard.reason);render();return}
   if(remainingFor(r)<0){closeModal();toast("当前承诺时间已超出声明总时间，请先调整");render();return}
-  state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:r.leader,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"team_contact",expiresAt:Date.now()+7*24*60*60*1000});
+  state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:r.leader,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"team_contact",expiresAt:Date.now()+config.pendingRequestMs});
   state.pendingApplyRecruitId=null;
   closeModal();toast("申请已提交，等待队长处理");state.progressView="relations";go("progress");
 }
@@ -642,6 +651,7 @@ function activeInviteForCandidate(recruitId,candidateId){
 function inviteCandidate(id){
   var c=candidates.filter(function(x){return x.id===id})[0],r=activeManagedRecruit();
   if(!c||!r)return;
+  if(c.name===state.profileName){toast("不能向自己发送邀请");return}
   if(!canManageRecruit(r)){toast("只有当前队长可以处理候选人或发送邀请");return}
   if(activeInviteForCandidate(r.id,c.id)){toast("该候选人在此招募下已有进行中的邀请");state.progressView="relations";go("progress");return}
   if(!state.loggedIn||!state.verified){state.authReturn="invite";state.selectedCandidate=id;go("auth");return}
@@ -655,12 +665,13 @@ function inviteCandidate(id){
 function sendInvitation(candidateId,recruitId){
   var c=candidates.filter(function(x){return x.id===candidateId})[0],r=findRecruit(recruitId);
   if(!c||!r)return;
+  if(c.name===state.profileName){closeModal();toast("不能向自己发送邀请");return}
   if(activeInviteForCandidate(recruitId,candidateId)){closeModal();toast("已有进行中的邀请");return}
   if(!state.loggedIn||!state.verified||!state.profileComplete||!hasUserContact()){closeModal();state.activeRoleRecruitId=recruitId;inviteCandidate(candidateId);return}
   if(!canManageRecruit(r)){closeModal();toast("只有当前队长可以发送邀请");render();return}
   if(r.status==="full"||r.status==="ended"||deadlinePassed(r)){closeModal();toast("该招募当前不能继续邀请");render();return}
   var hard=candidateMeetsHardRules(c,r);if(!hard.ok){closeModal();toast(hard.reason);render();return}
-  state.relationships.unshift({id:Date.now(),type:"invitation",direction:"outgoing",recruitId:r.id,candidateId:c.id,title:r.comp+" · "+r.role.name,party:c.name,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:c.contact,expiresAt:Date.now()+7*24*60*60*1000});
+  state.relationships.unshift({id:Date.now(),type:"invitation",direction:"outgoing",recruitId:r.id,candidateId:c.id,title:r.comp+" · "+r.role.name,party:c.name,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:c.contact,expiresAt:Date.now()+config.pendingRequestMs});
   closeModal();toast("邀请已发送，可在组队 / 进度查看");state.progressView="relations";go("progress");
 }
 function candidateMore(id){
@@ -871,7 +882,7 @@ function confirmCandidateStart(id){
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能发起正式确认："+eligibility.reason);render();return}
   if(r.role.formal>=r.role.capacity){closeModal();toast("该角色已正式招满");render();return}
   if(remainingFor(r)<r.role.hours){closeModal();toast("当前可投入时间低于最新岗位要求，请先更新真实可投入时间");render();return}
-  x.status="confirming";x.initiator="candidate";x.time="刚刚 · 等待队长最终确认";x.expiresAt=Date.now()+24*60*60*1000;x.conditionUpdated=false;
+  x.status="confirming";x.initiator="candidate";x.time="刚刚 · 等待队长最终确认";x.expiresAt=Date.now()+config.formalConfirmMs;x.conditionUpdated=false;
   closeModal();toast("确认请求已发送");render();
 }
 function captainStartConfirm(id){
@@ -895,7 +906,7 @@ function confirmCaptainStart(id){
   var candidateAvailable=relationCandidateAvailable(x);if(candidateAvailable<r.role.hours){closeModal();toast("候选人最新可投入时间不足");render();return}
   r.role.reserved+=1;x.reserved=true;x.reservedHours=r.role.hours;x.reservedOnCurrentUser=currentUserIsCandidate(x);
   if(x.reservedOnCurrentUser)state.reserved+=r.role.hours;
-  x.status="confirming";x.initiator="captain";x.time="刚刚 · 队长发起 · 名额确认中";x.expiresAt=Date.now()+24*60*60*1000;x.conditionUpdated=false;
+  x.status="confirming";x.initiator="captain";x.time="刚刚 · 队长发起 · 名额确认中";x.expiresAt=Date.now()+config.formalConfirmMs;x.conditionUpdated=false;
   closeModal();toast("已临时预留角色名额"+(x.reservedOnCurrentUser?"与时间":""));render();
 }
 function rejectConfirm(id){var x=rel(id);if(!x)return;releaseReservation(x);x.status="communication";x.initiator=null;x.time="刚刚 · 回到待沟通";toast("本次正式确认已结束，待沟通关系保留");render()}
@@ -1074,10 +1085,15 @@ function confirmLeaveManagedTeam(){state.managedMemberActive=false;state.committ
 function dissolveManagedTeam(){
   if(!state.managedCaptain){toast("只有当前队长可以解散队伍");return}
   if(managedOtherCount()>0){toast("仍有其他正式成员，请先转交队长；不能直接解散");return}
-  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
-  state.relationships.forEach(function(x){if(x.recruitId===r.id&&x.status!=="joined"&&x.status!=="ended"){releaseReservation(x);x.status="ended";x.reason="队伍已解散"}});
-  r.status="ended";state.teamDissolved=true;state.managedMemberActive=false;state.committed=Math.max(0,state.committed-state.managedStageHours);state.managedStageHours=0;
-  closeModal();toast("队伍已解散，未完成请求与临时预留已关闭");render();
+  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),ids=group.map(function(g){return g.id});
+  state.relationships.forEach(function(x){
+    if(ids.indexOf(x.recruitId)>=0&&x.status!=="joined"&&x.status!=="ended"){
+      releaseReservation(x);x.status="ended";x.reason="队伍已解散";x.expiresAt=null;
+    }
+  });
+  group.forEach(function(g){g.status="ended"});
+  state.teamDissolved=true;state.managedMemberActive=false;state.committed=Math.max(0,state.committed-state.managedStageHours);state.managedStageHours=0;
+  closeModal();toast("队伍已解散，全部角色招募、未完成请求与临时预留已关闭");render();
 }
 function resolveMemberHours(){
   if(!state.managedCaptain){toast("只有当前队长可以处理成员投入变化");return}
@@ -1302,7 +1318,7 @@ function saveRecruit(){
   if(!title)title=comp+" · 招募"+role;
   var newPeriod=md(start)+" - "+md(end),newDeadline=mdhm(deadline),newSkills=skills.join("|"),oldSkills=r.role.skills.join("|");
   var roleCoreChanged=r.role.name!==role||r.role.task!==task||r.role.hours!==hours||oldSkills!==newSkills;
-  var commonCoreChanged=r.period!==newPeriod||r.target!==target||r.hard!==hard;
+  var commonCoreChanged=r.period!==newPeriod||r.target!==target||r.hard!==hard||r.collab!==collab;
   var coreChanged=roleCoreChanged||commonCoreChanged;
   var groupIds=group.map(function(g){return g.id});
   var confirming=state.relationships.filter(function(x){
