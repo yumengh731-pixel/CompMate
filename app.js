@@ -118,6 +118,11 @@ function remainingFor(r){
 function allRecruitments(){return recruits.concat(managedRecruitments)}
 function findRecruit(id){return allRecruitments().filter(function(x){return x.id===Number(id)})[0]||null}
 function activeManagedRecruit(){return findRecruit(state.activeRoleRecruitId)||managedRecruitments[0]}
+function recruitGroupId(r){return r?(r.groupId||r.id):null}
+function managedGroup(r){
+  var gid=recruitGroupId(r);
+  return managedRecruitments.filter(function(x){return recruitGroupId(x)===gid});
+}
 function roleFree(r){return Math.max(0,r.role.capacity-r.role.formal-r.role.reserved)}
 function recruitDisplayStatus(r){
   if(!r)return ["未知",""];
@@ -1100,9 +1105,25 @@ function editManagedRecruit(){
 }
 function createRecruitDraft(){
   var id=Date.now();
-  managedRecruitments.push({id:id,category:"innovation",comp:"挑战杯 · 大挑",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],role:{name:"待补角色",capacity:1,formal:0,reserved:0,hours:6,task:"请填写加入后需要承担的具体任务",skills:["待填写"]}});
+  managedRecruitments.push({id:id,groupId:id,category:"innovation",comp:"挑战杯 · 大挑",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],role:{name:"待补角色",capacity:1,formal:0,reserved:0,hours:6,task:"请填写加入后需要承担的具体任务",skills:["待填写"]}});
   state.activeRoleRecruitId=id;return findRecruit(id);
 }
+function addAdditionalRole(){
+  var base=activeManagedRecruit();if(!base||!canManageRecruit(base)){toast("只有当前队长可以新增角色缺口");return}
+  var gid=recruitGroupId(base),id=Date.now();
+  if(!base.groupId)base.groupId=gid;
+  managedRecruitments.push({
+    id:id,groupId:gid,category:base.category,comp:base.comp,title:base.title,school:base.school,campus:base.campus,leader:base.leader,status:"paused",
+    target:base.target,period:base.period,deadline:base.deadline,team:base.team,progress:base.progress,collab:base.collab,hard:base.hard,reasons:[],
+    role:{name:"待补角色",capacity:1,formal:0,reserved:0,hours:6,task:"请填写加入后需要承担的具体任务",skills:["待填写"]}
+  });
+  state.activeRoleRecruitId=id;toast("已新增一个角色缺口，请补充该角色信息");render();
+}
+function switchPublishRole(id){
+  var r=findRecruit(id);if(!r||!canManageRecruit(r)){toast("当前角色不可编辑");return}
+  state.activeRoleRecruitId=id;render();
+}
+
 function beginPublish(createNew){
   state.publishNewRequested=!!createNew;
   if(!state.loggedIn||!state.verified){state.authReturn="publish";go("auth");return}
@@ -1135,9 +1156,10 @@ function deadlineInput(r){
 function md(v){var d=new Date(v+"T00:00:00");return (d.getMonth()+1)+"/"+d.getDate()}
 function mdhm(v){var d=new Date(v);return (d.getMonth()+1)+"/"+d.getDate()+" "+String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0")}
 function renderPublish(p){
-  var r=activeManagedRecruit(),statusLabel=r.status==="active"?"招募中":r.status==="paused"?"暂停接收":r.status==="full"?"已招满":"已结束";
+  var r=activeManagedRecruit(),group=managedGroup(r),statusLabel=r.status==="active"?"招募中":r.status==="paused"?"暂停接收":r.status==="full"?"已招满":"已结束";
+  var roleTabs=group.map(function(g){return '<button type="button" class="roleGapTab '+(g.id===r.id?"active":"")+'" onclick="switchPublishRole('+g.id+')"><b>'+e(g.role.name)+'</b><span>'+g.role.formal+'/'+g.role.capacity+' 已加入</span></button>'}).join("")+'<button type="button" class="roleGapTab add" onclick="addAdditionalRole()">＋ 新增角色缺口</button>';
   p.innerHTML='<div class="layout"><div class="panel"><div class="between"><div><h2 class="sectionTitle">结构化招募</h2><p class="subtitle">围绕“目标竞赛 + 缺口角色 + 具体任务 + 招募人数 + 时间要求”发布，候选人可以直接判断加入后要做什么。</p></div><span class="status '+(r.status==="active"?"green":r.status==="full"?"blue":"warn")+'">'+statusLabel+'</span></div>'+
-    '<div class="formGrid">'+
+    '<div class="formGrid"><div class="field full"><label>角色缺口（可重复）</label><div class="roleGapTabs">'+roleTabs+'</div><div class="help">同一队伍可以设置多个角色缺口；每个角色分别维护人数、任务、技能和最低投入。</div></div>'+
     '<div class="field"><label>目标竞赛 <span class="req">*</span></label><input class="input" id="pubComp" list="competitionOptions" value="'+e(r.comp)+'"><datalist id="competitionOptions"><option value="挑战杯 · 大挑"><option value="互联网+"><option value="正大杯"><option value="数学建模竞赛"><option value="行业经济分析大赛"></datalist><div class="help">优先选择标准赛事；未收录赛事可直接填写临时名称，发布时会做基础名称规范化。</div></div>'+
     '<div class="field"><label>招募标题（可选）</label><input class="input" id="pubTitle" maxlength="30" value="'+e(r.title)+'"><div class="help">不超过 30 字；留空时由系统根据竞赛和主要缺口生成。</div></div>'+
     '<div class="field"><label>学校 / 校区</label><input class="input" value="'+e(r.school)+' / '+e(r.campus)+'" disabled></div>'+
@@ -1183,7 +1205,9 @@ function saveRecruit(){
   var coreChanged=r.role.name!==role||r.role.task!==task||r.role.hours!==hours||r.period!==newPeriod||r.target!==target||oldSkills!==newSkills||r.hard!==hard;
   var confirming=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status==="confirming"})[0];
   if(coreChanged&&confirming){toast("该岗位存在正式确认中关系，请先结束或撤回当前确认");return}
-  r.comp=comp;r.title=title;r.team=team;r.progress=progress;r.collab=collab;r.target=target;r.period=newPeriod;r.deadline=newDeadline;r.hard=hard;
+  managedGroup(r).forEach(function(g){
+    g.comp=comp;g.title=title;g.team=team;g.progress=progress;g.collab=collab;g.target=target;g.period=newPeriod;g.deadline=newDeadline;g.hard=hard;g.category=r.category;
+  });
   r.role.capacity=cap;r.role.hours=hours;r.role.task=task;r.role.name=role;r.role.skills=skills;
   if(coreChanged){
     state.relationships.forEach(function(x){
@@ -1194,20 +1218,23 @@ function saveRecruit(){
 }
 function pauseRecruit(){
   var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以暂停或恢复招募");return}
-  if(r.status==="ended"){toast("主动结束的本轮招募不能直接恢复，请新建或复制招募");return}
+  var group=managedGroup(r);
+  if(group.some(function(g){return g.status==="ended"})){toast("主动结束的本轮招募不能直接恢复，请新建或复制招募");return}
   if(deadlinePassed(r)){toast("招募已过截止时间，需先设置新的截止时间后才能重新开放");return}
-  r.status=r.status==="paused"?"active":"paused";
-  toast(r.status==="paused"?"已暂停新的加入申请；截止前仍可主动邀请":"已恢复接收申请");render();
+  var pausing=r.status!=="paused";
+  group.forEach(function(g){if(g.status!=="full")g.status=pausing?"paused":"active"});
+  toast(pausing?"已暂停所有角色的新申请；截止前仍可主动邀请":"已恢复所有未招满角色的申请");render();
 }
 function endRecruit(){
   var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以结束招募");return}
+  var ids=managedGroup(r).map(function(g){return g.id});
   state.relationships.forEach(function(x){
-    if(x.recruitId===r.id&&x.status!=="joined"&&x.status!=="ended"){
+    if(ids.indexOf(x.recruitId)>=0&&x.status!=="joined"&&x.status!=="ended"){
       releaseReservation(x);x.status="ended";x.reason="队长已结束本轮招募";x.expiresAt=null;
     }
   });
-  r.status="ended";
-  toast("招募已结束，未完成的组队请求已关闭");render();
+  managedGroup(r).forEach(function(g){g.status="ended"});
+  toast("招募已结束，所有角色的未完成组队请求已关闭");render();
 }
 function coreChange(){
   var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以修改核心条件");return}
@@ -1291,6 +1318,8 @@ window.confirmRemoveMember=confirmRemoveMember;
 window.leaveTeam=leaveTeam;
 window.confirmLeave=confirmLeave;
 window.saveProfile=saveProfile;
+window.addAdditionalRole=addAdditionalRole;
+window.switchPublishRole=switchPublishRole;
 window.beginPublish=beginPublish;
 window.previewRecruit=previewRecruit;
 window.saveRecruit=saveRecruit;
