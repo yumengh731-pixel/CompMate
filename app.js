@@ -467,7 +467,7 @@ function chooseRole(id){
   render();
 }
 function teamResultRow(r){
-  var st=status(r.status),free=roleFree(r),risk=r.role.hours>remainingFor(r);
+  var st=recruitDisplayStatus(r),free=roleFree(r),risk=r.role.hours>remainingFor(r);
   return '<article class="teamResult" onclick="openRecruit('+r.id+')"><div class="teamResultMain"><div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div><h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p><div class="resultTags"><span class="strong">'+e(r.role.name)+'</span>'+r.role.skills.slice(0,3).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div></div><div class="teamResultFacts"><div><span>时间</span><b>'+r.role.hours+'h / 周</b></div><div><span>目标</span><b>'+e(r.target)+'</b></div><div><span>名额</span><b>'+free+' / '+r.role.capacity+'</b></div></div><div class="teamResultDecision"><span class="status '+st[1]+'">'+st[0]+'</span><div class="matchBox"><b>匹配提示</b><small>'+r.reasons.join(" · ")+'</small>'+(risk?'<small class="riskText">当前时间可能不足</small>':'')+'</div><button class="btn primary">查看详情</button></div></article>';
 }
 function personResultRow(c){
@@ -488,14 +488,14 @@ function relationButtonLabel(x){
   return {pending:"查看申请进度",communication:"查看沟通进度",confirming:"查看确认进度",joined:"已正式组队"}[x.status]||"查看进度";
 }
 function renderDetail(p){
-  var r=findRecruit(state.selectedRecruit)||recruits[0],ro=r.role,st=recruitDisplayStatus(r),free=roleFree(r),existing=activeCandidateRelationForRecruit(r.id),hard=userMeetsRecruitHardRules(r);
+  var r=findRecruit(state.selectedRecruit)||recruits[0],ro=r.role,st=recruitDisplayStatus(r),free=roleFree(r),existing=activeCandidateRelationForRecruit(r.id),hard=userMeetsRecruitHardRules(r),publicCanApply=r.status==="active"&&!deadlinePassed(r)&&ro.formal<ro.capacity;
   if(!state.loggedIn){
     p.innerHTML='<div class="publicRecruitDetail"><div class="panel"><div class="between"><div><div class="meta">'+e(r.comp)+' · '+e(r.school)+' '+e(r.campus)+'</div><div class="bigTitle">'+e(r.title)+'</div></div><span class="status '+st[1]+'">'+st[0]+'</span></div>'+
       '<div class="badges"><span class="badge green">队长学校身份已认证</span><span class="badge">'+e(r.leader)+' · 队长</span></div>'+
       '<div class="section"><h3 class="sectionTitle">队伍现状</h3><div class="kv" style="margin-top:12px"><div class="k">当前成员</div><div>'+e(r.team)+'</div><div class="k">当前进度</div><div>'+e(r.progress)+'</div><div class="k">参赛目标</div><div>'+e(r.target)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">招募截止</div><div>'+e(r.deadline)+'</div></div></div>'+
       '<div class="section"><h3 class="sectionTitle">当前角色缺口</h3><div class="roleBox"><b>'+e(ro.name)+' · 余 '+free+' 名</b><p class="subtitle">'+e(ro.task)+'</p><div class="badges">'+badges(ro.skills)+'<span class="badge blue">最低 '+ro.hours+'h / 周</span></div></div></div>'+
       '<div class="section"><h3 class="sectionTitle">协作预期</h3><p class="subtitle">'+e(r.collab)+'</p></div></div>'+
-      '<aside class="panel sticky"><h3 class="sectionTitle">申请前需要登录 / 认证</h3><p class="subtitle">公开分享仅展示招募信息，不展示任何私人联系方式或个性化匹配判断。</p><div class="notice">点击申请后再完成登录和学校身份认证，成功后会自动回到这条招募继续。</div><div class="actions"><button class="btn text" onclick="reportRecruit('+r.id+')">举报 / 反馈</button><button class="btn secondary" onclick="copyShareLink('+r.id+')">复制分享链接</button><button class="btn primary push" onclick="applyRecruit('+r.id+')">登录后申请</button></div></aside></div>';
+      '<aside class="panel sticky"><h3 class="sectionTitle">申请前需要登录 / 认证</h3><p class="subtitle">公开分享仅展示招募信息，不展示任何私人联系方式或个性化匹配判断。</p><div class="notice">点击申请后再完成登录和学校身份认证，成功后会自动回到这条招募继续。</div><div class="actions"><button class="btn text" onclick="reportRecruit('+r.id+')">举报 / 反馈</button><button class="btn secondary" onclick="copyShareLink('+r.id+')">复制分享链接</button><button class="btn primary push" '+(publicCanApply?'':'disabled')+' onclick="applyRecruit('+r.id+')">'+(publicCanApply?'登录后申请':r.status==="paused"?'暂停接收申请':ro.formal>=ro.capacity?'已招满':deadlinePassed(r)?'已截止':'当前不可申请')+'</button></div></aside></div>';
     return;
   }
   var canApply=r.status==="active"&&ro.formal<ro.capacity&&remainingFor(r)>=0&&!existing&&hard.ok&&!deadlinePassed(r);
