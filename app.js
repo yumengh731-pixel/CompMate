@@ -476,9 +476,6 @@ function blockUser(id){
   });
   closeModal();toast("已拉黑，未完成关系与临时预留已释放");state.mode="people";go("explore");
 }
-function reportUser(id){
-  closeModal();modal('<h2>提交举报</h2><div class="field"><label>举报原因</label><select class="select"><option>虚假经历 / 招募</option><option>骚扰</option><option>站外支付诱导</option><option>其他</option></select></div><div class="field" style="margin-top:10px"><label>补充说明</label><textarea class="textarea"></textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast(\'举报已记录，等待处理\')">提交</button></div>');
-}
 
 /* PROGRESS / STATE MACHINE */
 function renderProgress(p){
@@ -763,8 +760,8 @@ function renderProfile(p){
   var pct=state.total?Math.min(100,Math.round(state.committed/state.total*100)):0;
   p.innerHTML=demoBar()+'<div class="layout"><div class="panel"><div class="profileHero"><div class="avatar">黄</div><div><div class="bigTitle" style="margin:0">黄同学</div><div class="meta">广东工业大学 · 龙洞校区 · 大二 · 国际经济与贸易</div></div><span class="verifiedTag">'+(state.verified?"学校已认证":"未认证")+'</span></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">我能承担的任务与技能</h3><button class="btn secondary" onclick="go(\'profileEdit\')">编辑档案</button></div><div class="badges"><span class="badge blue">用户调研</span><span class="badge blue">商业分析</span><span class="badge">产品策划</span><span class="badge">Excel</span><span class="badge">报告写作</span></div></div>'+
-    '<div class="section"><h3 class="sectionTitle">相关经历与具体产出</h3><div class="roleBox"><b>挑战杯 · 项目负责人</b><p class="subtitle">负责需求调研、方案设计、团队推进与成果整合。</p></div><div class="roleBox"><b>行业经济分析大赛</b><p class="subtitle">负责资料检索、分析框架与报告撰写。</p></div></div></div>'+
-    '<aside class="panel sticky"><h3 class="sectionTitle">时间与目标</h3><div class="timeCapacityViz"><div class="timeCapacityNumbers"><div><b>'+Math.max(0,remaining())+'h</b><span>剩余可投入</span></div><small>总 '+state.total+'h / 周</small></div><div class="capacityTrack"><i style="width:'+pct+'%"></i></div><div class="capacityLegend"><span><i class="used"></i>已正式投入 '+state.committed+'h</span><span><i class="free"></i>剩余 '+Math.max(0,remaining())+'h</span></div></div><div class="section"><div class="kv"><div class="k">参赛目标</div><div>优先冲奖</div><div class="k">协作方式</div><div>关键节点提前同步</div><div class="k">联系方式</div><div>微信 · 独立隐私字段 · 按次授权</div></div></div><div class="notice">学校认证只证明属于该学校，不代表能力水平。</div></aside></div>';
+    '<div class="section"><h3 class="sectionTitle">相关经历与具体产出</h3><div class="roleBox"><b>挑战杯 · 项目负责人</b><p class="subtitle">负责需求调研、方案设计、团队推进与成果整合。</p><button class="btn text" onclick="openEvidence()">查看用户提供的成果链接</button></div><div class="roleBox"><b>行业经济分析大赛</b><p class="subtitle">负责资料检索、分析框架与报告撰写。</p></div></div></div>'+
+    '<aside class="panel sticky"><h3 class="sectionTitle">时间与目标</h3><div class="timeCapacityViz"><div class="timeCapacityNumbers"><div><b>'+Math.max(0,remaining())+'h</b><span>剩余可投入</span></div><small>总 '+state.total+'h / 周</small></div><div class="capacityTrack"><i style="width:'+pct+'%"></i></div><div class="capacityLegend"><span><i class="used"></i>已正式投入 '+state.committed+'h</span><span><i class="free"></i>剩余 '+Math.max(0,remaining())+'h</span></div></div><div class="section"><div class="kv"><div class="k">参赛目标</div><div>优先冲奖</div><div class="k">协作方式</div><div>关键节点提前同步</div><div class="k">联系方式</div><div>'+(hasUserContact()?'微信 · 已填写，按次授权':'未填写 · 不能发起申请 / 邀请')+'</div></div></div><div class="notice">学校认证只证明属于该学校，不代表能力水平。</div></aside></div>';
 }
 function renderProfileEdit(p){
   p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">最小可匹配档案</h2><p class="subtitle">经历和成果证明可后补；最小字段完整后才可主动申请并进入可被邀请候选列表。</p><div class="formGrid">'+
@@ -772,14 +769,25 @@ function renderProfileEdit(p){
     '<div class="field"><label>年级 / 专业</label><input class="input" value="大二 / 国际经济与贸易"></div><div class="field"><label>每周总可投入 <span class="req">*</span></label><input class="input" id="totalHours" type="number" min="0" value="'+state.total+'"></div>'+
     '<div class="field full"><label>希望承担的任务 <span class="req">*</span></label><div class="checkRow"><button class="check on">用户调研</button><button class="check on">商业分析</button><button class="check">产品策划</button><button class="check">数据分析</button></div></div>'+
     '<div class="field full"><label>技能标签 <span class="req">*</span></label><input class="input" value="Excel、报告写作、用户访谈"></div><div class="field"><label>可参与日期 <span class="req">*</span></label><input class="input" value="2026/10/05 - 2026/12/31"></div><div class="field"><label>参赛目标 <span class="req">*</span></label><select class="select"><option>优先冲奖</option><option>完整参赛</option><option>积累经验</option></select></div>'+
-    '<div class="field full"><label>协作方式 <span class="req">*</span></label><input class="input" value="关键节点提前同步，出现延误及时说明"></div><div class="field full"><label>联系方式（隐私字段）</label><input class="input" value="微信：cm_demo_2026"><div class="help">不会出现在公开档案，仅在双方同意沟通后按次开放。</div></div><div class="field full"><label>经历与具体产出（可选）</label><textarea class="textarea">挑战杯项目负责人：负责需求调研、方案设计、团队推进与成果整合。</textarea></div></div>'+
-    '<div class="actions end"><button class="btn secondary" onclick="go(\'profile\')">取消</button><button class="btn primary" onclick="saveProfile()">保存档案</button></div></div><aside class="panel sticky"><h3 class="sectionTitle">档案规则</h3><div class="notice good">当前最小字段完整，可以主动申请并进入候选列表。</div><div class="section"><p class="subtitle">平台不公开能力评分、责任心评分、人才等级或排行榜。</p></div><div class="section"><button class="btn secondary" onclick="state.verified=false;state.authReturn=\'profile\';go(\'auth\')">重新演示学校认证</button></div></aside></div>';
+    '<div class="field full"><label>协作方式 <span class="req">*</span></label><input class="input" value="关键节点提前同步，出现延误及时说明"></div><div class="field full"><label>联系方式（隐私字段）</label><input class="input" id="profileContact" value="'+e(state.userContact)+'" placeholder="微信 / QQ / 手机至少一种"><div class="help">不会出现在公开档案；发起请求前至少填写一种，双方同意沟通后按次开放。</div></div><div class="field full"><label>成果证据链接（可选）</label><input class="input" id="evidenceUrl" value="'+e(state.evidenceUrl)+'" placeholder="仅支持 http / https"><div class="help">平台仅标记为“用户提供”，不对第三方内容真实性背书。</div></div><div class="field full"><label>经历与具体产出（可选）</label><textarea class="textarea">挑战杯项目负责人：负责需求调研、方案设计、团队推进与成果整合。</textarea></div></div>'+
+    '<div class="actions end"><button class="btn secondary" onclick="go(\'profile\')">取消</button><button class="btn primary" onclick="saveProfile()">保存档案</button></div></div><aside class="panel sticky"><h3 class="sectionTitle">档案规则</h3><div class="notice '+(hasUserContact()?"good":"warn")+'">'+(hasUserContact()?"当前最小字段完整；完成认证后可正常申请 / 邀请。":"当前未填写联系方式：可保存和浏览，但不能发起申请 / 邀请或完成待沟通闭环。")+'</div><div class="section"><p class="subtitle">平台不公开能力评分、责任心评分、人才等级或排行榜。</p></div><div class="section"><button class="btn secondary" onclick="state.verified=false;state.authReturn=\'profile\';go(\'auth\')">重新演示学校认证</button></div></aside></div>';
+}
+function openEvidence(){
+  var u=String(state.evidenceUrl||"").trim();
+  if(!/^https?:\/\//i.test(u)){toast("成果证据链接无效");return}
+  var unknown=!/^(https?:\/\/)?(docs\.qq\.com|github\.com|gitee\.com|drive\.google\.com|example\.com)(\/|$)/i.test(u);
+  modal('<h2>即将离开 CompMate</h2><p class="subtitle">该链接由用户提供，平台不对第三方内容真实性或安全性背书。</p>'+(unknown?'<div class="notice warn">当前为未知域名，请注意防范钓鱼、付款诱导和个人信息泄露。</div>':'')+'<div class="roleBox" style="margin-top:10px">'+e(u)+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();toast(\'已确认外链风险；正式产品将打开新页面\')">继续前往</button></div>');
 }
 function saveProfile(){
-  state.total=Math.max(0,Number(byId("totalHours").value)||0);state.profileComplete=true;toast("个人档案已保存");
+  var hours=Number(byId("totalHours").value),contact=String(byId("profileContact").value||"").trim(),proof=String(byId("evidenceUrl").value||"").trim();
+  if(!Number.isFinite(hours)||hours<0){toast("每周总可投入时间需为 0 或正数");return}
+  if(proof&&!/^https?:\/\//i.test(proof)){toast("成果证据链接仅支持 http / https");return}
+  state.total=hours;state.userContact=contact;state.evidenceUrl=proof;state.profileComplete=true;toast("个人档案已保存");
   var ret=state.profileReturn;state.profileReturn="";
   if(ret==="publish")beginPublish();
   else if(ret==="apply"){state.route="detail";render();setTimeout(function(){applyRecruit(state.selectedRecruit)},150)}
+  else if(ret==="invite"){state.mode="people";state.route="candidate";render();setTimeout(function(){inviteCandidate(state.selectedCandidate)},150)}
+  else if(ret==="progress"){state.progressView="relations";go("progress")}
   else go("profile");
 }
 
@@ -836,7 +844,7 @@ function coreChange(){
 
 /* AUTH */
 function renderAuth(p){
-  var action=state.authReturn==="publish"?"发布招募":state.authReturn==="apply"?"继续申请":"继续使用";
+  var action=state.authReturn==="publish"?"发布招募":state.authReturn==="apply"?"继续申请":state.authReturn==="invite"?"继续邀请":"继续使用";
   p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">学校身份认证</h2><p class="subtitle">认证只验证“属于该学校”，不代表能力水平。</p><div class="formGrid"><div class="field"><label>学校</label><input class="input" value="广东工业大学"></div><div class="field"><label>校区</label><select class="select"><option>龙洞校区</option><option>大学城校区</option></select></div><div class="field full"><label>认证方式</label><select class="select"><option>校园邮箱验证码</option><option>运营白名单 / 人工核验</option></select></div><div class="field full"><label>校园邮箱</label><input class="input" value="demo@gdut.edu.cn"></div></div><div class="actions end"><button class="btn secondary" onclick="interruptAuth()">暂不认证</button><button class="btn primary" onclick="completeAuth()">完成认证并'+action+'</button></div></div><aside class="panel sticky"><div class="notice">产品逻辑只依赖“已认证 / 未认证”结果；具体认证方案可按工作室资源选择低成本实现。</div></aside></div>';
 }
 function interruptAuth(){
@@ -848,6 +856,7 @@ function completeAuth(){
   var ret=state.authReturn;state.authReturn="";
   if(ret==="publish"){toast("认证成功");beginPublish();return}
   if(ret==="apply"){state.pendingApplyRecruitId=null;state.route="detail";render();setTimeout(function(){applyRecruit(state.selectedRecruit)},150);return}
+  if(ret==="invite"){state.mode="people";state.route="candidate";render();setTimeout(function(){inviteCandidate(state.selectedCandidate)},150);return}
   toast("认证成功");go("profile");
 }
 
