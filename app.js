@@ -694,6 +694,7 @@ function candidateStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!currentUserIsCandidate(x)){toast("当前视角是队长，请使用发起确认");return}
   if(x.status!=="communication"){toast("当前关系不能发起正式确认");return}
+  var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能发起正式确认："+eligibility.reason);return}
   if(remainingFor(r)<0){toast("你当前承诺时间已超出声明总时间，请先调整");return}
   if(remainingFor(r)<r.role.hours){toast("当前可投入时间低于最新岗位要求，请先更新真实可投入时间");return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("该角色当前已无法继续正式确认");return}
@@ -704,6 +705,7 @@ function captainStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!canManageRecruit(r)){toast("只有当前队长可以发起队长侧正式确认");return}
   if(x.status!=="communication"){toast("当前关系不能发起正式确认");return}
+  var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能发起正式确认："+eligibility.reason);return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("角色已正式招满或招募已结束");return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("名额正在被其他候选人确认");return}
   var candidateAvailable=relationCandidateAvailable(x);
@@ -723,7 +725,8 @@ function confirmCaptainStart(id){
 function rejectConfirm(id){var x=rel(id);if(!x)return;releaseReservation(x);x.status="communication";x.initiator=null;x.time="刚刚 · 回到待沟通";toast("本次正式确认已结束，待沟通关系保留");render()}
 function openLeaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
-  modal('<h2>最终确认组队</h2><p class="subtitle">将按提交瞬间的最新名额、时间、关系和核心条件重新校验。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">当前可用名额</div><div>'+roleFree(r)+'</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();leaderFinalizeCandidateConfirm('+id+')">最终确认</button></div>');
+  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次正式确认已失效，已回到待沟通");render();return}
+  modal('<h2>最终确认组队</h2><p class="subtitle">将按提交瞬间的最新名额、时间、关系和核心条件重新校验。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">当前可用名额</div><div>'+roleFree(r)+'</div><div class="k">剩余处理时间</div><div>'+e(formatExpiry(x))+'</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();leaderFinalizeCandidateConfirm('+id+')">最终确认</button></div>');
 }
 function leaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
@@ -737,6 +740,7 @@ function leaderFinalizeCandidateConfirm(id){
 }
 function openCandidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次正式确认已失效，已回到待沟通");render();return}
   modal('<h2>确认加入队伍</h2><p class="subtitle">本次预留将转为正式成员占位，不会重复扣减时间。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">剩余处理时间</div><div>'+e(formatExpiry(x))+'</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();candidateAcceptCaptainConfirm('+id+')">确认加入</button></div>');
 }
 function candidateAcceptCaptainConfirm(id){
@@ -744,7 +748,7 @@ function candidateAcceptCaptainConfirm(id){
   if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("该临时预留已失效");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){releaseReservation(x);x.status="ended";x.reason="角色已正式招满";toast("确认失败：角色已正式招满");render();return}
-  var available=currentUserIsCandidate(x)?remaining()+(x.reservedOnCurrentUser?(x.reservedHours||0):0):relationCandidateAvailable(x);
+  var available=currentUserIsCandidate(x)?remainingFor(r)+(x.reservedOnCurrentUser?(x.reservedHours||0):0):relationCandidateAvailable(x);
   if(available<r.role.hours){releaseReservation(x);x.status="communication";x.initiator=null;toast("确认失败：最新可投入时间不足，已释放预留");render();return}
   releaseReservation(x);
   finishJoin(x,r,r.role.hours);
@@ -779,7 +783,6 @@ function finishJoin(x,r,hours){
   toast("正式组队成功");state.progressView="team";render();
 }
 
-/* FULL TEAM PAGE */
 /* FULL TEAM PAGE */
 function progressTeam(){
   var hasJoined=state.joined&&state.joinedRecruitId;
