@@ -40,6 +40,7 @@ var state={
   teamDissolved:false,
   dataMemberRemoved:false,
   groupNote:"请联系当前队长加入微信项目群。",
+  publishNewRequested:false,
   frontendAgreedHours:8,
   frontendCurrentHours:6,
   userCampus:"龙洞校区",
@@ -218,7 +219,7 @@ function shell(){
       '<nav class="nav">'+navButton("home","首页")+navButton("explore","寻找")+navButton("progress","组队 / 进度",pending)+navButton("profile","我的")+'</nav>'+
       '<div class="sideBottom"><div class="identity"><span class="dot"></span>'+(state.verified?"广东工业大学 · 已认证":"学校身份未认证")+'<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div><button class="sideGhost" onclick="demoShare()">预览外部分享</button></div>'+
     '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">竞旅 CompMate</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><div class="timePill"><span>当前可投入</span><b>'+Math.max(0,remaining())+'h</b></div></div></header><div id="page"></div></main></div>'+
-    (state.route!=="publish"?'<button class="fabPublish" onclick="beginPublish()"><span>＋</span><b>发布招募</b></button>':'')+
+    (state.route!=="publish"?'<button class="fabPublish" onclick="beginPublish(true)"><span>＋</span><b>发布招募</b></button>':'')+
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
 function demoBar(){
@@ -325,7 +326,7 @@ function renderTeamSearch(){
     '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽非核心筛选；招募有效性、拉黑和硬条件仍会保留。"))+'</div>';
 }
 function renderPeopleSearch(r){
-  if(!r||!canManageRecruit(r))return '<div class="panel empty"><h3>当前没有可管理的招募缺口</h3><p>只有当前队长可以筛选候选人和处理邀请。你仍可发布一条新的招募。</p><button class="btn primary" onclick="beginPublish()">发布招募</button></div>';
+  if(!r||!canManageRecruit(r))return '<div class="panel empty"><h3>当前没有可管理的招募缺口</h3><p>只有当前队长可以筛选候选人和处理邀请。你仍可发布一条新的招募。</p><button class="btn primary" onclick="beginPublish(true)">发布招募</button></div>';
   var list=filteredCandidates("");
   return '<section class="roleContext"><div class="roleContextMain"><span>当前招募岗位</span><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><small>'+e(r.role.task)+' · 最低 '+r.role.hours+'h / 周</small></div><div class="roleRequirement"><span>必需技能</span><b>'+e(r.role.skills.join(" · "))+'</b></div><button class="btn secondary" onclick="openRolePicker()">切换岗位</button></section>'+
     '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div><div class="filterChips">'+
@@ -435,9 +436,23 @@ function relaxEmpty(kind,title,sub){
   return '<div class="panel empty"><h3>'+e(title)+'</h3><p>'+e(sub)+'</p><button class="btn secondary" onclick="relaxFilters(\''+kind+'\')">一键放宽非核心条件</button></div>';
 }
 function relaxFilters(kind){
-  if(kind==="team")state.teamFilters={campus:false,time:false,active:true,award:false,category:""};
-  else state.peopleFilters={time:false,output:false,campus:false,target:false,capability:""};
-  toast("已放宽非核心筛选；不可绕过条件不会被放宽");render();
+  var relaxed=[];
+  if(kind==="team"){
+    if(state.teamFilters.campus)relaxed.push("校区优先");
+    if(state.teamFilters.time)relaxed.push("时间可行");
+    if(state.teamFilters.award)relaxed.push("冲奖目标");
+    if(state.teamFilters.category)relaxed.push("竞赛方向");
+    state.teamFilters={campus:false,time:false,active:true,award:false,category:""};
+  }else{
+    if(state.peopleFilters.time)relaxed.push("时间满足");
+    if(state.peopleFilters.output)relaxed.push("成果产出");
+    if(state.peopleFilters.campus)relaxed.push("同校区");
+    if(state.peopleFilters.target)relaxed.push("目标一致");
+    if(state.peopleFilters.capability)relaxed.push("能力方向");
+    state.peopleFilters={time:false,output:false,campus:false,target:false,capability:""};
+  }
+  toast(relaxed.length?"已放宽："+relaxed.join("、")+"；硬条件仍保留":"当前没有可继续放宽的非核心条件");
+  render();
 }
 function openRolePicker(){
   var rows=managedRecruitments.filter(function(r){return r.status!=="ended"&&canManageRecruit(r)}).map(function(r){
@@ -1029,21 +1044,29 @@ function saveProfile(){
 }
 function editManagedRecruit(){
   if(!state.managedCaptain){toast("只有当前队长可以编辑该队伍招募");return}
-  state.activeRoleRecruitId=state.managedTeamRecruitId;beginPublish();
+  state.activeRoleRecruitId=state.managedTeamRecruitId;
+  beginPublish(false);
 }
 function createRecruitDraft(){
   var id=Date.now();
   managedRecruitments.push({id:id,category:"innovation",comp:"挑战杯 · 大挑",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],role:{name:"待补角色",capacity:1,formal:0,reserved:0,hours:6,task:"请填写加入后需要承担的具体任务",skills:["待填写"]}});
   state.activeRoleRecruitId=id;return findRecruit(id);
 }
-function beginPublish(){
+function beginPublish(createNew){
+  state.publishNewRequested=!!createNew;
   if(!state.loggedIn||!state.verified){state.authReturn="publish";go("auth");return}
   if(!state.profileComplete){state.profileReturn="publish";go("profileEdit");toast("请先补齐最小个人档案");return}
-  var r=activeManagedRecruit();
-  if(!canManageRecruit(r)){
-    var owned=managedRecruitments.filter(function(x){return canManageRecruit(x)&&x.status!=="ended"})[0];
-    if(!owned)owned=createRecruitDraft();
-    state.activeRoleRecruitId=owned.id;
+  if(state.publishNewRequested){
+    var draft=createRecruitDraft();
+    state.activeRoleRecruitId=draft.id;
+    state.publishNewRequested=false;
+  }else{
+    var r=activeManagedRecruit();
+    if(!canManageRecruit(r)){
+      var owned=managedRecruitments.filter(function(x){return canManageRecruit(x)&&x.status!=="ended"})[0];
+      if(!owned)owned=createRecruitDraft();
+      state.activeRoleRecruitId=owned.id;
+    }
   }
   go("publish");
 }
@@ -1064,7 +1087,7 @@ function renderPublish(p){
   var r=activeManagedRecruit(),statusLabel=r.status==="active"?"招募中":r.status==="paused"?"暂停接收":r.status==="full"?"已招满":"已结束";
   p.innerHTML='<div class="layout"><div class="panel"><div class="between"><div><h2 class="sectionTitle">结构化招募</h2><p class="subtitle">围绕“目标竞赛 + 缺口角色 + 具体任务 + 招募人数 + 时间要求”发布，候选人可以直接判断加入后要做什么。</p></div><span class="status '+(r.status==="active"?"green":r.status==="full"?"blue":"warn")+'">'+statusLabel+'</span></div>'+
     '<div class="formGrid">'+
-    '<div class="field"><label>目标竞赛 <span class="req">*</span></label><input class="input" id="pubComp" value="'+e(r.comp)+'"><div class="help">未收录赛事可直接填写临时名称；发布时会做基础名称规范化。</div></div>'+
+    '<div class="field"><label>目标竞赛 <span class="req">*</span></label><input class="input" id="pubComp" list="competitionOptions" value="'+e(r.comp)+'"><datalist id="competitionOptions"><option value="挑战杯 · 大挑"><option value="互联网+"><option value="正大杯"><option value="数学建模竞赛"><option value="行业经济分析大赛"></datalist><div class="help">优先选择标准赛事；未收录赛事可直接填写临时名称，发布时会做基础名称规范化。</div></div>'+
     '<div class="field"><label>招募标题（可选）</label><input class="input" id="pubTitle" maxlength="30" value="'+e(r.title)+'"><div class="help">不超过 30 字；留空时由系统根据竞赛和主要缺口生成。</div></div>'+
     '<div class="field"><label>学校 / 校区</label><input class="input" value="'+e(r.school)+' / '+e(r.campus)+'" disabled></div>'+
     '<div class="field"><label>学校 / 校区是否硬条件</label><select class="select" id="pubHard"><option value="0" '+(!r.hard?"selected":"")+'>否，可跨校区沟通</option><option value="1" '+(r.hard?"selected":"")+'>是，不满足不可申请 / 邀请</option></select></div>'+
@@ -1103,7 +1126,7 @@ function saveRecruit(){
   if(deadlineDate<=new Date()){toast("新发布招募的截止时间必须晚于当前时间");return}
   if(deadlineDate>endDate){toast("招募截止时间不能晚于项目结束日期");return}
   var occupied=r.role.formal+r.role.reserved;if(cap<occupied){toast("招募人数不能低于正式成员 + 有效预留");return}
-  if(unsafePublicText([comp,title,task,collab].join(" "))){toast("公开文本中疑似包含联系方式或高风险引导，请修改后再发布");return}
+  if(unsafePublicText([comp,title,team,progress,role,task,skills.join(" "),target,collab].join(" "))){toast("公开文本中疑似包含联系方式或高风险引导，请修改后再发布");return}
   if(!title)title=comp+" · 招募"+role;
   var newPeriod=md(start)+" - "+md(end),newDeadline=mdhm(deadline),newSkills=skills.join("|"),oldSkills=r.role.skills.join("|");
   var coreChanged=r.role.name!==role||r.role.task!==task||r.role.hours!==hours||r.period!==newPeriod||r.target!==target||oldSkills!==newSkills||r.hard!==hard;
@@ -1157,7 +1180,7 @@ function interruptAuth(){
 function completeAuth(){
   state.loggedIn=true;state.verified=true;
   var ret=state.authReturn;state.authReturn="";
-  if(ret==="publish"){toast("认证成功");beginPublish();return}
+  if(ret==="publish"){toast("认证成功");beginPublish(state.publishNewRequested);return}
   if(ret==="apply"){var rr=findRecruit(state.selectedRecruit),hh=rr?userMeetsRecruitHardRules(rr):{ok:false,reason:"原招募不存在"};if(!rr||rr.status!=="active"||roleFree(rr)<=0||deadlinePassed(rr)||!hh.ok){showInvalidOriginalRecruit(state.selectedRecruit,!rr?"原招募不存在":rr.status!=="active"?"原招募当前不接收申请":roleFree(rr)<=0?"原角色当前没有可提交名额":deadlinePassed(rr)?"原招募已过截止时间":hh.reason);return}state.pendingApplyRecruitId=null;state.route="detail";render();setTimeout(function(){applyRecruit(state.selectedRecruit)},150);return}
   if(ret==="invite"){state.mode="people";state.route="candidate";render();setTimeout(function(){inviteCandidate(state.selectedCandidate)},150);return}
   toast("认证成功");go("profile");
