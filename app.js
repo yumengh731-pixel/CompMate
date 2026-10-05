@@ -30,12 +30,12 @@ var state={
   frontendAgreedHours:8,
   frontendCurrentHours:6,
   userCampus:"龙洞校区",
-  profileSkills:["Excel","报告写作","用户访谈","商业分析","数据分析","可视化"],
+  profileSkills:["Excel","报告写作","用户访谈","问卷设计","商业分析","数据分析","可视化"],
   userContact:"cm_demo_2026",
   contactUnlockEvents:[],
   reports:[],
   evidenceUrl:"https://example.com/compmate-output",
-  teamFilters:{campus:false,time:false,active:false,award:false,category:""},
+  teamFilters:{campus:false,time:false,active:true,award:false,category:""},
   peopleFilters:{time:false,output:false,campus:false,target:false,capability:""},
   relationships:[
     {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
@@ -67,6 +67,30 @@ var candidates=[
 function e(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
 function byId(id){return document.getElementById(id)}
 function remaining(){return state.total-state.committed-state.reserved}
+function periodRange(r){
+  var m=String(r&&r.period||"").match(/(\d{1,2})\/(\d{1,2})\s*-\s*(\d{1,2})\/(\d{1,2})/);
+  if(!m)return null;
+  return {start:new Date(2026,Number(m[1])-1,Number(m[2])),end:new Date(2026,Number(m[3])-1,Number(m[4]),23,59,59)};
+}
+function periodsOverlap(a,b){
+  var x=periodRange(a),y=periodRange(b);if(!x||!y)return true;
+  return x.start<=y.end&&y.start<=x.end;
+}
+function remainingFor(r){
+  if(!r)return remaining();
+  var used=0,managed=activeManagedRecruit();
+  if(state.managedMemberActive&&managed&&periodsOverlap(managed,r))used+=state.managedStageHours;
+  if(state.joined&&state.joinedRecruitId){
+    var joined=findRecruit(state.joinedRecruitId);
+    if(joined&&periodsOverlap(joined,r))used+=state.joinedStageHours;
+  }
+  state.relationships.forEach(function(x){
+    if(x.reserved&&x.reservedOnCurrentUser){
+      var rr=relationRecruit(x);if(rr&&periodsOverlap(rr,r))used+=x.reservedHours||0;
+    }
+  });
+  return state.total-used;
+}
 function allRecruitments(){return recruits.concat(managedRecruitments)}
 function findRecruit(id){return allRecruitments().filter(function(x){return x.id===Number(id)})[0]||null}
 function activeManagedRecruit(){return findRecruit(state.activeRoleRecruitId)||managedRecruitments[0]}
@@ -177,7 +201,7 @@ function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
-  var recommended=recruits.filter(function(r){return r.status==="active"&&roleFree(r)>0}).slice(0,3);
+  var recommended=recruits.filter(function(r){return r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&remainingFor(r)>=r.role.hours}).slice(0,3);
   var used=Math.max(0,state.committed+state.reserved);
   var pct=state.total?Math.min(100,Math.round(used/state.total*100)):0;
   var pendingAction=state.pendingApplyRecruitId?'<article class="todoBoard pendingResume" onclick="continuePendingApply()"><div class="statusBoardHead"><span>CONTINUE</span><h3>继续此前申请</h3></div><b>'+e(findRecruit(state.pendingApplyRecruitId)?findRecruit(state.pendingApplyRecruitId).title:"原招募")+'</b><p>认证曾中断，招募仍有效时可以继续。</p><em>继续申请 →</em></article>':
@@ -199,7 +223,7 @@ function renderHome(p){
     '</section>';
 }
 function smartRecommendRow(r){
-  var timeOk=remaining()>=r.role.hours;
+  var timeOk=remainingFor(r)>=r.role.hours;
   return '<article class="smartRecommendRow" onclick="openRecruit('+r.id+')"><div class="smartRecMain"><div class="smartRecMeta">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(r.role.task)+'</p><div class="smartRecTags"><span>'+e(r.role.name)+'</span><span>'+r.role.hours+'h / 周</span><span>'+e(r.target)+'</span></div></div>'+
     '<div class="smartRecReason"><span>匹配维度</span><div class="matchDims"><i>任务契合</i><i class="'+(timeOk?"ok":"warn")+'">'+(timeOk?"时间满足":"时间风险")+'</i><i>目标可对齐</i></div><small>'+r.reasons.join(" · ")+' · 剩余 '+roleFree(r)+' 个名额</small></div><span class="smartRecArrow">→</span></article>';
 }
@@ -275,8 +299,8 @@ function filteredTeams(q){
   return recruits.filter(function(r){
     if(q&&JSON.stringify(r).toLowerCase().indexOf(q)<0)return false;
     if(state.teamFilters.campus&&r.campus!=="龙洞校区")return false;
-    if(state.teamFilters.time&&remaining()<r.role.hours)return false;
-    if(state.teamFilters.active&&!(r.status==="active"&&roleFree(r)>0))return false;
+    if(state.teamFilters.time&&remainingFor(r)<r.role.hours)return false;
+    if(state.teamFilters.active&&(r.status!=="active"||deadlinePassed(r)))return false;
     if(state.teamFilters.award&&!isAwardGoal(r.target))return false;
     if(state.teamFilters.category&&teamCategory(r)!==state.teamFilters.category)return false;
     return true;
@@ -341,7 +365,7 @@ function chooseRole(id){
   render();
 }
 function teamResultRow(r){
-  var st=status(r.status),free=roleFree(r),risk=r.role.hours>remaining();
+  var st=status(r.status),free=roleFree(r),risk=r.role.hours>remainingFor(r);
   return '<article class="teamResult" onclick="openRecruit('+r.id+')"><div class="teamResultMain"><div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div><h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p><div class="resultTags"><span class="strong">'+e(r.role.name)+'</span>'+r.role.skills.slice(0,3).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div></div><div class="teamResultFacts"><div><span>时间</span><b>'+r.role.hours+'h / 周</b></div><div><span>目标</span><b>'+e(r.target)+'</b></div><div><span>名额</span><b>'+free+' / '+r.role.capacity+'</b></div></div><div class="teamResultDecision"><span class="status '+st[1]+'">'+st[0]+'</span><div class="matchBox"><b>为什么推荐</b><small>'+r.reasons.join(" · ")+'</small>'+(risk?'<small class="riskText">当前时间可能不足</small>':'')+'</div><button class="btn primary">查看详情</button></div></article>';
 }
 function personResultRow(c){
@@ -371,8 +395,8 @@ function renderDetail(p){
     '<div class="section"><h3 class="sectionTitle">队伍现状</h3><div class="kv" style="margin-top:12px"><div class="k">当前成员</div><div>'+e(r.team)+'</div><div class="k">当前进度</div><div>'+e(r.progress)+'</div><div class="k">参赛目标</div><div>'+e(r.target)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">招募截止</div><div>'+e(r.deadline)+'</div></div></div>'+
     '<div class="section"><h3 class="sectionTitle">角色缺口</h3><div class="roleBox"><div class="between"><div><b>'+e(ro.name)+'</b><div class="meta" style="margin-top:4px">'+ro.formal+'/'+ro.capacity+' 已正式加入'+(ro.reserved?' · '+ro.reserved+' 个名额确认中':'')+'</div></div><span class="status '+(ro.reserved?"warn":"green")+'">'+(ro.formal>=ro.capacity?"已招满":ro.reserved?"名额确认中":"可申请")+'</span></div><p class="subtitle">'+e(ro.task)+'</p><div class="badges">'+badges(ro.skills)+'<span class="badge blue">最低 '+ro.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><h3 class="sectionTitle">协作预期</h3><p class="subtitle">'+e(r.collab)+'</p></div></div>'+
-    '<aside class="panel sticky"><h3 class="sectionTitle">与你的匹配情况</h3><div class="reasons" style="margin-top:12px"><b>推荐理由</b><br>'+r.reasons.join(" · ")+'</div><div class="stats"><div class="stat"><b>'+Math.max(0,remaining())+'h</b><span>当前可投入</span></div><div class="stat"><b>'+ro.hours+'h</b><span>岗位最低投入</span></div><div class="stat"><b>'+free+'</b><span>可用名额</span></div></div>'+
-    (ro.hours>remaining()?'<div class="notice warn" style="margin-top:12px">当前时间低于最低要求：可以先沟通，但正式组队前必须满足最新要求。</div>':'<div class="notice good" style="margin-top:12px">当前时间条件满足。申请仍只代表沟通意向。</div>')+
+    '<aside class="panel sticky"><h3 class="sectionTitle">与你的匹配情况</h3><div class="reasons" style="margin-top:12px"><b>推荐理由</b><br>'+r.reasons.join(" · ")+'</div><div class="stats"><div class="stat"><b>'+Math.max(0,remainingFor(r))+'h</b><span>当前可投入</span></div><div class="stat"><b>'+ro.hours+'h</b><span>岗位最低投入</span></div><div class="stat"><b>'+free+'</b><span>可用名额</span></div></div>'+
+    (ro.hours>remainingFor(r)?'<div class="notice warn" style="margin-top:12px">当前时间低于最低要求：可以先沟通，但正式组队前必须满足最新要求。</div>':'<div class="notice good" style="margin-top:12px">当前时间条件满足。申请仍只代表沟通意向。</div>')+
     (r.status==="paused"?'<div class="notice warn" style="margin-top:10px">队长已暂停接收新的加入申请；已有关系仍可继续。</div>':'')+
     (!hard.ok&&!existing?'<div class="notice warn" style="margin-top:10px">'+e(hard.reason)+'。你仍可查看详情，但不能提交申请。</div>':'')+
     '<div class="actions"><button class="btn text" onclick="reportRecruit('+r.id+')">举报 / 反馈</button><button class="btn secondary" onclick="shareRecruit('+r.id+')">分享招募</button><button class="btn primary push" '+((canApply||existing)?'':'disabled')+' onclick="'+actionClick+'">'+actionLabel+'</button></div></aside></div>';
@@ -386,7 +410,7 @@ function applyRecruit(id){
   if(deadlinePassed(r)){toast("该招募已过截止时间，不能新增申请");return}
   if(roleFree(r)<=0){toast(r.role.formal>=r.role.capacity?"角色已正式招满":"名额正在被其他候选人确认");return}
   var hard=userMeetsRecruitHardRules(r);if(!hard.ok){toast(hard.reason);return}
-  if(remaining()<0){toast("当前承诺时间已超出声明总时间，请先调整");return}
+  if(remainingFor(r)<0){toast("当前承诺时间已超出声明总时间，请先调整");return}
   if(!state.loggedIn||!state.verified){
     state.selectedRecruit=id;state.pendingApplyRecruitId=id;state.authReturn="apply";go("auth");return;
   }
@@ -394,9 +418,9 @@ function applyRecruit(id){
     state.selectedRecruit=id;state.profileReturn="apply";go("profileEdit");toast("请先完成最小个人档案");return;
   }
   if(!hasUserContact()){state.selectedRecruit=id;state.profileReturn="apply";go("profileEdit");toast("发起申请前请至少填写并授权一种联系方式");return}
-  var short=remaining()<r.role.hours;
+  var short=remainingFor(r)<r.role.hours;
   modal('<h2>提交加入申请</h2><p class="subtitle">申请只代表愿意进一步沟通，不会直接加入队伍或占用正式名额。</p>'+
-    (short?'<div class="notice warn">当前剩余 '+Math.max(0,remaining())+'h / 周，低于岗位 '+r.role.hours+'h / 周。可以申请沟通，但正式组队前必须满足最新时间要求。</div>':'<div class="notice good">当前剩余 '+remaining()+'h / 周，岗位要求 '+r.role.hours+'h / 周，时间条件满足。</div>')+
+    (short?'<div class="notice warn">当前剩余 '+Math.max(0,remainingFor(r))+'h / 周，低于岗位 '+r.role.hours+'h / 周。可以申请沟通，但正式组队前必须满足最新时间要求。</div>':'<div class="notice good">当前剩余 '+remainingFor(r)+'h / 周，岗位要求 '+r.role.hours+'h / 周，时间条件满足。</div>')+
     '<div class="formGrid" style="margin-top:14px"><div class="field"><label>首选角色</label><input class="input" value="'+e(r.role.name)+'"></div><div class="field"><label>可接受其他角色</label><input class="input" value="可协商"></div><div class="field full"><label>补充说明</label><textarea class="textarea">我有相关项目经历，希望进一步了解具体分工和时间安排。</textarea></div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitApplication('+id+')">提交申请</button></div>');
 }
 function submitApplication(id){
@@ -588,7 +612,7 @@ function relationCandidate(x){
   return candidates.filter(function(c){return c.id===x.candidateId})[0]||null;
 }
 function relationCandidateAvailable(x){
-  if(currentUserIsCandidate(x))return remaining();
+  if(currentUserIsCandidate(x))return remainingFor(relationRecruit(x));
   var c=relationCandidate(x);
   return c?c.hours:0;
 }
@@ -620,10 +644,10 @@ function candidateStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!currentUserIsCandidate(x)){toast("当前视角是队长，请使用发起确认");return}
   if(x.status!=="communication"){toast("当前关系不能发起正式确认");return}
-  if(remaining()<0){toast("你当前承诺时间已超出声明总时间，请先调整");return}
-  if(remaining()<r.role.hours){toast("当前可投入时间低于最新岗位要求，请先更新真实可投入时间");return}
+  if(remainingFor(r)<0){toast("你当前承诺时间已超出声明总时间，请先调整");return}
+  if(remainingFor(r)<r.role.hours){toast("当前可投入时间低于最新岗位要求，请先更新真实可投入时间");return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("该角色当前已无法继续正式确认");return}
-  modal('<h2>候选人发起正式确认</h2><p class="subtitle">候选人发起时不预留名额；队长最终确认才按最新资源完成组队。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">当前剩余</div><div>'+Math.max(0,remaining())+'h / 周</div></div><div class="notice" style="margin-top:10px">请确认以上为最新条件；正式确认请求最长保留 24 小时。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="confirmCandidateStart('+id+')">发送确认请求</button></div>');
+  modal('<h2>候选人发起正式确认</h2><p class="subtitle">候选人发起时不预留名额；队长最终确认才按最新资源完成组队。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">当前剩余</div><div>'+Math.max(0,remainingFor(r))+'h / 周</div></div><div class="notice" style="margin-top:10px">请确认以上为最新条件；正式确认请求最长保留 24 小时。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="confirmCandidateStart('+id+')">发送确认请求</button></div>');
 }
 function confirmCandidateStart(id){var x=rel(id);if(!x)return;x.status="confirming";x.initiator="candidate";x.time="刚刚 · 等待队长最终确认";x.expiresAt=Date.now()+24*60*60*1000;x.conditionUpdated=false;closeModal();toast("确认请求已发送");render()}
 function captainStartConfirm(id){
