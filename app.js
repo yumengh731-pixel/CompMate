@@ -398,7 +398,7 @@ function renderHome(p){
     '<section class="homeWorkbench">'+
       '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
       '<div class="smartRecommendList">'+recommended.map(smartRecommendRow).join("")+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
-      '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><span>MY DEADLINES</span><h2>与你相关的竞赛节点</h2><p>只展示正在找队、已组队或已发布招募的近期节点。</p></div></div>'+
+      '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><span>MY DEADLINES</span><h2>与你相关的竞赛节点</h2><p>只展示正在找队、沟通 / 确认中或你已发布招募的近期节点。</p></div></div>'+
       '<div class="reminderTimeline">'+homeDeadlineRows()+'</div></aside>'+
     '</section>'+
     '<section class="homeStatusGrid">'+
@@ -867,7 +867,7 @@ function requestCard(x){
     note='<div class="relationMeta">请求有效期：'+e(formatExpiry(x))+'</div>'+(x.conditionUpdated?'<div class="notice warn" style="margin-top:8px">该招募条件已更新，请重新查看最新任务、时间与目标后再决定是否继续。</div>':'');
   }
   if(!asCandidate&&r&&!canManageRecruit(r)&&x.status!=="joined"&&x.status!=="ended"){
-    act='<span class="status">已无队长权限</span>';note='<div class="notice warn" style="margin-top:8px">该队伍的队长身份已经转交，你不能继续处理候选人或正式确认。</div>';
+    act='<span class="status">已无队长权限</span>';note='<div class="notice warn" style="margin-top:8px">该队伍的队长身份已经转交，你不能继续处理候选人或组队确认。</div>';
   }else if(x.status==="communication"){
     captureContactGrant(x);
     var roleSwitch=relationGroupRoles(x).length>1?'<button class="btn secondary" onclick="changeRelationRole('+x.id+')">调整角色</button>':'';
@@ -922,6 +922,7 @@ function confirmAgree(id){
   var x=rel(id);if(!x)return;
   if(x.status!=="pending"){closeModal();toast("请求状态已变化，请按最新状态继续");render();return}
   var r=relationRecruit(x);
+  if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){closeModal();toast("队长权限已变化，不能继续处理该请求");render();return}
   if(r&&(r.status==="ended"||r.role.formal>=r.role.capacity)){x.status="ended";x.reason=r.status==="ended"?"招募已结束":"名额已满";x.expiresAt=null;closeModal();toast(x.reason);render();return}
   if(!hasUserContact()||!x.partyContact){toast("双方需至少授权一种联系方式后才能开始沟通");return}
   if(!registerContactUnlock()){toast("短时间联系方式解锁过于频繁，请稍后重试或完成额外验证");return}
@@ -935,7 +936,7 @@ function simulateInviteAccepted(id){
   if(!registerContactUnlock()){toast("短时间联系方式解锁过于频繁，请稍后重试");return}
   captureContactGrant(x);x.status="communication";x.contact=true;x.expiresAt=null;x.time="刚刚 · 对方已同意";toast("对方已同意沟通，联系方式已开放");render();
 }
-function endComm(id){var x=rel(id);if(!x)return;releaseReservation(x);x.status="ended";x.reason="本次沟通已结束，旧的正式确认不能继续";toast("本次沟通已结束");render()}
+function endComm(id){var x=rel(id);if(!x)return;releaseReservation(x);x.status="ended";x.reason="本次沟通已结束，旧的组队确认不能继续";toast("本次沟通已结束");render()}
 function relationCandidate(x){
   if(!x||currentUserIsCandidate(x))return null;
   return candidates.filter(function(c){return c.id===x.candidateId})[0]||null;
@@ -974,7 +975,7 @@ function candidateStartConfirm(id){
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能进入组队确认："+eligibility.reason);return}
   if(remainingFor(r)<0){toast("你当前承诺时间已超出声明总时间，请先调整");return}
   if(remainingFor(r)<r.role.hours){toast("该项目周期可投入时间低于最新岗位要求，请先更新真实可投入时间");return}
-  if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("该角色当前已无法继续正式确认");return}
+  if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("该角色当前已无法继续组队确认");return}
   var skillGap=userSkillGap(r);
   modal('<h2>确认加入意向</h2><p class="subtitle">你先确认愿意按以下条件加入；队长确认后才正式组队。此时不会占用角色名额。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">该周期剩余</div><div>'+remainingLabel(remainingFor(r))+' / 周</div></div>'+(skillGap.length?'<div class="notice warn" style="margin-top:10px">'+e(skillGapCopy(skillGap))+'</div>':'')+'<div class="notice" style="margin-top:10px">确认意向最长保留 24 小时；队长确认时仍会重新检查名额和时间。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="confirmCandidateStart('+id+')">确认加入意向</button></div>');
 }
@@ -989,7 +990,7 @@ function confirmCandidateStart(id){
 }
 function captainStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
-  if(!canManageRecruit(r)){toast("只有当前队长可以发起队长侧正式确认");return}
+  if(!canManageRecruit(r)){toast("只有当前队长可以发送正式加入邀请");return}
   if(x.status!=="communication"){toast("当前关系不能进入组队确认");return}
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能进入组队确认："+eligibility.reason);return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("角色已正式招满或招募已结束");return}
@@ -1001,7 +1002,7 @@ function captainStartConfirm(id){
 }
 function confirmCaptainStart(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
-  if(!canManageRecruit(r)){closeModal();toast("只有当前队长可以发起队长侧正式确认");render();return}
+  if(!canManageRecruit(r)){closeModal();toast("只有当前队长可以发送正式加入邀请");render();return}
   if(x.status!=="communication"){closeModal();toast("关系状态已变化，请刷新后重试");render();return}
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能进入组队确认："+eligibility.reason);render();return}
   if(r.role.formal>=r.role.capacity){closeModal();toast("角色已正式招满");render();return}
@@ -1019,7 +1020,7 @@ function rejectConfirm(id){
 }
 function openLeaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
-  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次正式确认已失效，已回到待沟通");render();return}
+  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次组队确认已失效，已回到待沟通");render();return}
   modal('<h2>确认组队</h2><p class="subtitle">这是最后一步。确认后双方立即成为正式队友；系统会按当前最新名额、时间和不可放宽条件重新校验。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">当前可用名额</div><div>'+roleFree(r)+'</div><div class="k">剩余处理时间</div><div>'+e(formatExpiry(x))+'</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();leaderFinalizeCandidateConfirm('+id+')">确认组队</button></div>');
 }
 function leaderFinalizeCandidateConfirm(id){
@@ -1034,7 +1035,7 @@ function leaderFinalizeCandidateConfirm(id){
 }
 function openCandidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
-  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次正式确认已失效，已回到待沟通");render();return}
+  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次组队确认已失效，已回到待沟通");render();return}
   modal('<h2>确认加入</h2><p class="subtitle">这是最后一步。确认后你将正式加入队伍；确认中暂占会直接转为正式占用，不会重复扣减时间。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">剩余处理时间</div><div>'+e(formatExpiry(x))+'</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();candidateAcceptCaptainConfirm('+id+')">确认加入</button></div>');
 }
 function candidateAcceptCaptainConfirm(id){
@@ -1156,7 +1157,7 @@ function renderManagedTeam(){
 }
 function addedMemberRow(c,r){
   var isCaptain=state.managedCaptainName===c.name;
-  return '<div class="request"><div><div class="requestTitle">'+e(c.name)+' · '+e(isCaptain?"队长 / "+r.role.name:r.role.name)+'</div><div class="requestSub">已通过正式确认加入 · 当前岗位 '+e(r.role.name)+'</div></div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&!isCaptain?'<button class="btn text" onclick="removeAddedCandidate('+c.id+')">移除</button>':'')+'</div></div>';
+  return '<div class="request"><div><div class="requestTitle">'+e(c.name)+' · '+e(isCaptain?"队长 / "+r.role.name:r.role.name)+'</div><div class="requestSub">已通过双方确认加入 · 当前岗位 '+e(r.role.name)+'</div></div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&!isCaptain?'<button class="btn text" onclick="removeAddedCandidate('+c.id+')">移除</button>':'')+'</div></div>';
 }
 function removeAddedCandidate(candidateId){
   if(!state.managedCaptain){toast("只有当前队长可以移除其他成员");return}
