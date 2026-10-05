@@ -206,7 +206,7 @@ function empty(a,b){return '<div class="panel empty"><h3>'+e(a)+'</h3><p>'+e(b)+
 function badges(arr){return arr.map(function(x){return '<span class="badge">'+e(x)+'</span>'}).join("")}
 
 function navIcon(r){return {home:"⌂",explore:"⌕",progress:"◎",profile:"○"}[r]||"•"}
-function title(){return {home:"首页",explore:"寻找",detail:"招募详情",candidate:"候选人详情",progress:"组队 / 进度",profile:"我的",profileEdit:"编辑个人档案",publish:"发布 / 编辑招募",auth:"学校身份认证"}[state.route]||"竞旅 CompMate"}
+function title(){return {home:"首页",explore:"组队大厅",detail:"招募详情",candidate:"候选人详情",progress:"组队中心",profile:"我的",profileEdit:"编辑个人档案",publish:"发布 / 编辑招募",auth:"学校身份认证"}[state.route]||"竞旅 CompMate"}
 function activeRoute(){
   if(state.route==="detail"||state.route==="candidate"||state.route==="explore")return"explore";
   if(state.route==="progress")return"progress";
@@ -348,7 +348,7 @@ function renderExplore(p){
     if(owned){state.activeRoleRecruitId=owned.id;r=owned}
   }
   p.innerHTML=
-    '<section class="exploreHeader"><div><span class="pageKicker">EXPLORE</span><h2>寻找</h2><p>主动搜索与筛选是主路径；推荐只帮助你更快缩小范围。</p></div></section>'+
+    '<section class="exploreHeader"><div><span class="pageKicker">EXPLORE</span><h2>组队大厅</h2><p>主动搜索与筛选是主路径；在“找队伍 / 找队友”之间切换，推荐只帮助你更快缩小范围。</p></div></section>'+
     '<div class="exploreSwitch"><button class="'+(isTeams?"active":"")+'" onclick="state.mode=\'teams\';render()"><b>找队伍</b><span>我要加入一支队伍</span></button><button class="'+(!isTeams?"active":"")+'" onclick="state.mode=\'people\';render()"><b>找队友</b><span>我的队伍还缺人</span></button></div>'+
     (isTeams?renderTeamSearch():renderPeopleSearch(r));
 }
@@ -719,8 +719,8 @@ function renderProgress(p){
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
   var joined=Math.max(state.relationships.filter(function(x){return x.status==="joined"}).length,state.joined?1:0);
   p.innerHTML=demoBar()+
-    '<section class="progressHero"><div><span class="pageKicker">TEAMING PROGRESS</span><h2>组队 / 进度</h2><p>申请、沟通、确认和正式队伍统一放在一条状态链里。</p></div><div class="progressStats"><div><b>'+pending+'</b><span>待处理</span></div><div><b>'+communication+'</b><span>待沟通</span></div><div><b>'+confirming+'</b><span>确认中</span></div><div><b>'+joined+'</b><span>已组队</span></div></div></section>'+
-    '<div class="progressSwitch"><button class="'+(state.progressView==="relations"?"active":"")+'" onclick="state.progressView=\'relations\';render()">沟通与确认</button><button class="'+(state.progressView==="team"?"active":"")+'" onclick="state.progressView=\'team\';render()">我的队伍</button></div>'+
+    '<section class="progressHero"><div><span class="pageKicker">TEAMING PROGRESS</span><h2>组队中心</h2><p>“申请 / 邀请中心”和“我的队伍”统一归档，但仍保持两类页面职责清晰。</p></div><div class="progressStats"><div><b>'+pending+'</b><span>待处理</span></div><div><b>'+communication+'</b><span>待沟通</span></div><div><b>'+confirming+'</b><span>确认中</span></div><div><b>'+joined+'</b><span>已组队</span></div></div></section>'+
+    '<div class="progressSwitch"><button class="'+(state.progressView==="relations"?"active":"")+'" onclick="state.progressView=\'relations\';render()">申请 / 邀请中心</button><button class="'+(state.progressView==="team"?"active":"")+'" onclick="state.progressView=\'team\';render()">我的队伍</button></div>'+
     (state.progressView==="relations"?progressRelations():progressTeam());
 }
 function refreshRelationExpiry(x){
