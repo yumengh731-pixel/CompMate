@@ -158,6 +158,9 @@ function canManageRecruit(r){return !!(r&&r.leader==="你"&&state.verified)}
 function isAwardGoal(t){return /冲|奖|省赛|金奖/.test(t||"")}
 function goalAligned(a,b){if(isAwardGoal(a))return isAwardGoal(b);return true}
 function hasUserContact(){return !!(state.userContact&&String(state.userContact).trim())}
+function publisherBasicComplete(){
+  return !!(String(state.profileName||"").trim()&&String(state.profileCampus||"").trim()&&String(state.profileGrade||"").trim()&&String(state.profileMajor||"").trim());
+}
 function remainingLabel(v){v=Number(v)||0;return v>=0?v+"h":"超出 "+Math.abs(v)+"h"}
 function userMatchReasons(r){
   if(!r)return [];
@@ -1293,7 +1296,14 @@ function saveProfile(){
   state.profileName=name;state.profileCampus=campus;state.profileGrade=grade;state.profileMajor=major;state.userCampus=campus;state.profileExperience=experience;state.profileTasks=tasks;state.profileSkills=skills;state.profileTarget=target;state.profileCollab=collab;state.availStart=start;state.availEnd=end;state.total=hours;state.userContact=contact;state.evidenceUrl=proof;
   var missing=[];if(!name)missing.push("显示名称");if(!campus)missing.push("学校 / 校区");if(!grade)missing.push("年级");if(!major)missing.push("专业");if(!tasks)missing.push("角色 / 任务");if(!skills.length)missing.push("技能标签");if(!start||!end)missing.push("可参与日期");if(!collab)missing.push("协作方式");if(!target)missing.push("参赛目标");
   state.profileComplete=missing.length===0;
-  if(!state.profileComplete){toast("草稿已保存；仍缺少："+missing.join("、"));render();return}
+  if(!state.profileComplete){
+    if(state.profileReturn==="publish"&&publisherBasicComplete()){
+      var publishNew=state.publishNewRequested;state.profileReturn="";
+      toast("基础展示信息已保存；可继续发布招募，申请 / 邀请前再补完整档案");
+      beginPublish(publishNew);return;
+    }
+    toast("草稿已保存；仍缺少："+missing.join("、"));render();return
+  }
   toast("个人档案已保存");
   var ret=state.profileReturn;state.profileReturn="";
   if(ret==="publish")beginPublish(state.publishNewRequested);
@@ -1354,7 +1364,7 @@ function switchPublishRole(id){
 function beginPublish(createNew){
   state.publishNewRequested=!!createNew;
   if(!state.loggedIn||!state.verified){state.authReturn="publish";go("auth");return}
-  if(!state.profileComplete){state.profileReturn="publish";go("profileEdit");toast("请先补齐最小个人档案");return}
+  if(!publisherBasicComplete()){state.profileReturn="publish";go("profileEdit");toast("发布招募前请先补充基础展示信息；申请 / 邀请所需的完整档案可后补");return}
   if(state.publishNewRequested){
     var draft=createRecruitDraft();
     state.activeRoleRecruitId=draft.id;
@@ -1435,8 +1445,8 @@ function saveRecruit(){
   if(unsafePublicText([comp,title,team,progress,role,task,skills.join(" "),target,collab].join(" "))){toast("公开文本中疑似包含联系方式或高风险引导，请修改后再发布");return}
   if(!title)title=comp+" · 招募"+role;
   var newPeriod=periodLabel(start,end),newDeadline=mdhm(deadline),newSkills=skills.join("|"),oldSkills=r.role.skills.join("|");
-  var roleCoreChanged=r.role.name!==role||r.role.task!==task||r.role.hours!==hours||oldSkills!==newSkills;
-  var commonCoreChanged=r.period!==newPeriod||r.target!==target||r.hard!==hard;
+  var roleCoreChanged=r.role.name!==role||r.role.capacity!==cap||r.role.task!==task||r.role.hours!==hours||oldSkills!==newSkills;
+  var commonCoreChanged=r.comp!==comp||r.period!==newPeriod||r.target!==target||r.hard!==hard;
   var coreChanged=roleCoreChanged||commonCoreChanged;
   var groupIds=group.map(function(g){return g.id});
   var confirming=state.relationships.filter(function(x){
@@ -1447,18 +1457,27 @@ function saveRecruit(){
     g.comp=comp;g.title=title;g.team=team;g.progress=progress;g.collab=collab;g.target=target;g.period=newPeriod;g.periodStart=start;g.periodEnd=end;g.deadline=newDeadline;g.deadlineAt=deadline;g.hard=hard;g.category=r.category;
   });
   r.role.capacity=cap;r.role.hours=hours;r.role.task=task;r.role.name=role;r.role.skills=skills;
-  if(coreChanged){
-    state.relationships.forEach(function(x){
-      var affected=(roleCoreChanged&&x.recruitId===r.id)||(commonCoreChanged&&groupIds.indexOf(x.recruitId)>=0);
-      if(affected&&(x.status==="pending"||x.status==="communication"))x.conditionUpdated=true;
-    });
-  }
+  state.relationships.forEach(function(x){
+    var rr=findRecruit(x.recruitId);
+    if(!rr||groupIds.indexOf(rr.id)<0||x.status==="ended")return;
+    x.role=rr.role.name;x.title=rr.comp+" · "+rr.role.name;
+    var affected=(roleCoreChanged&&x.recruitId===r.id)||(commonCoreChanged&&groupIds.indexOf(x.recruitId)>=0);
+    if(coreChanged&&affected&&(x.status==="pending"||x.status==="communication"))x.conditionUpdated=true;
+  });
   var publishingDraft=!!r.isDraft,publishingRole=!!r.isDraftRole,inheritPaused=!!r.inheritPaused;
   group.forEach(function(g){
     if(g.role.formal>=g.role.capacity){g.status="full";return}
     if(g.id===r.id&&publishingDraft){g.status="active";return}
     if(g.id===r.id&&publishingRole){g.status=inheritPaused?"paused":"active";return}
     if(g.status!=="paused")g.status="active";
+  });
+  group.forEach(function(g){
+    if(g.role.formal<g.role.capacity)return;
+    state.relationships.forEach(function(x){
+      if(x.recruitId===g.id&&x.status!=="joined"&&x.status!=="ended"){
+        releaseReservation(x);x.status="ended";x.reason="名额已满";x.expiresAt=null;
+      }
+    });
   });
   delete r.isDraft;delete r.isDraftRole;delete r.inheritPaused;
   toast(coreChanged?"招募已保存；相关候选人将看到条件更新提示":publishingDraft||publishingRole?"招募已保存并发布":"修改已保存");render();
@@ -1490,7 +1509,7 @@ function coreChange(){
   var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以修改核心条件");return}
   var confirming=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status==="confirming"})[0];
   if(confirming){toast("当前存在正式确认中关系，必须先结束或撤回确认");return}
-  modal('<h2>核心条件修改规则</h2><p class="subtitle">角色、任务、必需技能、最低投入、项目周期、参赛目标和硬性校区条件发生变化时，保存后会通知待处理 / 待沟通候选人。</p><div class="notice warn">已经形成的正式成员约定不会被招募编辑自动改写；需要在队伍内另行协商确认。</div><div class="modalFoot"><button class="btn primary" onclick="closeModal()">知道了</button></div>');
+  modal('<h2>核心条件修改规则</h2><p class="subtitle">目标竞赛、角色 / 人数、具体任务、必需技能、最低投入、项目周期、参赛目标和硬性校区条件发生变化时，保存后会通知待处理 / 待沟通候选人；正式确认中则必须先结束或撤回当前确认。</p><div class="notice warn">已经形成的正式成员约定不会被招募编辑自动改写；需要在队伍内另行协商确认。</div><div class="modalFoot"><button class="btn primary" onclick="closeModal()">知道了</button></div>');
 }
 
 /* AUTH */
