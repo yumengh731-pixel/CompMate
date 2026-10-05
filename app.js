@@ -618,8 +618,10 @@ function renderCandidate(p){
     '<aside class="panel sticky"><h3 class="sectionTitle">针对「'+e(r.role.name)+'」的判断</h3><div class="reasons" style="margin-top:12px"><b>匹配维度</b><br>'+fit.dims.join(" · ")+'</div>'+(!fit.timeOk?'<div class="notice warn" style="margin-top:10px">该同学当前可投入 '+fit.available+'h / 周，低于岗位要求 '+r.role.hours+'h / 周。</div>':'')+(!hard.ok?'<div class="notice warn" style="margin-top:10px">'+e(hard.reason)+'。资料仍可查看，但不能发起邀请。</div>':'')+'<div class="actions"><button class="btn secondary" onclick="candidateMore('+c.id+')">更多</button><button class="btn primary push" '+((hard.ok||existingInvite)?'':'disabled')+' onclick="'+(existingInvite?"state.progressView=\'relations\';go(\'progress\')":"inviteCandidate("+c.id+")")+'">'+(existingInvite?"查看邀请进度":hard.ok?"邀请沟通":"当前不可邀请")+'</button></div></aside></div>';
 }
 function activeInviteForCandidate(recruitId,candidateId){
+  var target=findRecruit(recruitId),gid=recruitGroupId(target);
   return state.relationships.filter(function(x){
-    return x.recruitId===recruitId&&x.candidateId===candidateId&&x.status!=="ended"&&!currentUserIsCandidate(x);
+    var rr=findRecruit(x.recruitId);
+    return rr&&recruitGroupId(rr)===gid&&x.candidateId===candidateId&&x.status!=="ended"&&!currentUserIsCandidate(x);
   })[0]||null;
 }
 function inviteCandidate(id){
@@ -881,9 +883,11 @@ function finishJoin(x,r,hours){
       }
     });
   }else if(x.candidateId){
+    var gid=recruitGroupId(r);
     state.relationships.forEach(function(other){
-      if(other.id!==x.id&&other.recruitId===r.id&&other.candidateId===x.candidateId&&other.status!=="joined"&&other.status!=="ended"){
-        releaseReservation(other);other.status="ended";other.reason="该候选人已通过另一关系正式入队";
+      var rr=findRecruit(other.recruitId);
+      if(other.id!==x.id&&rr&&recruitGroupId(rr)===gid&&other.candidateId===x.candidateId&&other.status!=="joined"&&other.status!=="ended"){
+        releaseReservation(other);other.status="ended";other.reason="该候选人已通过同一招募的另一角色关系正式入队";
       }
     });
   }
@@ -905,19 +909,26 @@ function progressTeam(){
   var selector=hasJoined?'<div class="teamViewSwitch"><button class="'+(state.teamView==="managed"?"active":"")+'" onclick="state.teamView=\'managed\';render()">我创建的队伍</button><button class="'+(state.teamView==="joined"?"active":"")+'" onclick="state.teamView=\'joined\';render()">我加入的队伍</button></div>':'';
   return selector+(hasJoined&&state.teamView==="joined"?renderJoinedTeam():renderManagedTeam());
 }
+function managedJoinedCandidates(){
+  var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],ids=managedGroup(base).map(function(g){return g.id});
+  return state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&ids.indexOf(x.recruitId)>=0&&x.status==="joined"&&x.candidateId}).map(function(x){
+    return {relation:x,candidate:candidates.filter(function(c){return c.id===x.candidateId})[0],recruit:findRecruit(x.recruitId)};
+  }).filter(function(x){return x.candidate&&x.recruit});
+}
 function managedAddedCandidate(){
-  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],joinedInvite=state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.recruitId===r.id&&x.status==="joined"})[0];
-  return joinedInvite&&joinedInvite.candidateId?candidates.filter(function(c){return c.id===joinedInvite.candidateId})[0]:null;
+  var items=managedJoinedCandidates();return items.length?items[0].candidate:null;
 }
 function managedOtherCount(){
-  var count=0;if(!state.dataMemberRemoved)count++;if(!state.memberRemoved)count++;if(managedAddedCandidate())count++;return count;
+  var count=0;if(!state.dataMemberRemoved)count++;if(!state.memberRemoved)count++;count+=managedJoinedCandidates().length;return count;
 }
 function renderManagedTeam(){
-  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],added=managedAddedCandidate();
+  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),addedItems=managedJoinedCandidates();
   if(state.teamDissolved)return '<div class="panel empty"><h3>队伍已解散</h3><p>未完成招募和请求已关闭，相关临时预留已释放。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
   if(!state.managedMemberActive)return '<div class="panel empty"><h3>你已退出该队伍</h3><p>队长权限已转交，退出后不再显示成员管理操作。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
   var gaps=[];
-  if(r.role.formal<r.role.capacity)gaps.push('<div class="roleBox"><div class="between"><b>'+e(r.role.name)+' · '+(r.role.capacity-r.role.formal)+' 人</b><span class="status warn">待招募</span></div><p class="subtitle">'+e(r.role.task)+'</p></div>');
+  group.forEach(function(g){
+    if(g.role.formal<g.role.capacity)gaps.push('<div class="roleBox"><div class="between"><b>'+e(g.role.name)+' · '+(g.role.capacity-g.role.formal)+' 人</b><span class="status warn">待招募</span></div><p class="subtitle">'+e(g.role.task)+'</p></div>');
+  });
   if(state.memberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>前端开发 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">历史申请不会自动重新生效，由当前队长决定是否重新开放招募。</p></div>');
   if(state.dataMemberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>数据分析 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">以角色 + 任务为单位恢复缺口，不拆成工时缺口。</p></div>');
   var members=1+managedOtherCount(),captainActions="";
@@ -932,7 +943,7 @@ function renderManagedTeam(){
       teamMember("你",state.managedCaptain?"队长 / 产品":"产品","当前阶段投入 "+state.managedStageHours+"h / 周",true,false)+
       (state.dataMemberRemoved?"":'<div class="request"><div><div class="requestTitle">林清禾 · '+(state.managedCaptainName==="林清禾"?"队长 / 数据分析":"数据分析")+'</div><div class="requestSub">当前阶段投入 10h / 周</div></div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'data\')">移除</button>':'')+'</div></div>')+
       (state.memberRemoved?"":'<div class="request"><div><div class="requestTitle">陈予安 · '+(state.managedCaptainName==="陈予安"?"队长 / 前端开发":"前端开发")+'</div><div class="requestSub">'+e(frontendSub)+'</div>'+(state.frontendCurrentHours<state.frontendAgreedHours?'<div class="notice warn" style="margin-top:8px">当前投入低于原约定 '+state.frontendAgreedHours+'h / 周，需要继续协商。</div>':'')+'</div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&state.frontendCurrentHours<state.frontendAgreedHours?'<button class="btn text" onclick="resolveMemberHours()">处理投入变化</button>':'')+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'front\')">移除</button>':'')+'</div></div>')+
-      (added?addedMemberRow(added,r):"")+
+      addedItems.map(function(item){return addedMemberRow(item.candidate,item.recruit)}).join("")+
     '</div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3>'+(state.managedCaptain?'<button class="btn primary" onclick="editManagedRecruit()">管理招募</button>':'')+'</div>'+(gaps.length?gaps.join(""):'<div class="notice good" style="margin-top:10px">当前角色已补齐。</div>')+'</div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">入群说明</h3>'+(state.managedCaptain?'<button class="btn secondary" onclick="editGroupNote()">编辑</button>':'')+'</div><p class="subtitle">'+e(state.groupNote)+'</p><div class="meta">仅正式成员可见；队长转交后由新队长继续维护。</div></div></div>';
@@ -949,20 +960,23 @@ function removeAddedCandidate(candidateId){
   modal('<h2>移除成员？</h2><p class="subtitle">'+e(c.name)+' · '+e(r.role.name)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveAddedCandidate('+candidateId+')">确认移除</button></div>');
 }
 function confirmRemoveAddedCandidate(candidateId){
-  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
-  var x=state.relationships.filter(function(a){return a.candidateId===candidateId&&a.recruitId===r.id&&a.status==="joined"})[0];
+  var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],ids=managedGroup(base).map(function(g){return g.id});
+  var x=state.relationships.filter(function(a){return a.candidateId===candidateId&&ids.indexOf(a.recruitId)>=0&&a.status==="joined"})[0];
+  var r=x?relationRecruit(x):null;
   if(x){x.status="ended";x.reason="已被队长移除";x.expiresAt=null}
-  r.role.formal=Math.max(0,r.role.formal-1);
-  if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="paused";
+  if(r){
+    r.role.formal=Math.max(0,r.role.formal-1);
+    if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="paused";
+  }
   closeModal();toast("成员已移除，角色名额已恢复；是否重新开放招募由队长决定");render();
 }
 
 function transferCaptain(){
   if(!state.managedCaptain){toast("只有当前队长可以转交队长身份");return}
-  var added=managedAddedCandidate(),opts="";
+  var addedItems=managedJoinedCandidates(),opts="";
   if(!state.dataMemberRemoved)opts+='<button class="rolePick" onclick="confirmTransferCaptain(\'林清禾\')"><div><b>林清禾</b><span>数据分析 · 正式成员</span></div><small>设为队长 →</small></button>';
   if(!state.memberRemoved)opts+='<button class="rolePick" onclick="confirmTransferCaptain(\'陈予安\')"><div><b>陈予安</b><span>前端开发 · 正式成员</span></div><small>设为队长 →</small></button>';
-  if(added)opts+='<button class="rolePick" onclick="confirmTransferCaptain(\''+e(added.name)+'\')"><div><b>'+e(added.name)+'</b><span>'+e(activeManagedRecruit().role.name)+' · 正式成员</span></div><small>设为队长 →</small></button>';
+  addedItems.forEach(function(item){opts+='<button class="rolePick" onclick="confirmTransferCaptain(\''+e(item.candidate.name)+'\')"><div><b>'+e(item.candidate.name)+'</b><span>'+e(item.recruit.role.name)+' · 正式成员</span></div><small>设为队长 →</small></button>'});
   modal('<h2>转交队长身份</h2><p class="subtitle">只能转交给当前正式成员。转交成功后，你立即按普通正式成员权限处理。</p>'+(opts?'<div class="rolePicker">'+opts+'</div>':'<div class="notice warn">当前没有其他正式成员，不能转交队长。你可以选择解散队伍。</div>')+'<div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button>'+(opts?'':'<button class="btn danger" onclick="closeModal();dissolveManagedTeam()">解散队伍</button>')+'</div>');
 }
 function confirmTransferCaptain(name){var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];state.managedCaptain=false;state.managedCaptainName=name;if(r)r.leader=name;closeModal();toast("队长身份已转交给 "+name+"；你的管理权限已立即更新");render()}
@@ -1202,9 +1216,14 @@ function saveRecruit(){
   if(unsafePublicText([comp,title,team,progress,role,task,skills.join(" "),target,collab].join(" "))){toast("公开文本中疑似包含联系方式或高风险引导，请修改后再发布");return}
   if(!title)title=comp+" · 招募"+role;
   var newPeriod=md(start)+" - "+md(end),newDeadline=mdhm(deadline),newSkills=skills.join("|"),oldSkills=r.role.skills.join("|");
-  var coreChanged=r.role.name!==role||r.role.task!==task||r.role.hours!==hours||r.period!==newPeriod||r.target!==target||oldSkills!==newSkills||r.hard!==hard;
-  var confirming=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status==="confirming"})[0];
-  if(coreChanged&&confirming){toast("该岗位存在正式确认中关系，请先结束或撤回当前确认");return}
+  var roleCoreChanged=r.role.name!==role||r.role.task!==task||r.role.hours!==hours||oldSkills!==newSkills;
+  var commonCoreChanged=r.period!==newPeriod||r.target!==target||r.hard!==hard;
+  var coreChanged=roleCoreChanged||commonCoreChanged;
+  var groupIds=managedGroup(r).map(function(g){return g.id});
+  var confirming=state.relationships.filter(function(x){
+    return x.status==="confirming"&&((roleCoreChanged&&x.recruitId===r.id)||(commonCoreChanged&&groupIds.indexOf(x.recruitId)>=0));
+  })[0];
+  if(coreChanged&&confirming){toast(commonCoreChanged?"同一招募中存在正式确认中关系，请先结束或撤回确认":"该岗位存在正式确认中关系，请先结束或撤回当前确认");return}
   managedGroup(r).forEach(function(g){
     g.comp=comp;g.title=title;g.team=team;g.progress=progress;g.collab=collab;g.target=target;g.period=newPeriod;g.deadline=newDeadline;g.hard=hard;g.category=r.category;
   });
