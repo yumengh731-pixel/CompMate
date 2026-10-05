@@ -358,9 +358,9 @@ function relationButtonLabel(x){
   return {pending:"查看申请进度",communication:"查看沟通进度",confirming:"查看确认进度",joined:"已正式组队"}[x.status]||"查看进度";
 }
 function renderDetail(p){
-  var r=findRecruit(state.selectedRecruit)||recruits[0],ro=r.role,st=status(r.status),free=roleFree(r),existing=activeCandidateRelationForRecruit(r.id);
-  var canApply=r.status==="active"&&free>0&&remaining()>=0&&!existing;
-  var actionLabel=existing?relationButtonLabel(existing):(r.status==="paused"?"暂停接收申请":free<=0?(ro.formal>=ro.capacity?"已招满":"名额确认中"):remaining()<0?"当前时间不可申请":"申请加入");
+  var r=findRecruit(state.selectedRecruit)||recruits[0],ro=r.role,st=status(r.status),free=roleFree(r),existing=activeCandidateRelationForRecruit(r.id),hard=userMeetsRecruitHardRules(r);
+  var canApply=r.status==="active"&&free>0&&remaining()>=0&&!existing&&hard.ok;
+  var actionLabel=existing?relationButtonLabel(existing):(r.status==="paused"?"暂停接收申请":free<=0?(ro.formal>=ro.capacity?"已招满":"名额确认中"):remaining()<0?"当前时间不可申请":!hard.ok?hard.reason:"申请加入");
   var actionClick=existing?"go('progress')":"applyRecruit("+r.id+")";
   p.innerHTML='<button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">← 返回寻找 · 找队伍</button><div class="layout"><div class="panel">'+
     '<div class="between"><div><div class="meta">'+e(r.comp)+' · '+e(r.school)+' '+e(r.campus)+'</div><div class="bigTitle">'+e(r.title)+'</div></div><span class="status '+st[1]+'">'+st[0]+'</span></div>'+
@@ -371,7 +371,8 @@ function renderDetail(p){
     '<aside class="panel sticky"><h3 class="sectionTitle">与你的匹配情况</h3><div class="reasons" style="margin-top:12px"><b>推荐理由</b><br>'+r.reasons.join(" · ")+'</div><div class="stats"><div class="stat"><b>'+Math.max(0,remaining())+'h</b><span>当前可投入</span></div><div class="stat"><b>'+ro.hours+'h</b><span>岗位最低投入</span></div><div class="stat"><b>'+free+'</b><span>可用名额</span></div></div>'+
     (ro.hours>remaining()?'<div class="notice warn" style="margin-top:12px">当前时间低于最低要求：可以先沟通，但正式组队前必须满足最新要求。</div>':'<div class="notice good" style="margin-top:12px">当前时间条件满足。申请仍只代表沟通意向。</div>')+
     (r.status==="paused"?'<div class="notice warn" style="margin-top:10px">队长已暂停接收新的加入申请；已有关系仍可继续。</div>':'')+
-    '<div class="actions"><button class="btn secondary" onclick="shareRecruit('+r.id+')">分享招募</button><button class="btn primary push" '+((canApply||existing)?'':'disabled')+' onclick="'+actionClick+'">'+actionLabel+'</button></div></aside></div>';
+    (!hard.ok&&!existing?'<div class="notice warn" style="margin-top:10px">'+e(hard.reason)+'。你仍可查看详情，但不能提交申请。</div>':'')+
+    '<div class="actions"><button class="btn text" onclick="reportRecruit('+r.id+')">举报 / 反馈</button><button class="btn secondary" onclick="shareRecruit('+r.id+')">分享招募</button><button class="btn primary push" '+((canApply||existing)?'':'disabled')+' onclick="'+actionClick+'">'+actionLabel+'</button></div></aside></div>';
 }
 function applyRecruit(id){
   var r=findRecruit(id);
@@ -379,14 +380,17 @@ function applyRecruit(id){
   var existing=activeCandidateRelationForRecruit(id);
   if(existing){state.progressView="relations";go("progress");return}
   if(r.status!=="active"){toast("该招募当前不接收新的申请");return}
+  if(deadlinePassed(r)){toast("该招募已过截止时间，不能新增申请");return}
   if(roleFree(r)<=0){toast(r.role.formal>=r.role.capacity?"角色已正式招满":"名额正在被其他候选人确认");return}
-  if(remaining()<0){toast("当前可投入时间不足，暂不能发起新的申请");return}
+  var hard=userMeetsRecruitHardRules(r);if(!hard.ok){toast(hard.reason);return}
+  if(remaining()<0){toast("当前承诺时间已超出声明总时间，请先调整");return}
   if(!state.loggedIn||!state.verified){
     state.selectedRecruit=id;state.pendingApplyRecruitId=id;state.authReturn="apply";go("auth");return;
   }
   if(!state.profileComplete){
     state.selectedRecruit=id;state.profileReturn="apply";go("profileEdit");toast("请先完成最小个人档案");return;
   }
+  if(!hasUserContact()){state.selectedRecruit=id;state.profileReturn="apply";go("profileEdit");toast("发起申请前请至少填写并授权一种联系方式");return}
   var short=remaining()<r.role.hours;
   modal('<h2>提交加入申请</h2><p class="subtitle">申请只代表愿意进一步沟通，不会直接加入队伍或占用正式名额。</p>'+
     (short?'<div class="notice warn">当前剩余 '+Math.max(0,remaining())+'h / 周，低于岗位 '+r.role.hours+'h / 周。可以申请沟通，但正式组队前必须满足最新时间要求。</div>':'<div class="notice good">当前剩余 '+remaining()+'h / 周，岗位要求 '+r.role.hours+'h / 周，时间条件满足。</div>')+
@@ -396,7 +400,7 @@ function submitApplication(id){
   var r=findRecruit(id);
   if(!r)return;
   if(activeCandidateRelationForRecruit(id)){closeModal();toast("该招募已有进行中的关系");state.progressView="relations";go("progress");return}
-  state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:r.leader,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0});
+  state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:r.leader,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"team_contact",expiresAt:Date.now()+7*24*60*60*1000});
   state.pendingApplyRecruitId=null;
   closeModal();toast("申请已提交，等待队长处理");state.progressView="relations";go("progress");
 }
@@ -406,6 +410,7 @@ function shareRecruit(id){
   var r=findRecruit(id);if(!r)return;
   modal('<h2>外部分享卡</h2><div class="panel" style="padding:15px;background:#f8f9fb"><div class="meta">'+e(r.comp)+'</div><div class="title">'+e(r.title)+'</div><p class="subtitle">'+e(r.role.task)+'</p><div class="badges"><span class="badge blue">'+e(r.role.name)+'</span><span class="badge">'+r.role.hours+'h / 周</span><span class="badge">'+e(r.target)+'</span></div><div class="meta">私人联系方式不会出现在分享内容中。</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal();toast(\'已复制结构化招募文本\')">复制文本</button><button class="btn secondary" onclick="demoExpiredShare()">演示失效链接</button><button class="btn primary" onclick="closeModal();demoShare('+id+')">模拟外部打开</button></div>');
 }
+function copyShareLink(id){closeModal();toast("分享链接已复制；私人联系方式不会包含在链接内容中")}
 function demoShare(id){
   state.loggedIn=false;state.verified=false;if(id)state.selectedRecruit=id;state.pendingApplyRecruitId=null;state.route="detail";render();
   modal('<h2>外部分享访问</h2><p class="subtitle">当前模拟从微信群打开分享链接的未登录访客。访客可以先查看完整公开招募，点击申请时再登录 / 学校认证。</p><div class="modalFoot"><button class="btn primary" onclick="closeModal()">查看招募</button></div>');
@@ -426,12 +431,12 @@ function continuePendingApply(){
 function openCandidate(id){state.selectedCandidate=id;state.route="candidate";render();window.scrollTo(0,0)}
 function renderCandidate(p){
   var c=candidates.filter(function(x){return x.id===state.selectedCandidate})[0]||candidates[0];
-  var r=activeManagedRecruit(),fit=candidateFit(c,r);
+  var r=activeManagedRecruit(),fit=candidateFit(c,r),hard=candidateMeetsHardRules(c,r),existingInvite=activeInviteForCandidate(r.id,c.id);
   p.innerHTML='<button class="btn text" onclick="state.mode=\'people\';go(\'explore\')">← 返回寻找 · 找队友</button><div class="layout"><div class="panel"><div class="profileHero"><div class="avatar">'+e(c.name.charAt(0))+'</div><div><div class="bigTitle" style="margin:0">'+e(c.name)+'</div><div class="meta">广东工业大学 · '+e(c.campus)+' · '+e(c.grade)+' · '+e(c.major)+'</div></div><span class="verifiedTag">学校已认证</span></div>'+
     '<div class="section"><h3 class="sectionTitle">可承担任务与技能</h3><div class="badges">'+c.roles.map(function(x){return '<span class="badge blue">'+e(x)+'</span>'}).join("")+badges(c.skills)+'</div></div>'+
     '<div class="section"><h3 class="sectionTitle">相关经历与具体产出</h3><div class="roleBox"><b>'+e(c.exp.split(" · ")[0])+'</b><p class="subtitle">'+e(c.exp.split(" · ").slice(1).join(" · "))+'</p></div></div>'+
     '<div class="section"><h3 class="sectionTitle">时间与目标</h3><div class="kv" style="margin-top:12px"><div class="k">当前可投入</div><div>'+c.hours+'h / 周</div><div class="k">参赛目标</div><div>'+e(c.target)+'</div><div class="k">联系方式</div><div>未解锁 · 双方同意沟通后按次展示</div></div></div></div>'+
-    '<aside class="panel sticky"><h3 class="sectionTitle">针对「'+e(r.role.name)+'」的判断</h3><div class="reasons" style="margin-top:12px"><b>匹配维度</b><br>'+fit.dims.join(" · ")+'</div>'+(!fit.timeOk?'<div class="notice warn" style="margin-top:10px">该同学当前可投入 '+c.hours+'h / 周，低于岗位要求 '+r.role.hours+'h / 周。</div>':'')+'<div class="actions"><button class="btn secondary" onclick="candidateMore('+c.id+')">更多</button><button class="btn primary push" onclick="inviteCandidate('+c.id+')">邀请沟通</button></div></aside></div>';
+    '<aside class="panel sticky"><h3 class="sectionTitle">针对「'+e(r.role.name)+'」的判断</h3><div class="reasons" style="margin-top:12px"><b>匹配维度</b><br>'+fit.dims.join(" · ")+'</div>'+(!fit.timeOk?'<div class="notice warn" style="margin-top:10px">该同学当前可投入 '+c.hours+'h / 周，低于岗位要求 '+r.role.hours+'h / 周。</div>':'')+(!hard.ok?'<div class="notice warn" style="margin-top:10px">'+e(hard.reason)+'。资料仍可查看，但不能发起邀请。</div>':'')+'<div class="actions"><button class="btn secondary" onclick="candidateMore('+c.id+')">更多</button><button class="btn primary push" '+((hard.ok&&!existingInvite)?'':'disabled')+' onclick="inviteCandidate('+c.id+')">'+(existingInvite?"查看邀请进度":hard.ok?"邀请沟通":"当前不可邀请")+'</button></div></aside></div>';
 }
 function activeInviteForCandidate(recruitId,candidateId){
   return state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.recruitId===recruitId&&x.candidateId===candidateId&&x.status!=="ended"})[0]||null;
@@ -440,7 +445,11 @@ function inviteCandidate(id){
   var c=candidates.filter(function(x){return x.id===id})[0],r=activeManagedRecruit();
   if(!c||!r)return;
   if(activeInviteForCandidate(r.id,c.id)){toast("该候选人在此招募下已有进行中的邀请");state.progressView="relations";go("progress");return}
-  if(r.status==="full"||r.status==="ended"){toast("该招募当前不能继续邀请");return}
+  if(!state.loggedIn||!state.verified){state.authReturn="invite";state.selectedCandidate=id;go("auth");return}
+  if(!state.profileComplete){state.profileReturn="invite";state.selectedCandidate=id;go("profileEdit");toast("请先完成最小个人档案");return}
+  if(!hasUserContact()){state.profileReturn="invite";state.selectedCandidate=id;go("profileEdit");toast("发送邀请前请至少填写并授权一种联系方式");return}
+  if(r.status==="full"||r.status==="ended"||deadlinePassed(r)){toast("该招募当前不能继续邀请");return}
+  var hard=candidateMeetsHardRules(c,r);if(!hard.ok){toast(hard.reason);return}
   var fit=candidateFit(c,r);
   modal('<h2>邀请 '+e(c.name)+' 沟通</h2><p class="subtitle">本次邀请绑定「'+e(r.comp)+' · '+e(r.role.name)+'」，不会直接占用名额。</p><div class="kv"><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">最低投入</div><div>'+r.role.hours+'h / 周</div><div class="k">候选人时间</div><div>'+c.hours+'h / 周</div></div>'+(!fit.timeOk?'<div class="notice warn" style="margin-top:10px">时间低于当前岗位要求，建议先沟通是否能调整。</div>':'')+'<div class="field" style="margin-top:12px"><label>邀请说明</label><textarea class="textarea">你的经历与当前任务比较匹配，希望进一步聊聊具体分工和时间安排。</textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="sendInvitation('+c.id+','+r.id+')">发送邀请</button></div>');
 }
@@ -448,7 +457,7 @@ function sendInvitation(candidateId,recruitId){
   var c=candidates.filter(function(x){return x.id===candidateId})[0],r=findRecruit(recruitId);
   if(!c||!r)return;
   if(activeInviteForCandidate(recruitId,candidateId)){closeModal();toast("已有进行中的邀请");return}
-  state.relationships.unshift({id:Date.now(),type:"invitation",direction:"outgoing",recruitId:r.id,candidateId:c.id,title:r.comp+" · "+r.role.name,party:c.name,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0});
+  state.relationships.unshift({id:Date.now(),type:"invitation",direction:"outgoing",recruitId:r.id,candidateId:c.id,title:r.comp+" · "+r.role.name,party:c.name,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:c.contact,expiresAt:Date.now()+7*24*60*60*1000});
   closeModal();toast("邀请已发送，可在组队 / 进度查看");state.progressView="relations";go("progress");
 }
 function candidateMore(id){
