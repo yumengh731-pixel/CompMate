@@ -36,7 +36,7 @@ var recruits=[
   {id:1,category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"10/18 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
   {id:2,category:"market",comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学",campus:"大学城校区",leader:"许辰",status:"active",target:"完整参赛并争取省赛",period:"10/10 - 12/10",deadline:"10/20 20:00",team:"现有 4 人",progress:"正在设计正式问卷",collab:"线上协作为主，每周一次集中同步。",hard:false,reasons:["有访谈经验","目标一致"],role:{name:"市场调研",capacity:1,formal:0,reserved:1,hours:6,task:"访谈提纲、用户访谈、问卷设计与洞察整理",skills:["用户访谈","问卷设计","报告写作"]}},
   {id:3,category:"innovation",comp:"互联网+",title:"寻找前端开发同学",school:"广东工业大学",campus:"龙洞校区",leader:"陈屿",status:"paused",target:"冲校赛金奖",period:"10/01 - 11/25",deadline:"10/22 18:00",team:"现有 3 人",progress:"产品方向已确定",collab:"每两天线上同步开发进度。",hard:true,reasons:["技能高度匹配"],role:{name:"前端开发",capacity:2,formal:1,reserved:0,hours:10,task:"实现产品 Demo、核心交互和路演展示页面",skills:["JavaScript","React","HTML/CSS"]}},
-  {id:4,category:"math",comp:"数学建模竞赛",title:"建模队补一名编程队友",school:"广东工业大学",campus:"龙洞校区",leader:"林深",status:"full",target:"稳定完赛",period:"11/01 - 12/01",deadline:"10/12 22:00",team:"现有 3 人",progress:"已完成组队",collab:"赛前每周训练，比赛期间集中协作。",hard:false,reasons:["跨专业互补"],role:{name:"编程 / 建模",capacity:1,formal:1,reserved:0,hours:12,task:"Python 求解、模型验证、结果整理",skills:["Python","数学建模"]}},
+  {id:4,category:"math",comp:"数学建模竞赛",title:"建模队补一名编程队友",school:"广东工业大学",campus:"龙洞校区",leader:"林深",status:"full",target:"稳定完赛",period:"11/01 - 12/01",deadline:"10/12 22:00",team:"现有 3 人",progress:"已完成组队",collab:"赛前每周训练，比赛期间集中协作。",hard:false,reasons:["跨专业互补"],role:{name:"编程 / 建模",capacity:1,formal:1,reserved:0,hours:14,task:"Python 求解、模型验证、结果整理",skills:["Python","数学建模"]}},
   {id:5,category:"market",comp:"行业经济分析大赛",title:"招募商业分析与报告撰写队友",school:"广东工业大学",campus:"龙洞校区",leader:"叶知",status:"active",target:"冲校奖",period:"10/08 - 11/30",deadline:"10/24 21:00",team:"现有 2 人",progress:"已完成资料框架",collab:"线上协作为主，周末集中讨论。",hard:false,reasons:["商业分析经历相关","同校区"],role:{name:"商业分析",capacity:2,formal:0,reserved:0,hours:6,task:"行业资料检索、分析框架搭建、核心结论与报告撰写",skills:["Excel","商业分析","报告写作"]}}
 ];
 
@@ -46,10 +46,10 @@ var managedRecruitments=[
 ];
 
 var candidates=[
-  {id:11,name:"林清禾",campus:"大学城校区",grade:"大二",major:"数据科学与大数据技术",roles:["数据分析","数学建模"],skills:["Python","SPSS","数据可视化"],hours:10,target:"冲省奖",exp:"正大杯校赛二等奖 · 负责数据清洗、统计检验和结果可视化"},
-  {id:12,name:"陈予安",campus:"大学城校区",grade:"大二",major:"计算机科学与技术",roles:["前端开发","数据处理"],skills:["React","JavaScript","Python"],hours:8,target:"完整参赛",exp:"互联网+校赛项目 · 负责前端页面与数据接口"},
-  {id:13,name:"周言",campus:"龙洞校区",grade:"大二",major:"工商管理",roles:["商业分析","用户调研"],skills:["访谈","Excel","报告写作"],hours:6,target:"冲奖",exp:"行业经济分析大赛 · 负责访谈、资料分析与报告"},
-  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS"],hours:5,target:"积累经验",exp:"社团招新视觉 · 负责海报与展示物料设计"}
+  {id:11,name:"林清禾",campus:"大学城校区",grade:"大二",major:"数据科学与大数据技术",roles:["数据分析","数学建模"],skills:["Python","SPSS","数据可视化"],hours:10,target:"冲省奖",proof:true,exp:"正大杯校赛二等奖 · 负责数据清洗、统计检验和结果可视化"},
+  {id:12,name:"陈予安",campus:"大学城校区",grade:"大二",major:"计算机科学与技术",roles:["前端开发","数据处理"],skills:["React","JavaScript","Python"],hours:8,target:"完整参赛",proof:true,exp:"互联网+校赛项目 · 负责前端页面与数据接口"},
+  {id:13,name:"周言",campus:"龙洞校区",grade:"大二",major:"工商管理",roles:["商业分析","用户调研"],skills:["访谈","Excel","报告写作"],hours:6,target:"冲奖",proof:true,exp:"行业经济分析大赛 · 负责访谈、资料分析与报告"},
+  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS"],hours:5,target:"积累经验",proof:false,exp:"社团招新视觉 · 负责海报与展示物料设计"}
 ];
 
 function e(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
@@ -129,7 +129,7 @@ function renderHome(p){
     '<article class="todoBoard" onclick="go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>下一步</h3></div><b>处理 '+pending+' 条新邀请 / 申请</b><p>在沟通前先确认任务、时间和目标。</p><em>进入组队 / 进度 →</em></article>';
 
   p.innerHTML=
-    '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT Alpha · 双向选择 · 隐私联系方式</div></section>'+
+    '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 隐私联系方式</div></section>'+
     '<section class="homeWorkbench">'+
       '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、当前可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
       '<div class="smartRecommendList">'+recommended.map(smartRecommendRow).join("")+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
@@ -250,7 +250,7 @@ function filteredCandidates(q){
     if(q&&JSON.stringify(c).toLowerCase().indexOf(q)<0)return false;
     var fit=candidateFit(c,r);
     if(state.peopleFilters.time&&!fit.timeOk)return false;
-    if(state.peopleFilters.output&&!c.exp)return false;
+    if(state.peopleFilters.output&&!c.proof)return false;
     if(state.peopleFilters.campus&&!fit.campusOk)return false;
     if(state.peopleFilters.target&&!fit.targetOk)return false;
     if(state.peopleFilters.capability&&!candidateCapability(c,state.peopleFilters.capability))return false;
@@ -562,7 +562,7 @@ function renderManagedTeam(){
       (added?teamMember(added.name,r.role.name,"已通过正式确认加入",false,false):"")+
     '</div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3><button class="btn primary" onclick="beginPublish()">管理招募</button></div>'+(gaps.length?gaps.join(""):'<div class="notice good" style="margin-top:10px">当前角色已补齐。</div>')+'</div>'+
-    '<div class="section"><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：请联系队长加入微信项目群。Alpha 使用文本说明，不上传群二维码。</p></div></div>';
+    '<div class="section"><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：请联系队长加入微信项目群。当前仅使用文本入群说明，不上传群二维码。</p></div></div>';
 }
 function renderJoinedTeam(){
   var r=findRecruit(state.joinedRecruitId)||recruits[0];
@@ -701,7 +701,7 @@ function coreChange(){
 /* AUTH */
 function renderAuth(p){
   var action=state.authReturn==="publish"?"发布招募":state.authReturn==="apply"?"继续申请":"继续使用";
-  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">学校身份认证</h2><p class="subtitle">认证只验证“属于该学校”，不代表能力水平。</p><div class="formGrid"><div class="field"><label>学校</label><input class="input" value="广东工业大学"></div><div class="field"><label>校区</label><select class="select"><option>龙洞校区</option><option>大学城校区</option></select></div><div class="field full"><label>认证方式（Alpha 示例）</label><select class="select"><option>校园邮箱验证码</option><option>运营白名单 / 人工核验</option></select></div><div class="field full"><label>校园邮箱</label><input class="input" value="demo@gdut.edu.cn"></div></div><div class="actions end"><button class="btn secondary" onclick="interruptAuth()">暂不认证</button><button class="btn primary" onclick="completeAuth()">完成认证并'+action+'</button></div></div><aside class="panel sticky"><div class="notice">产品逻辑只依赖“已认证 / 未认证”结果；具体认证方案可按工作室资源选择低成本实现。</div></aside></div>';
+  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">学校身份认证</h2><p class="subtitle">认证只验证“属于该学校”，不代表能力水平。</p><div class="formGrid"><div class="field"><label>学校</label><input class="input" value="广东工业大学"></div><div class="field"><label>校区</label><select class="select"><option>龙洞校区</option><option>大学城校区</option></select></div><div class="field full"><label>认证方式</label><select class="select"><option>校园邮箱验证码</option><option>运营白名单 / 人工核验</option></select></div><div class="field full"><label>校园邮箱</label><input class="input" value="demo@gdut.edu.cn"></div></div><div class="actions end"><button class="btn secondary" onclick="interruptAuth()">暂不认证</button><button class="btn primary" onclick="completeAuth()">完成认证并'+action+'</button></div></div><aside class="panel sticky"><div class="notice">产品逻辑只依赖“已认证 / 未认证”结果；具体认证方案可按工作室资源选择低成本实现。</div></aside></div>';
 }
 function interruptAuth(){
   if(state.authReturn==="apply"&&state.selectedRecruit)state.pendingApplyRecruitId=state.selectedRecruit;
