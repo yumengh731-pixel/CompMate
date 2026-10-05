@@ -547,13 +547,13 @@ function progressTeam(){
   return selector+(hasJoined&&state.teamView==="joined"?renderJoinedTeam():renderManagedTeam());
 }
 function renderManagedTeam(){
-  var r=managedRecruitments[0],joinedInvite=state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.recruitId===r.id&&x.status==="joined"})[0];
+  var r=activeManagedRecruit(),joinedInvite=state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.recruitId===r.id&&x.status==="joined"})[0];
   var added=joinedInvite&&joinedInvite.candidateId?candidates.filter(function(c){return c.id===joinedInvite.candidateId})[0]:null;
   var gaps=[];
   if(r.role.formal<r.role.capacity)gaps.push('<div class="roleBox"><div class="between"><b>'+e(r.role.name)+' · '+(r.role.capacity-r.role.formal)+' 人</b><span class="status warn">待招募</span></div><p class="subtitle">'+e(r.role.task)+'</p></div>');
   if(state.memberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>前端开发 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">历史申请不会自动重新生效，由队长决定是否重新开放招募。</p></div>');
   var members=3+(added?1:0)-(state.memberRemoved?1:0);
-  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">CompMate 项目队</div><div class="subtitle">队长视角：管理正式成员、角色投入与剩余缺口。</div></div><span class="status green">进行中</span></div>'+
+  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">队长视角：管理正式成员、角色投入与剩余缺口。</div></div><span class="status green">进行中</span></div>'+
     '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.managedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
       teamMember("你","队长 / 产品","负责需求、产品方案与整体推进",true,false)+
@@ -598,12 +598,12 @@ function simulateTeam(){
   state.progressView="team";render();
 }
 function editHours(){
-  var joinedView=state.teamView==="joined",r=joinedView?(findRecruit(state.joinedRecruitId)||recruits[0]):managedRecruitments[0];
+  var joinedView=state.teamView==="joined",r=joinedView?(findRecruit(state.joinedRecruitId)||recruits[0]):activeManagedRecruit();
   var current=joinedView?state.joinedStageHours:state.managedStageHours;
   modal('<h2>更新当前阶段投入</h2><p class="subtitle">实际投入变化会立即影响后续匹配；低于原约定时会提示继续协商。</p><div class="field"><label>当前阶段预计投入（h / 周）</label><input class="input" id="stageHours" type="number" min="0" value="'+current+'"></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveStageHours()">保存</button></div>');
 }
 function saveStageHours(){
-  var joinedView=state.teamView==="joined",r=joinedView?(findRecruit(state.joinedRecruitId)||recruits[0]):managedRecruitments[0];
+  var joinedView=state.teamView==="joined",r=joinedView?(findRecruit(state.joinedRecruitId)||recruits[0]):activeManagedRecruit();
   var old=joinedView?state.joinedStageHours:state.managedStageHours;
   var v=Math.max(0,Number(byId("stageHours").value)||0),delta=v-old;
   if(joinedView)state.joinedStageHours=v;else state.managedStageHours=v;
@@ -654,32 +654,33 @@ function beginPublish(){
   go("publish");
 }
 function renderPublish(p){
-  var r=managedRecruitments[0],statusLabel=state.ownStatus==="active"?"招募中":state.ownStatus==="paused"?"暂停接收":"已结束";
-  p.innerHTML='<div class="layout"><div class="panel"><div class="between"><div><h2 class="sectionTitle">结构化招募</h2><p class="subtitle">把“缺技术 / 缺商科”转化为角色、任务、人数、技能、时间和目标。</p></div><span class="status '+(state.ownStatus==="active"?"green":"warn")+'">'+statusLabel+'</span></div>'+
+  var r=activeManagedRecruit(),statusLabel=r.status==="active"?"招募中":r.status==="paused"?"暂停接收":"已结束";
+  p.innerHTML='<div class="layout"><div class="panel"><div class="between"><div><h2 class="sectionTitle">结构化招募</h2><p class="subtitle">把“缺技术 / 缺商科”转化为角色、任务、人数、技能、时间和目标。</p></div><span class="status '+(r.status==="active"?"green":"warn")+'">'+statusLabel+'</span></div>'+
     '<div class="formGrid"><div class="field"><label>目标竞赛 <span class="req">*</span></label><input class="input" id="pubComp" value="'+e(r.comp)+'"><div class="help">未收录赛事可直接填写临时名称；相似名称聚合作为 P1。</div></div><div class="field"><label>学校 / 校区</label><input class="input" value="'+e(r.school)+' / '+e(r.campus)+'"></div>'+
     '<div class="field"><label>缺口角色 <span class="req">*</span></label><input class="input" id="pubRole" value="'+e(r.role.name)+'"></div><div class="field"><label>招募人数 <span class="req">*</span></label><input class="input" id="pubCap" type="number" min="1" value="'+r.role.capacity+'"></div>'+
     '<div class="field full"><label>具体任务 <span class="req">*</span></label><textarea class="textarea" id="pubTask">'+e(r.role.task)+'</textarea></div><div class="field"><label>必需技能 <span class="req">*</span></label><input class="input" id="pubSkills" value="'+e(r.role.skills.join("、"))+'"></div><div class="field"><label>最低每周投入 <span class="req">*</span></label><input class="input" id="pubHours" type="number" min="1" value="'+r.role.hours+'"></div>'+
     '<div class="field"><label>项目周期 <span class="req">*</span></label><input class="input" value="'+e(r.period)+'"></div><div class="field"><label>招募截止时间 <span class="req">*</span></label><input class="input" value="'+e(r.deadline)+'"></div><div class="field"><label>参赛目标 <span class="req">*</span></label><input class="input" value="'+e(r.target)+'"></div><div class="field"><label>学校 / 校区是否硬条件</label><select class="select"><option>否，可跨校区沟通</option><option>是，不满足不可申请</option></select></div></div>'+
     '<div class="actions"><button class="btn secondary" onclick="previewRecruit()">预览</button><button class="btn primary push" onclick="saveRecruit()">保存并发布</button></div></div>'+
-    '<aside class="panel sticky"><h3 class="sectionTitle">招募生命周期</h3><div class="list" style="margin-top:12px"><button class="btn secondary" onclick="pauseRecruit()">'+(state.ownStatus==="paused"?"恢复接收申请":"暂停接收新申请")+'</button><button class="btn secondary" onclick="coreChange()">演示核心条件变更</button><button class="btn danger" onclick="endRecruit()">结束本轮招募</button></div><div class="section"><div class="notice">暂停仅停止新的加入申请；截止前队长仍可主动邀请。结束招募则收口尚未正式组队的关系。</div></div><div class="section"><div class="meta">已有正式成员 / 有效临时预留时，角色人数不能调低到当前已占用资源以下。</div></div></aside></div>';
+    '<aside class="panel sticky"><h3 class="sectionTitle">招募生命周期</h3><div class="list" style="margin-top:12px"><button class="btn secondary" onclick="pauseRecruit()">'+(r.status==="paused"?"恢复接收申请":"暂停接收新申请")+'</button><button class="btn secondary" onclick="coreChange()">演示核心条件变更</button><button class="btn danger" onclick="endRecruit()">结束本轮招募</button></div><div class="section"><div class="notice">暂停仅停止新的加入申请；截止前队长仍可主动邀请。结束招募则收口尚未正式组队的关系。</div></div><div class="section"><div class="meta">已有正式成员 / 有效临时预留时，角色人数不能调低到当前已占用资源以下。</div></div></aside></div>';
 }
 function previewRecruit(){
   modal('<h2>招募预览</h2><div class="roleBox"><b>'+e(byId("pubRole").value)+' · '+e(byId("pubCap").value)+' 人</b><p class="subtitle">'+e(byId("pubTask").value)+'</p><div class="badges"><span class="badge">'+e(byId("pubSkills").value)+'</span><span class="badge blue">'+e(byId("pubHours").value)+'h / 周</span></div></div><div class="modalFoot"><button class="btn primary" onclick="closeModal()">返回编辑</button></div>');
 }
 function saveRecruit(){
-  var r=managedRecruitments[0],cap=Number(byId("pubCap").value),h=Number(byId("pubHours").value),task=byId("pubTask").value.trim(),occupied=r.role.formal+r.role.reserved;
+  var r=activeManagedRecruit(),cap=Number(byId("pubCap").value),h=Number(byId("pubHours").value),task=byId("pubTask").value.trim(),occupied=r.role.formal+r.role.reserved;
   if(cap<1||h<1||!task){toast("请检查人数、时间和任务字段");return}
   if(cap<occupied){toast("招募人数不能低于正式成员 + 有效预留");return}
   r.role.capacity=cap;r.role.hours=h;r.role.task=task;r.role.name=byId("pubRole").value.trim()||r.role.name;r.role.skills=byId("pubSkills").value.split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean);
-  state.ownStatus="active";r.status="active";toast("招募已保存并发布");render();
+  r.status="active";toast("招募已保存并发布");render();
 }
 function pauseRecruit(){
-  var r=managedRecruitments[0];
-  if(state.ownStatus==="ended"){toast("主动结束的本轮招募不直接恢复，请新建或复制");return}
-  state.ownStatus=state.ownStatus==="paused"?"active":"paused";r.status=state.ownStatus;toast(state.ownStatus==="paused"?"已暂停新的加入申请；仍可主动邀请":"已恢复接收申请");render();
+  var r=activeManagedRecruit();
+  if(r.status==="ended"){toast("主动结束的本轮招募不直接恢复，请新建或复制");return}
+  r.status=r.status==="paused"?"active":"paused";
+  toast(r.status==="paused"?"已暂停新的加入申请；仍可主动邀请":"已恢复接收申请");render();
 }
 function endRecruit(){
-  var r=managedRecruitments[0];
+  var r=activeManagedRecruit();
   state.relationships.forEach(function(x){
     if(x.recruitId===r.id&&x.status!=="joined"&&x.status!=="ended"){
       releaseReservation(x);
@@ -687,11 +688,11 @@ function endRecruit(){
       x.reason="队长已结束本轮招募";
     }
   });
-  state.ownStatus="ended";r.status="ended";
+  r.status="ended";
   toast("本轮招募已结束，未组队关系已收口；正式成员不受影响");render();
 }
 function coreChange(){
-  var r=managedRecruitments[0];
+  var r=activeManagedRecruit();
   var confirming=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status==="confirming"})[0];
   if(confirming){toast("该岗位存在正式确认中关系，请先结束或撤回确认");return}
   modal('<h2>修改核心条件</h2><p class="subtitle">任务、最低投入、项目周期、参赛目标等变化，需要通知待沟通候选人。</p><div class="notice warn">保存后，相关候选人会看到“招募条件已更新”。已经形成的正式成员约定不会被自动改写。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast(\'条件已更新并通知相关候选人\')">确认修改</button></div>');
