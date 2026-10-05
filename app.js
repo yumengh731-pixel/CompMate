@@ -161,11 +161,12 @@ function renderExplore(p){
     (isTeams?renderTeamSearch():renderPeopleSearch(r));
 }
 function renderTeamSearch(){
+  var list=filteredTeams("");
   return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div><div class="filterChips">'+
     filterButton("team","campus","同校 / 同校区",state.teamFilters.campus)+filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
     '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("team","innovation","创新创业")+categoryButton("team","market","市场调研")+categoryButton("team","tech","科技科研")+categoryButton("team","math","数学建模")+'</div>'+
     '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+recruits.length+' 条结果</span></div><span>任务、时间和风险分开呈现</span></div>'+
-    '<div id="hallList" class="teamResultList">'+recruits.map(teamResultRow).join("")+'</div>';
+    '<div id="hallList" class="teamResultList">'+list.map(teamResultRow).join("")+'</div>';
 }
 function renderPeopleSearch(r){
   var list=filteredCandidates("");
@@ -294,7 +295,7 @@ function personResultRow(c){
 
 /* RECRUITMENT DETAIL / APPLY */
 function openRecruit(id){state.selectedRecruit=id;state.route="detail";render();window.scrollTo(0,0)}
-function activeApplicationForRecruit(id){
+function activeCandidateRelationForRecruit(id){
   return state.relationships.filter(function(x){
     return x.recruitId===id&&x.status!=="ended"&&currentUserIsCandidate(x);
   })[0]||null;
@@ -304,7 +305,7 @@ function relationButtonLabel(x){
   return {pending:"查看申请进度",communication:"查看沟通进度",confirming:"查看确认进度",joined:"已正式组队"}[x.status]||"查看进度";
 }
 function renderDetail(p){
-  var r=findRecruit(state.selectedRecruit)||recruits[0],ro=r.role,st=status(r.status),free=roleFree(r),existing=activeApplicationForRecruit(r.id);
+  var r=findRecruit(state.selectedRecruit)||recruits[0],ro=r.role,st=status(r.status),free=roleFree(r),existing=activeCandidateRelationForRecruit(r.id);
   var canApply=r.status==="active"&&free>0&&remaining()>=0&&!existing;
   var actionLabel=existing?relationButtonLabel(existing):(r.status==="paused"?"暂停接收申请":free<=0?(ro.formal>=ro.capacity?"已招满":"名额确认中"):remaining()<0?"当前时间不可申请":"申请加入");
   var actionClick=existing?"go('progress')":"applyRecruit("+r.id+")";
@@ -322,7 +323,7 @@ function renderDetail(p){
 function applyRecruit(id){
   var r=findRecruit(id);
   if(!r)return;
-  var existing=activeApplicationForRecruit(id);
+  var existing=activeCandidateRelationForRecruit(id);
   if(existing){state.progressView="relations";go("progress");return}
   if(r.status!=="active"){toast("该招募当前不接收新的申请");return}
   if(roleFree(r)<=0){toast(r.role.formal>=r.role.capacity?"角色已正式招满":"名额正在被其他候选人确认");return}
@@ -341,7 +342,7 @@ function applyRecruit(id){
 function submitApplication(id){
   var r=findRecruit(id);
   if(!r)return;
-  if(activeApplicationForRecruit(id)){closeModal();toast("该招募已有进行中的关系");state.progressView="relations";go("progress");return}
+  if(activeCandidateRelationForRecruit(id)){closeModal();toast("该招募已有进行中的关系");state.progressView="relations";go("progress");return}
   state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:r.leader,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0});
   state.pendingApplyRecruitId=null;
   closeModal();toast("申请已提交，等待队长处理");state.progressView="relations";go("progress");
@@ -535,6 +536,13 @@ function finishJoin(x,r,hours){
     state.teamView="managed";
   }
   x.status="joined";x.initiator=null;x.time="刚刚 · 正式组队成功";
+  if(asCandidate){
+    state.relationships.forEach(function(other){
+      if(other.id!==x.id&&other.recruitId===r.id&&other.status!=="joined"&&other.status!=="ended"&&currentUserIsCandidate(other)){
+        releaseReservation(other);other.status="ended";other.reason="已通过另一关系正式组队";
+      }
+    });
+  }
   if(r.role.formal>=r.role.capacity)r.status="full";
   toast("正式组队成功");state.progressView="team";render();
 }
@@ -588,13 +596,21 @@ function removeMemberDemo(){
 }
 function confirmRemoveMember(){state.memberRemoved=true;closeModal();toast("成员已移除，前端开发角色恢复为空缺");render()}
 function simulateTeam(){
-  var r=recruits[0];
+  if(state.joined){state.teamView="joined";state.progressView="team";render();return}
+  var r=recruits[0],existing=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status!=="ended"&&currentUserIsCandidate(x)})[0];
   state.joined=true;state.joinedRecruitId=r.id;state.teamView="joined";state.joinedStageHours=r.role.hours;state.committed+=r.role.hours;
   if(r.role.formal<r.role.capacity)r.role.formal=r.role.capacity;
   r.status="full";
-  if(!state.relationships.some(function(x){return x.status==="joined"&&x.recruitId===r.id})){
+  if(existing){
+    releaseReservation(existing);existing.status="joined";existing.initiator=null;existing.time="演示数据 · 正式组队";
+  }else{
     state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:"星火队",role:r.role.name,status:"joined",time:"演示数据",contact:true,initiator:null,reserved:false,reservedHours:0});
   }
+  state.relationships.forEach(function(other){
+    if(existing&&other.id!==existing.id&&other.recruitId===r.id&&other.status!=="joined"&&other.status!=="ended"&&currentUserIsCandidate(other)){
+      releaseReservation(other);other.status="ended";other.reason="已通过另一关系正式组队";
+    }
+  });
   state.progressView="team";render();
 }
 function editHours(){
