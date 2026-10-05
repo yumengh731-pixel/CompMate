@@ -913,7 +913,7 @@ function renderJoinedTeam(){
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3><span class="status warn">视觉设计 · 1 人</span></div><p class="subtitle">是否重新开放招募由队长决定，历史申请不会自动恢复。</p></div>'+
     '<div class="section"><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：请联系队长顾闻加入微信项目群。</p></div>'+
-    '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="toast(\'基础举报已记录\')">举报问题</button></div></div>';
+    '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="openReport(\'team\',1,\'星火队\')">举报问题</button></div></div>';
 }
 function teamMember(name,role,sub,self,removable){
   return '<div class="request"><div><div class="requestTitle">'+e(name)+' · '+e(role)+'</div><div class="requestSub">'+e(sub)+'</div></div><div class="requestActions">'+(self?'<span class="status green">本人</span>':'<span class="status">正式成员</span>')+(removable?'<button class="btn text" onclick="removeMemberDemo()">移除</button>':'')+'</div></div>';
@@ -923,24 +923,6 @@ function removeMemberDemo(){
   modal('<h2>移除成员？</h2><p class="subtitle">移除后对应角色恢复为空缺；历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveMember()">确认移除</button></div>');
 }
 function confirmRemoveMember(){state.memberRemoved=true;closeModal();toast("成员已移除，前端开发角色恢复为空缺");render()}
-function simulateTeam(){
-  if(state.joined){state.teamView="joined";state.progressView="team";render();return}
-  var r=recruits[0],existing=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status!=="ended"&&currentUserIsCandidate(x)})[0];
-  state.joined=true;state.joinedRecruitId=r.id;state.teamView="joined";state.joinedStageHours=r.role.hours;state.committed+=r.role.hours;
-  if(r.role.formal<r.role.capacity)r.role.formal=r.role.capacity;
-  r.status="full";
-  if(existing){
-    releaseReservation(existing);existing.status="joined";existing.initiator=null;existing.time="刚刚 · 正式组队";
-  }else{
-    state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:"星火队",role:r.role.name,status:"joined",time:"演示数据",contact:true,initiator:null,reserved:false,reservedHours:0});
-  }
-  state.relationships.forEach(function(other){
-    if(existing&&other.id!==existing.id&&other.recruitId===r.id&&other.status!=="joined"&&other.status!=="ended"&&currentUserIsCandidate(other)){
-      releaseReservation(other);other.status="ended";other.reason="已通过另一关系正式组队";
-    }
-  });
-  state.progressView="team";render();
-}
 function editHours(){
   var joinedView=state.teamView==="joined",r=joinedView?(findRecruit(state.joinedRecruitId)||recruits[0]):(findRecruit(state.managedTeamRecruitId)||managedRecruitments[0]);
   var current=joinedView?state.joinedStageHours:state.managedStageHours;
@@ -1142,7 +1124,9 @@ function renderAuth(p){
 function authHelp(){modal('<h2>认证未完成</h2><p class="subtitle">可以重试校园邮箱验证码，或改用当前试点允许的运营 / 人工核验方式。已填写内容和待恢复申请不会被清空。</p><div class="modalFoot"><button class="btn primary" onclick="closeModal()">返回重试</button></div>')}
 function interruptAuth(){
   if(state.authReturn==="apply"&&state.selectedRecruit)state.pendingApplyRecruitId=state.selectedRecruit;
-  state.authReturn="";go("home");toast("认证已中断，可从首页继续此前申请");
+  state.authReturn="";
+  if(!state.loggedIn&&state.selectedRecruit){state.route="detail";render();toast("认证已中断；申请意图已保留，之后可继续");return}
+  go("home");toast("认证已中断；申请意图已保留");
 }
 function completeAuth(){
   state.loggedIn=true;state.verified=true;
@@ -1187,7 +1171,6 @@ window.captainStartConfirm=captainStartConfirm;
 window.rejectConfirm=rejectConfirm;
 window.leaderFinalizeCandidateConfirm=leaderFinalizeCandidateConfirm;
 window.candidateAcceptCaptainConfirm=candidateAcceptCaptainConfirm;
-window.simulateTeam=simulateTeam;
 window.editHours=editHours;
 window.saveStageHours=saveStageHours;
 window.removeMemberDemo=removeMemberDemo;
