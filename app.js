@@ -142,7 +142,7 @@ function formatExpiry(x){
   return h>24?"剩余 "+Math.ceil(h/24)+" 天":"剩余约 "+h+" 小时";
 }
 function normalizeCompetitionName(v){return String(v||"").trim().replace(/\s+/g," ").replace(/[＋+]/g,"+")}
-function unsafePublicText(v){return /(微信|vx|wechat|qq|手机号|1[3-9]\d{9}|加我|私聊付款|转账|代刷)/i.test(String(v||""))}
+function unsafePublicText(v){return /(微信号\s*[:：]?\s*[A-Za-z0-9_-]{4,}|(?:vx|wechat)\s*[:：]?\s*[A-Za-z0-9_-]{4,}|qq\s*[:：]?\s*\d{5,}|手机号\s*[:：]?\s*1[3-9]\d{9}|1[3-9]\d{9}|加我(?:微信|QQ)|私聊付款|先转账|代刷)/i.test(String(v||""))}
 function registerContactUnlock(){
   var now=Date.now(),windowMs=10*60*1000;
   state.contactUnlockEvents=state.contactUnlockEvents.filter(function(t){return now-t<windowMs});
@@ -173,6 +173,10 @@ function mNav(r,label){
   return '<button class="mNav '+(on?"active":"")+'" onclick="go(\''+r+'\')"><b>'+navIcon(r)+'</b><span>'+label+'</span></button>';
 }
 function shell(){
+  if(!state.loggedIn){
+    byId("app").innerHTML='<div class="publicShell"><header class="publicHeader"><div class="brand"><div class="brandMark">C</div><div><div class="brandName">竞旅 CompMate</div><div class="brandSub">大学生竞赛组队平台</div></div></div><span>公开招募预览</span></header><main class="publicMain"><div id="page"></div></main></div>';
+    return;
+  }
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   byId("app").innerHTML=
     '<div class="shell"><aside class="sidebar">'+
@@ -187,9 +191,8 @@ function demoBar(){
   return '<details class="demoGuide"><summary>演示指引</summary><div><span>建议路径：寻找 → 招募详情 → 申请 / 沟通 → 正式确认 → 组队</span><button onclick="go(\'explore\')">从“寻找”开始</button></div></details>';
 }
 function go(r){
-  state.route=r;
-  render();
-  window.scrollTo(0,0);
+  if(!state.loggedIn&&r!=="detail"&&r!=="auth"){state.authReturn="browse";state.route="auth";render();window.scrollTo(0,0);return}
+  state.route=r;render();window.scrollTo(0,0);
 }
 function render(){
   state.relationships.forEach(refreshRelationExpiry);
@@ -245,6 +248,10 @@ function reminderRow(date,comp,label,sub,tone){
 function renderExplore(p){
   var isTeams=state.mode!=="people";
   var r=activeManagedRecruit();
+  if(!isTeams&&!canManageRecruit(r)){
+    var owned=managedRecruitments.filter(function(x){return x.status!=="ended"&&canManageRecruit(x)})[0];
+    if(owned){state.activeRoleRecruitId=owned.id;r=owned}
+  }
   p.innerHTML=
     '<section class="exploreHeader"><div><span class="pageKicker">EXPLORE</span><h2>寻找</h2><p>主动搜索与筛选是主路径；推荐只帮助你更快缩小范围。</p></div></section>'+
     '<div class="exploreSwitch"><button class="'+(isTeams?"active":"")+'" onclick="state.mode=\'teams\';render()"><b>找队伍</b><span>我要加入一支队伍</span></button><button class="'+(!isTeams?"active":"")+'" onclick="state.mode=\'people\';render()"><b>找队友</b><span>我的队伍还缺人</span></button></div>'+
@@ -259,6 +266,7 @@ function renderTeamSearch(){
     '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽非核心筛选；招募有效性、拉黑和硬条件仍会保留。"))+'</div>';
 }
 function renderPeopleSearch(r){
+  if(!r||!canManageRecruit(r))return '<div class="panel empty"><h3>当前没有可管理的招募缺口</h3><p>只有当前队长可以筛选候选人和处理邀请。你仍可发布一条新的招募。</p><button class="btn primary" onclick="beginPublish()">发布招募</button></div>';
   var list=filteredCandidates("");
   return '<section class="roleContext"><div class="roleContextMain"><span>当前招募岗位</span><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><small>'+e(r.role.task)+' · 最低 '+r.role.hours+'h / 周</small></div><div class="roleRequirement"><span>必需技能</span><b>'+e(r.role.skills.join(" · "))+'</b></div><button class="btn secondary" onclick="openRolePicker()">切换岗位</button></section>'+
     '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div><div class="filterChips">'+
@@ -585,13 +593,15 @@ function requestCard(x){
     else act='<button class="btn secondary" onclick="cancelReq('+x.id+')">取消申请</button>';
     note='<div class="relationMeta">请求有效期：'+e(formatExpiry(x))+'</div>';
   }
-  if(x.status==="communication"){
+  if(!asCandidate&&r&&!canManageRecruit(r)&&x.status!=="joined"&&x.status!=="ended"){
+    act='<span class="status">已无队长权限</span>';note='<div class="notice warn" style="margin-top:8px">该队伍的队长身份已经转交，你不能继续处理候选人或正式确认。</div>';
+  }else if(x.status==="communication"){
     if(asCandidate)act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button><button class="btn primary" onclick="candidateStartConfirm('+x.id+')">发起正式确认</button><button class="btn text" onclick="captainStartConfirm('+x.id+')">查看队长发起流程</button>';
     else act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button><button class="btn primary" onclick="captainStartConfirm('+x.id+')">发起正式确认</button>';
     note='<div class="contactReveal"><b>本次已授权联系方式</b><span>我的微信：'+e(state.userContact||"未授权")+'</span><span>对方：'+e(x.partyContact||"已授权联系方式")+'</span><small>中止沟通后平台停止后续授权，但无法收回已被保存的站外联系方式。</small></div>';
     if(x.conditionUpdated)note+='<div class="notice warn" style="margin-top:8px">该招募条件已更新，请重新查看最新任务、时间与目标。</div>';
   }
-  if(x.status==="confirming"){
+  if((asCandidate||!r||canManageRecruit(r))&&x.status==="confirming"){
     if(x.initiator==="captain"){
       if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">暂不加入</button><button class="btn primary" onclick="openCandidateAcceptCaptainConfirm('+x.id+')">确认加入</button>';
       else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回确认</button><button class="btn primary" onclick="openCandidateAcceptCaptainConfirm('+x.id+')">查看候选人确认</button>';
