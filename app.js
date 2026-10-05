@@ -1493,6 +1493,7 @@ function pauseRecruit(){
   var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以暂停或恢复招募");return}
   if(!recruitIsPublished(r)){toast("草稿尚未发布，暂不需要暂停 / 恢复操作");return}
   var group=managedGroup(r);
+  if(group.some(function(g){return g.isDraft||g.isDraftRole})){toast("同一招募还有未发布的角色草稿，请先保存草稿再调整招募状态");return}
   if(group.some(function(g){return g.status==="ended"})){toast("主动结束的本轮招募不能直接恢复，请新建或复制招募");return}
   if(deadlinePassed(r)){toast("招募已过截止时间，需先设置新的截止时间后才能重新开放");return}
   var live=group.filter(function(g){return g.role.formal<g.role.capacity});
@@ -1505,7 +1506,9 @@ function pauseRecruit(){
 function endRecruit(){
   var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以结束招募");return}
   if(!recruitIsPublished(r)){toast("草稿尚未发布；如不继续编辑，直接离开即可");return}
-  var ids=managedGroup(r).map(function(g){return g.id});
+  var endGroup=managedGroup(r);
+  if(endGroup.some(function(g){return g.isDraft||g.isDraftRole})){toast("同一招募还有未发布的角色草稿，请先保存草稿再结束本轮招募");return}
+  var ids=endGroup.map(function(g){return g.id});
   state.relationships.forEach(function(x){
     if(ids.indexOf(x.recruitId)>=0&&x.status!=="joined"&&x.status!=="ended"){
       releaseReservation(x);x.status="ended";x.reason="队长已结束本轮招募";x.expiresAt=null;
