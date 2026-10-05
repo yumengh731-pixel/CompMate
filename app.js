@@ -26,6 +26,7 @@ var state={
   memberRemoved:false,
   managedCaptain:true,
   managedCaptainName:"你",
+  managedMemberActive:true,
   frontendAgreedHours:8,
   frontendCurrentHours:6,
   userCampus:"龙洞校区",
@@ -570,6 +571,23 @@ function relationCandidateAvailable(x){
   var c=relationCandidate(x);
   return c?c.hours:0;
 }
+function formalEligibility(x,r){
+  if(!x||!r)return {ok:false,reason:"关系或招募不存在"};
+  if(r.status==="ended")return {ok:false,reason:"招募已结束"};
+  if(currentUserIsCandidate(x)){
+    if(state.blockedRecruitIds[r.id])return {ok:false,reason:"双方存在拉黑关系"};
+    if(r.hard&&r.campus!==state.userCampus)return {ok:false,reason:"最新校区硬条件不满足"};
+    var miss=(r.role.skills||[]).filter(function(k){return state.profileSkills.indexOf(k)<0});
+    if(miss.length)return {ok:false,reason:"最新必需技能条件不满足："+miss.join("、")};
+  }else{
+    var c=relationCandidate(x);if(!c)return {ok:false,reason:"候选人资料不存在"};
+    if(state.blocked[c.id])return {ok:false,reason:"双方存在拉黑关系"};
+    if(r.hard&&c.campus!==r.campus)return {ok:false,reason:"最新校区硬条件不满足"};
+    var pool=c.skills.concat(c.roles),missing=(r.role.skills||[]).filter(function(k){return pool.indexOf(k)<0});
+    if(missing.length)return {ok:false,reason:"候选人不满足最新必需技能："+missing.join("、")};
+  }
+  return {ok:true,reason:""};
+}
 function releaseReservation(x){
   if(!x||!x.reserved)return;
   var r=relationRecruit(x);
@@ -614,7 +632,7 @@ function openLeaderFinalizeCandidateConfirm(id){
 function leaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(x.status!=="confirming"||x.initiator!=="candidate"){toast("当前不是候选人发起的确认");return}
-  if(r.status==="ended"){x.status="ended";x.reason="招募已结束";toast("最终校验失败：招募已结束");render();return}
+  var eligible=formalEligibility(x,r);if(!eligible.ok){x.status="communication";x.initiator=null;x.expiresAt=null;toast("最终校验失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){x.status="ended";x.reason="角色已正式招满";toast("最终校验失败：角色已正式招满");render();return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("名额正在与其他候选人确认中，请稍后重试");return}
   if(relationCandidateAvailable(x)<r.role.hours){toast("最终校验失败：候选人当前可投入时间不足");return}
@@ -627,7 +645,7 @@ function openCandidateAcceptCaptainConfirm(id){
 function candidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("该临时预留已失效");return}
-  if(r.status==="ended"){releaseReservation(x);x.status="ended";x.reason="招募已结束";toast("确认失败：招募已结束");render();return}
+  var eligible=formalEligibility(x,r);if(!eligible.ok){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){releaseReservation(x);x.status="ended";x.reason="角色已正式招满";toast("确认失败：角色已正式招满");render();return}
   var available=currentUserIsCandidate(x)?remaining()+(x.reservedOnCurrentUser?(x.reservedHours||0):0):relationCandidateAvailable(x);
   if(available<r.role.hours){releaseReservation(x);x.status="communication";x.initiator=null;toast("确认失败：最新可投入时间不足，已释放预留");render();return}
@@ -672,23 +690,47 @@ function progressTeam(){
   return selector+(hasJoined&&state.teamView==="joined"?renderJoinedTeam():renderManagedTeam());
 }
 function renderManagedTeam(){
-  var r=activeManagedRecruit(),joinedInvite=state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.recruitId===r.id&&x.status==="joined"})[0];
+  var r=activeManagedRecruit();
+  if(!state.managedMemberActive){
+    return '<div class="panel empty"><h3>你已退出该队伍</h3><p>队长权限已转交，退出后不再显示成员管理操作。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
+  }
+  var joinedInvite=state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.recruitId===r.id&&x.status==="joined"})[0];
   var added=joinedInvite&&joinedInvite.candidateId?candidates.filter(function(c){return c.id===joinedInvite.candidateId})[0]:null;
   var gaps=[];
   if(r.role.formal<r.role.capacity)gaps.push('<div class="roleBox"><div class="between"><b>'+e(r.role.name)+' · '+(r.role.capacity-r.role.formal)+' 人</b><span class="status warn">待招募</span></div><p class="subtitle">'+e(r.role.task)+'</p></div>');
-  if(state.memberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>前端开发 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">历史申请不会自动重新生效，由队长决定是否重新开放招募。</p></div>');
+  if(state.memberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>前端开发 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">历史申请不会自动重新生效，由当前队长决定是否重新开放招募。</p></div>');
   var members=3+(added?1:0)-(state.memberRemoved?1:0);
-  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">队长视角：管理正式成员、角色投入与剩余缺口。</div></div><span class="status green">进行中</span></div>'+
+  var captainActions=state.managedCaptain?'<button class="btn secondary" onclick="transferCaptain()">转交队长</button><button class="btn primary" onclick="beginPublish()">管理招募</button>':'<button class="btn danger" onclick="leaveManagedTeam()">退出队伍</button>';
+  var frontendSub=state.memberRemoved?"":"当前阶段投入 "+state.frontendCurrentHours+"h / 周 · 约定 "+state.frontendAgreedHours+"h / 周";
+  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">当前队长：'+e(state.managedCaptainName)+'。'+(state.managedCaptain?"你拥有招募、成员和队长转交权限。":"你当前按普通正式成员权限使用。")+'</div></div><span class="status green">进行中</span></div>'+
+    '<div class="actions">'+captainActions+'</div>'+
     '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.managedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
-      teamMember("你","队长 / 产品","负责需求、产品方案与整体推进",true,false)+
-      teamMember("林清禾","数据分析","当前阶段投入 10h / 周",false,false)+
-      (state.memberRemoved?"":teamMember("陈予安","前端开发","当前阶段投入 8h / 周",false,true))+
-      (added?teamMember(added.name,r.role.name,"已通过正式确认加入",false,false):"")+
+      teamMember("你",state.managedCaptain?"队长 / 产品":"产品","当前阶段投入 "+state.managedStageHours+"h / 周",true,false)+
+      teamMember("林清禾",state.managedCaptainName==="林清禾"?"队长 / 数据分析":"数据分析","当前阶段投入 10h / 周",false,false)+
+      (state.memberRemoved?"":'<div class="request"><div><div class="requestTitle">陈予安 · '+(state.managedCaptainName==="陈予安"?"队长 / 前端开发":"前端开发")+'</div><div class="requestSub">'+e(frontendSub)+'</div>'+(state.frontendCurrentHours<state.frontendAgreedHours?'<div class="notice warn" style="margin-top:8px">当前投入低于原约定 '+state.frontendAgreedHours+'h / 周，需要继续协商。</div>':'')+'</div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&state.frontendCurrentHours<state.frontendAgreedHours?'<button class="btn text" onclick="resolveMemberHours()">处理投入变化</button>':'')+(state.managedCaptain?'<button class="btn text" onclick="removeMemberDemo()">移除</button>':'')+'</div></div>')+
+      (added?teamMember(added.name,state.managedCaptainName===added.name?"队长 / "+r.role.name:r.role.name,"已通过正式确认加入",false,false):"")+
     '</div></div>'+
-    '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3><button class="btn primary" onclick="beginPublish()">管理招募</button></div>'+(gaps.length?gaps.join(""):'<div class="notice good" style="margin-top:10px">当前角色已补齐。</div>')+'</div>'+
-    '<div class="section"><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：请联系队长加入微信项目群。当前仅使用文本入群说明，不上传群二维码。</p></div></div>';
+    '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3>'+(state.managedCaptain?'<button class="btn primary" onclick="beginPublish()">管理招募</button>':'')+'</div>'+(gaps.length?gaps.join(""):'<div class="notice good" style="margin-top:10px">当前角色已补齐。</div>')+'</div>'+
+    '<div class="section"><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：请联系当前队长 '+e(state.managedCaptainName)+' 加入微信项目群。当前仅使用文本入群说明，不上传群二维码。</p></div></div>';
 }
+function transferCaptain(){
+  if(!state.managedCaptain){toast("只有当前队长可以转交队长身份");return}
+  var opts='<button class="rolePick" onclick="confirmTransferCaptain(\'林清禾\')"><div><b>林清禾</b><span>数据分析 · 正式成员</span></div><small>设为队长 →</small></button>'+
+    (state.memberRemoved?'':'<button class="rolePick" onclick="confirmTransferCaptain(\'陈予安\')"><div><b>陈予安</b><span>前端开发 · 正式成员</span></div><small>设为队长 →</small></button>');
+  modal('<h2>转交队长身份</h2><p class="subtitle">只能转交给当前正式成员。转交成功后，你立即按普通正式成员权限处理。</p><div class="rolePicker">'+opts+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button></div>');
+}
+function confirmTransferCaptain(name){state.managedCaptain=false;state.managedCaptainName=name;closeModal();toast("队长身份已转交给 "+name);render()}
+function leaveManagedTeam(){
+  if(state.managedCaptain){toast("队长退出前必须先转交队长身份");return}
+  modal('<h2>退出该队伍？</h2><p class="subtitle">退出后你的角色恢复为空缺，相关正式投入不再计入你的剩余时间。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmLeaveManagedTeam()">确认退出</button></div>');
+}
+function confirmLeaveManagedTeam(){state.managedMemberActive=false;state.committed=Math.max(0,state.committed-state.managedStageHours);state.managedStageHours=0;closeModal();toast("已退出队伍；角色空缺由当前队长决定是否重新开放");render()}
+function resolveMemberHours(){
+  if(!state.managedCaptain){toast("只有当前队长可以处理成员投入变化");return}
+  modal('<h2>处理成员投入变化</h2><p class="subtitle">陈予安当前阶段预计投入 '+state.frontendCurrentHours+'h / 周，低于原约定 '+state.frontendAgreedHours+'h / 周。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">继续协商</button><button class="btn secondary" onclick="acceptFrontendAgreement()">接受新约定</button><button class="btn danger" onclick="closeModal();removeMemberDemo()">移除并恢复缺口</button></div>');
+}
+function acceptFrontendAgreement(){state.frontendAgreedHours=state.frontendCurrentHours;closeModal();toast("已接受新的阶段约定投入");render()}
 function renderJoinedTeam(){
   var r=findRecruit(state.joinedRecruitId)||recruits[0];
   return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我加入的队伍</div><div class="bigTitle">星火队</div><div class="subtitle">成员视角：查看角色任务、阶段投入、队伍缺口与退出操作。</div></div><span class="status green">已组队</span></div>'+
@@ -709,6 +751,7 @@ function teamMember(name,role,sub,self,removable){
   return '<div class="request"><div><div class="requestTitle">'+e(name)+' · '+e(role)+'</div><div class="requestSub">'+e(sub)+'</div></div><div class="requestActions">'+(self?'<span class="status green">本人</span>':'<span class="status">正式成员</span>')+(removable?'<button class="btn text" onclick="removeMemberDemo()">移除</button>':'')+'</div></div>';
 }
 function removeMemberDemo(){
+  if(!state.managedCaptain){toast("只有当前队长可以移除其他成员");return}
   modal('<h2>移除成员？</h2><p class="subtitle">移除后对应角色恢复为空缺；历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveMember()">确认移除</button></div>');
 }
 function confirmRemoveMember(){state.memberRemoved=true;closeModal();toast("成员已移除，前端开发角色恢复为空缺");render()}
@@ -749,10 +792,10 @@ function leaveTeam(){
 function confirmLeave(){
   var x=state.relationships.filter(function(a){return a.status==="joined"&&(state.joinedRecruitId==null||a.recruitId===state.joinedRecruitId)})[0],r=x?relationRecruit(x):findRecruit(state.joinedRecruitId);
   var h=state.joinedStageHours;
-  if(r){r.role.formal=Math.max(0,r.role.formal-1);if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="active"}
+  if(r){r.role.formal=Math.max(0,r.role.formal-1);if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="paused"}
   state.committed=Math.max(0,state.committed-h);state.joined=false;state.joinedRecruitId=null;state.joinedStageHours=0;state.teamView="managed";
   if(x){x.status="ended";x.reason="你已退出队伍"}
-  closeModal();toast("已退出，名额和时间已释放");render();
+  closeModal();toast("已退出，角色名额已恢复；是否重新开放招募由队长决定");render();
 }
 
 /* PROFILE */
@@ -895,8 +938,9 @@ function coreChange(){
 /* AUTH */
 function renderAuth(p){
   var action=state.authReturn==="publish"?"发布招募":state.authReturn==="apply"?"继续申请":state.authReturn==="invite"?"继续邀请":"继续使用";
-  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">学校身份认证</h2><p class="subtitle">认证只验证“属于该学校”，不代表能力水平。</p><div class="formGrid"><div class="field"><label>学校</label><input class="input" value="广东工业大学"></div><div class="field"><label>校区</label><select class="select"><option>龙洞校区</option><option>大学城校区</option></select></div><div class="field full"><label>认证方式</label><select class="select"><option>校园邮箱验证码</option><option>运营白名单 / 人工核验</option></select></div><div class="field full"><label>校园邮箱</label><input class="input" value="demo@gdut.edu.cn"></div></div><div class="actions end"><button class="btn secondary" onclick="interruptAuth()">暂不认证</button><button class="btn primary" onclick="completeAuth()">完成认证并'+action+'</button></div></div><aside class="panel sticky"><div class="notice">产品逻辑只依赖“已认证 / 未认证”结果；具体认证方案可按工作室资源选择低成本实现。</div></aside></div>';
+  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">学校身份认证</h2><p class="subtitle">认证只验证“属于该学校”，不代表能力水平。</p><div class="formGrid"><div class="field full"><label>账号 / 登录信息</label><input class="input" id="loginAccount" value="demo_user@gdut.edu.cn"><div class="help">未登录用户从分享链接申请时，先完成登录，再进行学校身份认证。</div></div><div class="field"><label>学校</label><input class="input" value="广东工业大学"></div><div class="field"><label>校区</label><select class="select"><option>龙洞校区</option><option>大学城校区</option></select></div><div class="field full"><label>认证方式</label><select class="select"><option>校园邮箱验证码</option><option>运营白名单 / 人工核验</option></select></div><div class="field full"><label>校园邮箱</label><input class="input" value="demo@gdut.edu.cn"></div></div><div class="actions end"><button class="btn text" onclick="authHelp()">认证遇到问题</button><button class="btn secondary" onclick="interruptAuth()">暂不认证</button><button class="btn primary" onclick="completeAuth()">完成认证并'+action+'</button></div></div><aside class="panel sticky"><div class="notice">产品逻辑只依赖“已认证 / 未认证”结果；具体认证方案可按工作室资源选择低成本实现。</div></aside></div>';
 }
+function authHelp(){modal('<h2>认证未完成</h2><p class="subtitle">可以重试校园邮箱验证码，或改用当前试点允许的运营 / 人工核验方式。已填写内容和待恢复申请不会被清空。</p><div class="modalFoot"><button class="btn primary" onclick="closeModal()">返回重试</button></div>')}
 function interruptAuth(){
   if(state.authReturn==="apply"&&state.selectedRecruit)state.pendingApplyRecruitId=state.selectedRecruit;
   state.authReturn="";go("home");toast("认证已中断，可从首页继续此前申请");
