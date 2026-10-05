@@ -1079,3 +1079,86 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 .rolePick span{display:block;font-size:10px;color:var(--muted);margin-top:4px;line-height:1.45}
 .rolePick small{font-size:9px;color:#707782;text-align:right}
 .categoryRibbon button.active{background:#17191f;color:#fff;border-color:#17191f}
+
+/* ===== V11 PRD-consistency details ===== */
+.homeCoreEntry{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:10px;
+  margin-bottom:14px;
+}
+.homeCoreEntry button{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:14px;
+  padding:12px 14px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:3px 10px;
+  text-align:left;
+  align-items:center;
+}
+.homeCoreEntry button:hover{border-color:#cfd5dd;box-shadow:0 5px 16px rgba(0,0,0,.04)}
+.homeCoreEntry span{font-size:13px;font-weight:800}
+.homeCoreEntry small{font-size:9px;color:var(--muted)}
+.homeCoreEntry em{grid-row:1/3;grid-column:2;font-style:normal;color:#8f97a3}
+.requestTask{
+  margin-top:6px;
+  font-size:10px;
+  color:#59616c;
+  line-height:1.5;
+}
+.relationMeta{
+  margin-top:7px;
+  font-size:9px;
+  color:#858c96;
+}
+.contactReveal{
+  display:grid;
+  gap:4px;
+  margin-top:8px;
+  padding:10px 11px;
+  border:1px solid #dce9e2;
+  background:#f6fbf8;
+  border-radius:10px;
+}
+.contactReveal b{font-size:9px}
+.contactReveal span{font-size:9px;color:#335f4d}
+.contactReveal small{font-size:8px;color:#78817c;line-height:1.4}
+.publicShell{
+  min-height:100vh;
+  background:var(--bg);
+}
+.publicHeader{
+  position:sticky;
+  top:0;
+  z-index:20;
+  min-height:68px;
+  padding:12px max(18px,calc((100vw - 1100px)/2));
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:16px;
+  background:rgba(255,255,255,.94);
+  border-bottom:1px solid var(--line);
+  backdrop-filter:blur(12px);
+}
+.publicHeader>span{font-size:10px;color:var(--muted)}
+.publicMain{
+  max-width:1100px;
+  margin:0 auto;
+  padding:22px 18px 42px;
+}
+.filterChips button.on,
+.categoryRibbon button.active{
+  background:#17191f;
+  color:#fff;
+  border-color:#17191f;
+}
+.requestActions .status{white-space:nowrap}
+@media(max-width:520px){
+  .homeCoreEntry{grid-template-columns:1fr}
+  .publicHeader{padding:10px 14px}
+  .publicMain{padding:14px 12px 32px}
+  .contactReveal{padding:9px}
+}
