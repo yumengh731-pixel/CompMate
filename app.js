@@ -51,7 +51,7 @@ var state={
   relationships:[
     {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
     {id:202,type:"invitation",direction:"incoming",recruitId:2,title:"正大杯 · 市场调研岗",party:"许辰",role:"市场调研",status:"pending",time:"2 小时前",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"xuchen_demo",expiresAt:Date.now()+6*24*60*60*1000},
-    {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:13,title:"挑战杯 · 视觉设计岗",party:"周言",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"zhou_demo",expiresAt:Date.now()+7*24*60*60*1000},
+    {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:14,title:"挑战杯 · 视觉设计岗",party:"宋禾",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"song_demo",expiresAt:Date.now()+7*24*60*60*1000},
     {id:203,type:"application",direction:"outgoing",recruitId:3,title:"互联网+ · 前端开发",party:"陈屿",role:"前端开发",status:"ended",time:"昨天",reason:"对方已暂停并结束本次请求",contact:false,initiator:null,reserved:false,reservedHours:0}
   ]
 };
@@ -73,7 +73,7 @@ var candidates=[
   {id:11,name:"林清禾",campus:"大学城校区",grade:"大二",major:"数据科学与大数据技术",roles:["数据分析","数学建模"],skills:["Python","SPSS","数据可视化","数据分析"],hours:10,target:"冲省奖",proof:true,contact:"lin_demo",availStart:"2026-10-05",availEnd:"2026-12-31",exp:"正大杯校赛二等奖 · 负责数据清洗、统计检验和结果可视化"},
   {id:12,name:"陈予安",campus:"大学城校区",grade:"大二",major:"计算机科学与技术",roles:["前端开发","数据处理"],skills:["React","JavaScript","Python","HTML/CSS"],hours:8,target:"完整参赛",proof:true,contact:"chen_demo",availStart:"2026-10-01",availEnd:"2026-11-30",exp:"互联网+校赛项目 · 负责前端页面与数据接口"},
   {id:13,name:"周言",campus:"龙洞校区",grade:"大二",major:"工商管理",roles:["商业分析","用户调研"],skills:["访谈","Excel","报告写作","商业分析"],hours:6,target:"冲奖",proof:true,contact:"zhou_demo",availStart:"2026-10-05",availEnd:"2026-12-20",exp:"行业经济分析大赛 · 负责访谈、资料分析与报告"},
-  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS","视觉设计"],hours:5,target:"积累经验",proof:false,contact:"song_demo",availStart:"2026-10-20",availEnd:"2026-12-31",exp:"社团招新视觉 · 负责海报与展示物料设计"}
+  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS","视觉设计"],hours:7,target:"积累经验",proof:false,contact:"song_demo",availStart:"2026-10-20",availEnd:"2026-12-31",exp:"社团招新视觉 · 负责海报与展示物料设计"}
 ];
 
 function e(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
