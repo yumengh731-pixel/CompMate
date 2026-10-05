@@ -15,6 +15,7 @@ var state={
   profileTasks:"用户调研、商业分析、产品策划",
   profileTarget:"优先冲奖",
   profileCollab:"关键节点提前同步，出现延误及时说明",
+  profileExperience:"挑战杯项目负责人：负责需求调研、方案设计、团队推进与成果整合；行业经济分析大赛：负责资料检索、分析框架与报告撰写。",
   availStart:"2026-10-05",
   availEnd:"2026-12-31",
   total:20,
@@ -1096,7 +1097,7 @@ function renderProfile(p){
   var pct=state.total?Math.min(100,Math.round(state.committed/state.total*100)):0;
   p.innerHTML=demoBar()+'<div class="layout"><div class="panel"><div class="profileHero"><div class="avatar">'+e((state.profileName||"黄").charAt(0))+'</div><div><div class="bigTitle" style="margin:0">'+e(state.profileName)+'</div><div class="meta">广东工业大学 · '+e(state.profileCampus)+' · '+e(state.profileGrade)+' · '+e(state.profileMajor)+'</div></div><span class="verifiedTag">'+(state.verified?"学校已认证":"未认证")+'</span></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">我能承担的任务与技能</h3><button class="btn secondary" onclick="go(\'profileEdit\')">编辑档案</button></div><div class="badges">'+state.profileTasks.split(/[、,，]/).filter(Boolean).map(function(x){return '<span class="badge blue">'+e(x.trim())+'</span>'}).join("")+badges(state.profileSkills.slice(0,6))+'</div></div>'+
-    '<div class="section"><h3 class="sectionTitle">相关经历与具体产出</h3><div class="roleBox"><b>挑战杯 · 项目负责人</b><p class="subtitle">负责需求调研、方案设计、团队推进与成果整合。</p><button class="btn text" onclick="openEvidence()">查看用户提供的成果链接</button></div><div class="roleBox"><b>行业经济分析大赛</b><p class="subtitle">负责资料检索、分析框架与报告撰写。</p></div></div></div>'+
+    '<div class="section"><h3 class="sectionTitle">相关经历与具体产出</h3><div class="roleBox"><b>项目 / 竞赛经历</b><p class="subtitle">'+e(state.profileExperience||"暂未补充")+'</p>'+(state.evidenceUrl?'<button class="btn text" onclick="openEvidence()">查看用户提供的成果链接</button>':'')+'</div></div></div>'+
     '<aside class="panel sticky"><h3 class="sectionTitle">时间与目标</h3><div class="timeCapacityViz"><div class="timeCapacityNumbers"><div><b>'+Math.max(0,remaining())+'h</b><span>剩余可投入</span></div><small>总 '+state.total+'h / 周</small></div><div class="capacityTrack"><i style="width:'+pct+'%"></i></div><div class="capacityLegend"><span><i class="used"></i>已正式投入 '+state.committed+'h</span><span><i class="free"></i>剩余 '+Math.max(0,remaining())+'h</span></div></div><div class="section"><div class="kv"><div class="k">可参与日期</div><div>'+e(state.availStart)+' 至 '+e(state.availEnd)+'</div><div class="k">参赛目标</div><div>'+e(state.profileTarget)+'</div><div class="k">协作方式</div><div>'+e(state.profileCollab)+'</div><div class="k">联系方式</div><div>'+(hasUserContact()?'微信 · 已填写，按次授权':'未填写 · 不能发起申请 / 邀请')+'</div></div></div><div class="notice">学校认证只证明属于该学校，不代表能力水平。时间信息为用户自行声明 / 约定值，平台不将其表述为客观验证时长。</div></aside></div>';
 }
 function renderProfileEdit(p){
@@ -1114,7 +1115,7 @@ function renderProfileEdit(p){
     '<div class="field"><label>协作方式 <span class="req">*</span></label><input class="input" id="profileCollab" value="'+e(state.profileCollab)+'"></div>'+
     '<div class="field full"><label>联系方式（隐私字段）</label><input class="input" id="profileContact" value="'+e(state.userContact)+'" placeholder="微信 / QQ / 手机至少一种"><div class="help">不会出现在公开档案；发起请求前至少填写一种，双方同意沟通后按次开放。</div></div>'+
     '<div class="field full"><label>成果证据链接（可选）</label><input class="input" id="evidenceUrl" value="'+e(state.evidenceUrl)+'" placeholder="仅支持 http / https"><div class="help">平台仅标记为“用户提供”，不对第三方内容真实性背书。</div></div>'+
-    '<div class="field full"><label>经历与具体产出（可选）</label><textarea class="textarea">挑战杯项目负责人：负责需求调研、方案设计、团队推进与成果整合。</textarea></div></div>'+
+    '<div class="field full"><label>经历与具体产出（可选）</label><textarea class="textarea" id="profileExperience" maxlength="800">'+e(state.profileExperience)+'</textarea><div class="help">建议写清项目名称、本人职责和具体产出；不要只写“参加过”。</div></div></div>'+
     '<div class="actions end"><button class="btn secondary" onclick="go(\'profile\')">取消</button><button class="btn primary" onclick="saveProfile()">保存档案</button></div></div>'+
     '<aside class="panel sticky"><h3 class="sectionTitle">档案规则</h3><div class="notice '+(state.profileComplete?"good":"warn")+'">'+(state.profileComplete?"最小档案已完成；申请 / 邀请前还需学校认证和至少一种联系方式。":"当前为未完成档案：可保存草稿和继续浏览，但不能主动申请或进入可邀请候选列表。")+'</div><div class="section"><p class="subtitle">平台不公开能力评分、责任心评分、人才等级或排行榜。</p></div><div class="section"><button class="btn secondary" onclick="state.verified=false;state.authReturn=\'profile\';go(\'auth\')">重新认证</button></div></aside></div>';
 }
@@ -1126,12 +1127,12 @@ function openEvidence(){
 }
 function saveProfile(){
   var name=String(byId("profileName").value||"").trim(),campus=String(byId("profileCampus").value||"").trim(),grade=String(byId("profileGrade").value||"").trim(),major=String(byId("profileMajor").value||"").trim(),tasks=String(byId("profileTasks").value||"").trim(),skills=String(byId("profileSkills").value||"").split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean),target=String(byId("profileTarget").value||"").trim(),collab=String(byId("profileCollab").value||"").trim();
-  var start=byId("availStart").value,end=byId("availEnd").value,hours=Number(byId("totalHours").value),contact=String(byId("profileContact").value||"").trim(),proof=String(byId("evidenceUrl").value||"").trim();
+  var start=byId("availStart").value,end=byId("availEnd").value,hours=Number(byId("totalHours").value),contact=String(byId("profileContact").value||"").trim(),proof=String(byId("evidenceUrl").value||"").trim(),experience=String(byId("profileExperience").value||"").trim();
   if(!Number.isFinite(hours)||hours<0){toast("每周总可投入时间需为 0 或正数");return}
   if(start&&end&&new Date(start)>new Date(end)){toast("可参与开始日期不能晚于结束日期");return}
   if(proof&&!/^https?:\/\//i.test(proof)){toast("成果证据链接仅支持 http / https");return}
-  if(unsafePublicText([name,grade,major,tasks,skills.join(" "),collab].join(" "))){toast("公开档案字段中疑似包含联系方式或高风险引导，请改用独立联系方式字段");return}
-  state.profileName=name;state.profileCampus=campus;state.profileGrade=grade;state.profileMajor=major;state.userCampus=campus;state.profileTasks=tasks;state.profileSkills=skills;state.profileTarget=target;state.profileCollab=collab;state.availStart=start;state.availEnd=end;state.total=hours;state.userContact=contact;state.evidenceUrl=proof;
+  if(unsafePublicText([name,grade,major,tasks,skills.join(" "),collab,experience].join(" "))){toast("公开档案字段中疑似包含联系方式或高风险引导，请改用独立联系方式字段");return}
+  state.profileName=name;state.profileCampus=campus;state.profileGrade=grade;state.profileMajor=major;state.userCampus=campus;state.profileExperience=experience;state.profileTasks=tasks;state.profileSkills=skills;state.profileTarget=target;state.profileCollab=collab;state.availStart=start;state.availEnd=end;state.total=hours;state.userContact=contact;state.evidenceUrl=proof;
   var missing=[];if(!name)missing.push("显示名称");if(!campus)missing.push("学校 / 校区");if(!grade)missing.push("年级");if(!major)missing.push("专业");if(!tasks)missing.push("角色 / 任务");if(!skills.length)missing.push("技能标签");if(!start||!end)missing.push("可参与日期");if(!collab)missing.push("协作方式");if(!target)missing.push("参赛目标");
   state.profileComplete=missing.length===0;
   if(!state.profileComplete){toast("草稿已保存；仍缺少："+missing.join("、"));render();return}
