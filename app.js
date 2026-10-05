@@ -319,6 +319,7 @@ function simulateNextRemoteAction(){
 function simulateRemoteAgree(id){
   var x=rel(id);if(!x||x.status!=="pending")return;
   var r=relationRecruit(x);
+  if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){closeModal();toast("队长权限已变化，不能继续处理该请求");render();return}
   if(r&&(r.status==="ended"||r.role.formal>=r.role.capacity)){x.status="ended";x.reason=r.status==="ended"?"招募已结束":"名额已满";x.expiresAt=null;toast(x.reason);render();return}
   if(!hasUserContact()||!x.partyContact){toast("双方联系方式条件尚未满足");return}
   if(!registerContactUnlock()){toast("短时间联系方式解锁过于频繁，请稍后重试或完成额外验证");return}
@@ -330,7 +331,7 @@ function remoteLeaderFinalizeCandidateConfirm(id){
   var eligible=formalEligibility(x,r);if(!eligible.ok){x.status="communication";x.initiator=null;x.expiresAt=null;toast("对方最终校验失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){x.status="ended";x.reason="角色已正式招满";x.expiresAt=null;toast("对方最终校验：角色已正式招满");render();return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("对方最终校验：名额正在与其他候选人确认中");return}
-  if(relationCandidateAvailable(x)<r.role.hours){x.status="communication";x.initiator=null;x.expiresAt=null;toast("对方最终校验：当前可投入时间不足，已回到待沟通");render();return}
+  if(relationCandidateAvailable(x)<r.role.hours){x.status="communication";x.initiator=null;x.expiresAt=null;toast("对方确认失败：项目周期可投入时间不足，已回到待沟通");render();return}
   finishJoin(x,r,r.role.hours);
 }
 function go(r){
@@ -354,6 +355,33 @@ function render(){
 }
 
 /* HOME */
+function deadlineShort(r){
+  var d=parseDeadline(r);if(!d)return "待定";
+  return (d.getMonth()+1)+"/"+d.getDate();
+}
+function homeDeadlineRows(){
+  var byRecruit={},rows=[];
+  state.relationships.forEach(function(x){
+    if(["pending","communication","confirming"].indexOf(x.status)<0)return;
+    var r=relationRecruit(x);if(!r||deadlinePassed(r)||r.status==="ended")return;
+    var current=byRecruit[r.id];
+    if(!current||({confirming:3,communication:2,pending:1}[x.status]||0)>({confirming:3,communication:2,pending:1}[current.status]||0))byRecruit[r.id]=x;
+  });
+  Object.keys(byRecruit).forEach(function(id){
+    var x=byRecruit[id],r=findRecruit(Number(id)),sub="";
+    if(x.status==="confirming")sub=currentUserIsCandidate(x)?"等待完成双方组队确认":"有候选人处于双方确认中";
+    else if(x.status==="communication")sub="正在与 "+x.party+" 沟通";
+    else if(x.direction==="incoming")sub="有 1 条"+(x.type==="application"?"申请":"邀请")+"待处理";
+    else sub=(x.type==="application"?"申请":"邀请")+"等待对方处理";
+    rows.push({r:r,date:parseDeadline(r),label:"招募截止",sub:sub,tone:x.status==="confirming"?"hot":""});
+  });
+  managedRecruitments.forEach(function(r){
+    if(!recruitIsPublished(r)||deadlinePassed(r)||r.status==="ended"||r.status==="full"||byRecruit[r.id])return;
+    rows.push({r:r,date:parseDeadline(r),label:r.status==="paused"?"当前暂停":"招募截止",sub:r.role.name+" · "+(r.status==="paused"?"已有关系仍可继续":"仍有 "+roleFree(r)+" 个名额"),tone:r.status==="paused"?"future":""});
+  });
+  rows=rows.filter(function(x){return x.r&&x.date}).sort(function(a,b){return a.date-b.date}).slice(0,4);
+  return rows.length?rows.map(function(x){return reminderRow(deadlineShort(x.r),x.r.comp,x.label,x.sub,x.tone)}).join(""):'<div class="notice">当前没有与你相关的近期招募节点。</div>';
+}
 function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
@@ -371,7 +399,7 @@ function renderHome(p){
       '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
       '<div class="smartRecommendList">'+recommended.map(smartRecommendRow).join("")+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
       '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><span>MY DEADLINES</span><h2>与你相关的竞赛节点</h2><p>只展示正在找队、已组队或已发布招募的近期节点。</p></div></div>'+
-      '<div class="reminderTimeline">'+reminderRow("10/18","挑战杯","组队截止","你正在沟通 1 个岗位","hot")+reminderRow("10/20","正大杯","组队节点","你有 1 条待处理邀请","")+reminderRow("10/28","CompMate 项目","招募截止","你的视觉设计岗仍在招募","")+reminderRow("11 月","互联网+","项目推进","相关招募已暂停接收","future")+'</div></aside>'+
+      '<div class="reminderTimeline">'+homeDeadlineRows()+'</div></aside>'+
     '</section>'+
     '<section class="homeStatusGrid">'+
       '<article class="statusBoard"><div class="statusBoardHead"><span>MY STATUS</span><h3>我的组队状态</h3></div><div class="statusNumbers"><button onclick="go(\'progress\')"><b>'+pending+'</b><span>待处理</span></button><button onclick="go(\'progress\')"><b>'+communicating+'</b><span>待沟通</span></button><button onclick="go(\'progress\')"><b>'+confirming+'</b><span>确认中</span></button></div></article>'+
@@ -786,7 +814,7 @@ function refreshRelationExpiry(x){
   if(x.status==="pending"){
     x.status="ended";x.reason="请求已超时失效";x.expiresAt=null;
   }else if(x.status==="confirming"){
-    releaseReservation(x);x.status="communication";x.initiator=null;x.reason="本次正式确认已超时，关系保留为待沟通";x.time="确认超时 · 已回到待沟通";x.expiresAt=null;
+    releaseReservation(x);x.status="communication";x.initiator=null;x.reason="本次组队确认已超时，关系保留为待沟通";x.time="确认超时 · 已回到待沟通";x.expiresAt=null;
   }
 }
 function progressRelations(){
@@ -802,7 +830,7 @@ function currentUserIsCandidate(x){
 function relationGroupRoles(x){
   var r=relationRecruit(x);if(!r)return[];
   var gid=recruitGroupId(r);
-  return allRecruitments().filter(function(rr){return recruitGroupId(rr)===gid});
+  return allRecruitments().filter(function(rr){return recruitGroupId(rr)===gid&&recruitIsPublished(rr)&&rr.status!=="ended"});
 }
 function changeRelationRole(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
@@ -818,11 +846,13 @@ function changeRelationRole(id){
 function confirmRelationRoleChange(id,newRecruitId){
   var x=rel(id),oldR=relationRecruit(x),r=findRecruit(newRecruitId);if(!x||!oldR||!r)return;
   if(x.status!=="communication"||recruitGroupId(oldR)!==recruitGroupId(r)){toast("关系状态或角色已变化，请刷新后重试");return}
+  if(!recruitIsPublished(r)||r.status==="ended"){toast("该角色尚未发布或已结束，不能切换");return}
+  if(!currentUserIsCandidate(x)&&!canManageRecruit(oldR)){toast("队长权限已变化，不能继续调整候选人角色");render();return}
   if(r.role.formal>=r.role.capacity){toast("该角色已正式招满");return}
   var hard=formalEligibility(x,r);
   if(!hard.ok){toast("当前不能切换到该角色："+hard.reason);return}
   x.recruitId=r.id;x.role=r.role.name;x.title=r.comp+" · "+r.role.name;x.conditionUpdated=true;
-  closeModal();toast("目标角色已调整；正式确认将按新角色重新校验");render();
+  closeModal();toast("目标角色已调整；组队确认将按新角色重新校验");render();
 }
 
 function requestCard(x){
@@ -870,14 +900,20 @@ function openJoinedRelationTeam(id){
   state.progressView="team";state.teamView="joined";render();
 }
 function relationRecruit(x){return x?findRecruit(x.recruitId):null}
-function rejectReq(id){var x=rel(id);if(!x)return;x.status="ended";x.reason=x.type==="application"?"你已拒绝本次申请":"你已拒绝本次邀请";x.expiresAt=null;toast("已拒绝，不产生负面标签");render()}
+function rejectReq(id){
+  var x=rel(id),r=relationRecruit(x);if(!x)return;
+  if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){toast("队长权限已变化，不能处理该请求");render();return}
+  x.status="ended";x.reason=x.type==="application"?"你已拒绝本次申请":"你已拒绝本次邀请";x.expiresAt=null;toast("已拒绝，不产生负面标签");render();
+}
 function cancelReq(id){
-  var x=rel(id);if(!x)return;
+  var x=rel(id),r=relationRecruit(x);if(!x)return;
+  if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){toast("队长权限已变化，不能撤回该邀请");render();return}
   releaseReservation(x);x.status="ended";x.reason=x.type==="invitation"?"邀请已撤回":"申请已取消";x.expiresAt=null;
   toast(x.reason);render();
 }
 function agreeReq(id){
-  var x=rel(id);if(!x)return;
+  var x=rel(id),r=relationRecruit(x);if(!x)return;
+  if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){toast("队长权限已变化，不能处理该请求");render();return}
   if(!hasUserContact()){toast("请先补充并授权至少一种联系方式");state.profileReturn="progress";go("profileEdit");return}
   if(!x.partyContact){toast("对方当前未授权可用联系方式，暂不能进入待沟通");return}
   modal('<h2>同意沟通</h2><p class="subtitle">进入待沟通前，双方都需要至少授权一种联系方式；公开档案不会直接展示联系方式。</p><div class="notice">我的授权：微信 · '+e(state.userContact)+'</div><div class="notice" style="margin-top:8px">对方已授权：'+e(x.partyContact)+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="confirmAgree('+id+')">确认并开放</button></div>');
@@ -1133,6 +1169,7 @@ function removeAddedCandidate(candidateId){
   modal('<h2>移除成员？</h2><p class="subtitle">'+e(cnd.name)+' · '+e(rr.role.name)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveAddedCandidate('+candidateId+')">确认移除</button></div>');
 }
 function confirmRemoveAddedCandidate(candidateId){
+  if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能移除成员");render();return}
   var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],ids=managedGroup(base).map(function(g){return g.id});
   var x=state.relationships.filter(function(a){return a.candidateId===candidateId&&ids.indexOf(a.recruitId)>=0&&a.status==="joined"})[0];
   var r=x?relationRecruit(x):null;
@@ -1153,6 +1190,12 @@ function transferCaptain(){
   modal('<h2>转交队长身份</h2><p class="subtitle">只能转交给当前正式成员。转交成功后，你立即按普通正式成员权限处理。</p>'+(opts?'<div class="rolePicker">'+opts+'</div>':'<div class="notice warn">当前没有其他正式成员，不能转交队长。你可以选择解散队伍。</div>')+'<div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button>'+(opts?'':'<button class="btn danger" onclick="closeModal();dissolveManagedTeam()">解散队伍</button>')+'</div>');
 }
 function confirmTransferCaptain(name){
+  if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能再次转交");render();return}
+  var validNames=[];
+  if(!state.dataMemberRemoved)validNames.push("苏嘉");
+  if(!state.memberRemoved)validNames.push("何川");
+  managedJoinedCandidates().forEach(function(item){validNames.push(item.candidate.name)});
+  if(validNames.indexOf(name)<0){closeModal();toast("目标成员已不在当前正式队伍中");render();return}
   var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
   state.managedCaptain=false;state.managedCaptainName=name;
   if(r)managedGroup(r).forEach(function(g){g.leader=name});
@@ -1193,6 +1236,8 @@ function removeManagedMember(kind){
   modal('<h2>移除成员？</h2><p class="subtitle">'+e(label)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveManagedMember(\''+kind+'\')">确认移除</button></div>');
 }
 function confirmRemoveManagedMember(kind){
+  if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能移除成员");render();return}
+  if((kind==="data"&&state.dataMemberRemoved)||(kind==="front"&&state.memberRemoved)){closeModal();toast("该成员已不在队伍中");render();return}
   if(kind==="data")state.dataMemberRemoved=true;else state.memberRemoved=true;
   var gap=ensureRestoredRole(kind);
   closeModal();toast("成员已移除，"+gap.role.name+"已恢复为角色缺口；由队长决定何时重新开放");render();
