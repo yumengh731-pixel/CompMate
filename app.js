@@ -505,8 +505,10 @@ function personResultRow(c){
 /* RECRUITMENT DETAIL / APPLY */
 function openRecruit(id){state.selectedRecruit=id;state.route="detail";render();window.scrollTo(0,0)}
 function activeCandidateRelationForRecruit(id){
+  var target=findRecruit(id),gid=recruitGroupId(target);
   return state.relationships.filter(function(x){
-    return x.recruitId===id&&x.status!=="ended"&&currentUserIsCandidate(x);
+    var rr=findRecruit(x.recruitId);
+    return rr&&recruitGroupId(rr)===gid&&x.status!=="ended"&&currentUserIsCandidate(x);
   })[0]||null;
 }
 function relationButtonLabel(x){
@@ -877,9 +879,11 @@ function finishJoin(x,r,hours){
   }
   x.status="joined";x.initiator=null;x.joinedHours=hours;x.time="刚刚 · 正式组队成功";
   if(asCandidate){
+    var candidateGroupId=recruitGroupId(r);
     state.relationships.forEach(function(other){
-      if(other.id!==x.id&&other.recruitId===r.id&&other.status!=="joined"&&other.status!=="ended"&&currentUserIsCandidate(other)){
-        releaseReservation(other);other.status="ended";other.reason="已通过另一关系正式组队";
+      var rr=findRecruit(other.recruitId);
+      if(other.id!==x.id&&rr&&recruitGroupId(rr)===candidateGroupId&&other.status!=="joined"&&other.status!=="ended"&&currentUserIsCandidate(other)){
+        releaseReservation(other);other.status="ended";other.reason="已通过同一招募的另一角色关系正式组队";
       }
     });
   }else if(x.candidateId){
