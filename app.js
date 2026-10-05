@@ -411,7 +411,7 @@ function submitApplication(id){
 /* SHARE / AUTH CONTEXT */
 function shareRecruit(id){
   var r=findRecruit(id);if(!r)return;
-  modal('<h2>外部分享卡</h2><div class="panel" style="padding:15px;background:#f8f9fb"><div class="meta">'+e(r.comp)+'</div><div class="title">'+e(r.title)+'</div><p class="subtitle">'+e(r.role.task)+'</p><div class="badges"><span class="badge blue">'+e(r.role.name)+'</span><span class="badge">'+r.role.hours+'h / 周</span><span class="badge">'+e(r.target)+'</span></div><div class="meta">私人联系方式不会出现在分享内容中。</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal();toast(\'已复制结构化招募文本\')">复制文本</button><button class="btn secondary" onclick="demoExpiredShare()">演示失效链接</button><button class="btn primary" onclick="closeModal();demoShare('+id+')">模拟外部打开</button></div>');
+  modal('<h2>外部分享卡</h2><div class="panel" style="padding:15px;background:#f8f9fb"><div class="meta">'+e(r.comp)+'</div><div class="title">'+e(r.title)+'</div><p class="subtitle">'+e(r.role.task)+'</p><div class="badges"><span class="badge blue">'+e(r.role.name)+'</span><span class="badge">'+r.role.hours+'h / 周</span><span class="badge">'+e(r.target)+'</span></div><div class="meta">私人联系方式不会出现在分享内容中。</div></div><div class="modalFoot"><button class="btn secondary" onclick="copyShareLink('+id+')">复制分享链接</button><button class="btn secondary" onclick="demoExpiredShare()">查看失效链接状态</button><button class="btn primary" onclick="closeModal();demoShare('+id+')">预览外部访问</button></div>');
 }
 function copyShareLink(id){closeModal();toast("分享链接已复制；私人联系方式不会包含在链接内容中")}
 function demoShare(id){
@@ -477,6 +477,27 @@ function blockUser(id){
   });
   closeModal();toast("已拉黑，未完成关系与临时预留已释放");state.mode="people";go("explore");
 }
+function openReport(kind,id,label){
+  modal('<h2>举报 / 反馈</h2><p class="subtitle">对象：'+e(label)+'</p><div class="field"><label>举报原因</label><select class="select" id="reportReason"><option>虚假招募 / 经历</option><option>骚扰</option><option>诱导站外支付</option><option>疑似不当索取成果</option><option>其他</option></select></div><div class="field" style="margin-top:10px"><label>补充说明（可选）</label><textarea class="textarea" id="reportNote"></textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitReport(\''+kind+'\','+id+')">提交举报</button></div>');
+}
+function submitReport(kind,id){
+  var reason=byId("reportReason")?byId("reportReason").value:"其他";
+  var note=byId("reportNote")?byId("reportNote").value:"";
+  state.reports.push({id:Date.now(),kind:kind,targetId:id,reason:reason,note:note,status:"received"});
+  closeModal();toast("已收到反馈；不会因单次举报自动评分或封禁");
+}
+function reportRecruit(id){var r=findRecruit(id);if(r)openReport("recruit",id,r.comp+" · "+r.title)}
+function reportRelation(id){var x=rel(id);if(x)openReport("relation",id,x.title+" · "+x.party)}
+function reportUser(id){var c=candidates.filter(function(x){return x.id===id})[0];if(c)openReport("user",id,c.name)}
+function blockRelationParty(id){
+  var x=rel(id);if(!x)return;
+  if(x.candidateId){blockUser(x.candidateId);return}
+  state.blockedRecruitIds[x.recruitId]=true;
+  releaseReservation(x);
+  if(x.status!=="joined"){x.status="ended";x.reason="已拉黑对方"}
+  toast("已拉黑；双方不再进入新的搜索、申请或邀请");render();
+}
+
 
 /* PROGRESS / STATE MACHINE */
 function renderProgress(p){
@@ -1005,5 +1026,22 @@ window.coreChange=coreChange;
 window.interruptAuth=interruptAuth;
 window.completeAuth=completeAuth;
 window.closeModal=closeModal;
+window.copyShareLink=copyShareLink;
+window.reportRecruit=reportRecruit;
+window.reportRelation=reportRelation;
+window.reportUser=reportUser;
+window.blockRelationParty=blockRelationParty;
+window.submitReport=submitReport;
+window.openEvidence=openEvidence;
+window.openLeaderFinalizeCandidateConfirm=openLeaderFinalizeCandidateConfirm;
+window.openCandidateAcceptCaptainConfirm=openCandidateAcceptCaptainConfirm;
+window.confirmCaptainStart=confirmCaptainStart;
+window.transferCaptain=transferCaptain;
+window.confirmTransferCaptain=confirmTransferCaptain;
+window.leaveManagedTeam=leaveManagedTeam;
+window.confirmLeaveManagedTeam=confirmLeaveManagedTeam;
+window.resolveMemberHours=resolveMemberHours;
+window.acceptFrontendAgreement=acceptFrontendAgreement;
+window.authHelp=authHelp;
 window.toast=toast;
 render();
