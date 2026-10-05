@@ -149,6 +149,18 @@ function explorePage(p){
     '<div id="hallList" class="peopleResultList">'+visible.map(personResultRow).join("")+'</div>'
   );
 }
+function smartRecommendRow(r){
+  var ro=r.role,free=Math.max(0,ro.capacity-ro.formal-ro.reserved);
+  var timeOk=remaining()>=ro.hours;
+  return '<article class="smartRecommendRow" onclick="openRecruit('+r.id+')">'+
+    '<div class="smartRecMain"><div class="smartRecMeta">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(ro.task)+'</p><div class="smartRecTags"><span>'+e(ro.name)+'</span><span>'+ro.hours+'h / 周</span><span>'+e(r.target)+'</span></div></div>'+
+    '<div class="smartRecReason"><span>匹配维度</span><div class="matchDims"><i>任务契合</i><i class="'+(timeOk?"ok":"warn")+'">'+(timeOk?"时间满足":"时间风险")+'</i><i>目标可对齐</i></div><small>'+r.reasons.join(" · ")+' · 剩余 '+free+' 个名额</small></div>'+
+    '<span class="smartRecArrow">→</span>'+
+  '</article>';
+}
+function reminderRow(date,comp,label,sub,tone){
+  return '<div class="reminderRow '+(tone||"")+'"><div class="reminderDate">'+date+'</div><div class="reminderLine"><span></span></div><div class="reminderContent"><b>'+comp+'</b><strong>'+label+'</strong><small>'+sub+'</small></div></div>';
+}
 function cleanRecruitRow(r){
   var ro=r.role,st=status(r.status),free=Math.max(0,ro.capacity-ro.formal-ro.reserved);
   return '<article class="cleanRecruit" onclick="openRecruit('+r.id+')"><div class="cleanRecruitMain"><div class="miniComp">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(ro.task)+'</p><div class="cleanTags"><span>'+e(ro.name)+'</span><span>'+ro.hours+'h / 周</span><span>'+e(r.target)+'</span></div></div><div class="cleanRecruitSide"><span class="status '+st[1]+'">'+st[0]+'</span><strong>余 '+free+' 名</strong><small>'+r.reasons.join(" · ")+'</small><em>查看详情 →</em></div></article>';
