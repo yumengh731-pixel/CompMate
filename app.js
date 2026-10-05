@@ -1,3 +1,10 @@
+var config={
+  pendingRequestMs:7*24*60*60*1000,
+  formalConfirmMs:24*60*60*1000,
+  contactUnlockWindowMs:10*60*1000,
+  contactUnlockLimit:5
+};
+
 var state={
   route:"home",
   mode:"teams",
@@ -59,13 +66,6 @@ var state={
     {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:14,title:"挑战杯 · 视觉设计岗",party:"宋禾",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"song_demo",expiresAt:Date.now()+config.pendingRequestMs},
     {id:203,type:"application",direction:"outgoing",recruitId:3,title:"互联网+ · 前端开发",party:"陈屿",role:"前端开发",status:"ended",time:"昨天",reason:"对方已暂停并结束本次请求",contact:false,initiator:null,reserved:false,reservedHours:0}
   ]
-};
-
-var config={
-  pendingRequestMs:7*24*60*60*1000,
-  formalConfirmMs:24*60*60*1000,
-  contactUnlockWindowMs:10*60*1000,
-  contactUnlockLimit:5
 };
 
 var recruits=[
