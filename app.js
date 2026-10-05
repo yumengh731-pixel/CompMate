@@ -896,11 +896,31 @@ function renderManagedTeam(){
       teamMember("你",state.managedCaptain?"队长 / 产品":"产品","当前阶段投入 "+state.managedStageHours+"h / 周",true,false)+
       (state.dataMemberRemoved?"":'<div class="request"><div><div class="requestTitle">林清禾 · '+(state.managedCaptainName==="林清禾"?"队长 / 数据分析":"数据分析")+'</div><div class="requestSub">当前阶段投入 10h / 周</div></div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'data\')">移除</button>':'')+'</div></div>')+
       (state.memberRemoved?"":'<div class="request"><div><div class="requestTitle">陈予安 · '+(state.managedCaptainName==="陈予安"?"队长 / 前端开发":"前端开发")+'</div><div class="requestSub">'+e(frontendSub)+'</div>'+(state.frontendCurrentHours<state.frontendAgreedHours?'<div class="notice warn" style="margin-top:8px">当前投入低于原约定 '+state.frontendAgreedHours+'h / 周，需要继续协商。</div>':'')+'</div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&state.frontendCurrentHours<state.frontendAgreedHours?'<button class="btn text" onclick="resolveMemberHours()">处理投入变化</button>':'')+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'front\')">移除</button>':'')+'</div></div>')+
-      (added?teamMember(added.name,state.managedCaptainName===added.name?"队长 / "+r.role.name:r.role.name,"已通过正式确认加入",false,false):"")+
+      (added?addedMemberRow(added,r):"")+
     '</div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3>'+(state.managedCaptain?'<button class="btn primary" onclick="editManagedRecruit()">管理招募</button>':'')+'</div>'+(gaps.length?gaps.join(""):'<div class="notice good" style="margin-top:10px">当前角色已补齐。</div>')+'</div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">入群说明</h3>'+(state.managedCaptain?'<button class="btn secondary" onclick="editGroupNote()">编辑</button>':'')+'</div><p class="subtitle">'+e(state.groupNote)+'</p><div class="meta">仅正式成员可见；队长转交后由新队长继续维护。</div></div></div>';
 }
+function addedMemberRow(c,r){
+  var isCaptain=state.managedCaptainName===c.name;
+  return '<div class="request"><div><div class="requestTitle">'+e(c.name)+' · '+e(isCaptain?"队长 / "+r.role.name:r.role.name)+'</div><div class="requestSub">已通过正式确认加入 · 当前岗位 '+e(r.role.name)+'</div></div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&!isCaptain?'<button class="btn text" onclick="removeAddedCandidate('+c.id+')">移除</button>':'')+'</div></div>';
+}
+function removeAddedCandidate(candidateId){
+  if(!state.managedCaptain){toast("只有当前队长可以移除其他成员");return}
+  var c=candidates.filter(function(x){return x.id===candidateId})[0],r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
+  if(!c||!r)return;
+  if(state.managedCaptainName===c.name){toast("不能直接移除当前队长，请先转交队长身份");return}
+  modal('<h2>移除成员？</h2><p class="subtitle">'+e(c.name)+' · '+e(r.role.name)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveAddedCandidate('+candidateId+')">确认移除</button></div>');
+}
+function confirmRemoveAddedCandidate(candidateId){
+  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
+  var x=state.relationships.filter(function(a){return a.candidateId===candidateId&&a.recruitId===r.id&&a.status==="joined"})[0];
+  if(x){x.status="ended";x.reason="已被队长移除";x.expiresAt=null}
+  r.role.formal=Math.max(0,r.role.formal-1);
+  if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="paused";
+  closeModal();toast("成员已移除，角色名额已恢复；是否重新开放招募由队长决定");render();
+}
+
 function transferCaptain(){
   if(!state.managedCaptain){toast("只有当前队长可以转交队长身份");return}
   var added=managedAddedCandidate(),opts="";
@@ -1246,6 +1266,8 @@ window.openEvidence=openEvidence;
 window.openLeaderFinalizeCandidateConfirm=openLeaderFinalizeCandidateConfirm;
 window.openCandidateAcceptCaptainConfirm=openCandidateAcceptCaptainConfirm;
 window.confirmCaptainStart=confirmCaptainStart;
+window.removeAddedCandidate=removeAddedCandidate;
+window.confirmRemoveAddedCandidate=confirmRemoveAddedCandidate;
 window.transferCaptain=transferCaptain;
 window.confirmTransferCaptain=confirmTransferCaptain;
 window.leaveManagedTeam=leaveManagedTeam;
