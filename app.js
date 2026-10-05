@@ -711,6 +711,32 @@ function currentUserIsCandidate(x){
   if(!x)return true;
   return (x.type==="application"&&x.direction==="outgoing")||(x.type==="invitation"&&x.direction==="incoming");
 }
+function relationGroupRoles(x){
+  var r=relationRecruit(x);if(!r)return[];
+  var gid=recruitGroupId(r);
+  return allRecruitments().filter(function(rr){return recruitGroupId(rr)===gid});
+}
+function changeRelationRole(id){
+  var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  if(x.status!=="communication"){toast("只有待沟通阶段可以调整当前目标角色");return}
+  var roles=relationGroupRoles(x);
+  if(roles.length<=1){toast("当前招募没有其他角色缺口");return}
+  var rows=roles.map(function(rr){
+    var current=rr.id===r.id,full=rr.role.formal>=rr.role.capacity;
+    return '<button class="rolePick '+(current?"active":"")+'" '+((current||full)?'disabled':'')+' onclick="confirmRelationRoleChange('+id+','+rr.id+')"><div><b>'+e(rr.role.name)+(current?" · 当前角色":"")+'</b><span>'+e(rr.role.task)+'</span></div><small>'+(full?"已招满":rr.role.hours+"h / 周")+'</small></button>';
+  }).join("");
+  modal('<h2>调整当前目标角色</h2><p class="subtitle">待沟通阶段可以协商调整角色；正式确认前会按新角色重新检查名额、技能、时间和最新条件。</p><div class="rolePicker">'+rows+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button></div>');
+}
+function confirmRelationRoleChange(id,newRecruitId){
+  var x=rel(id),oldR=relationRecruit(x),r=findRecruit(newRecruitId);if(!x||!oldR||!r)return;
+  if(x.status!=="communication"||recruitGroupId(oldR)!==recruitGroupId(r)){toast("关系状态或角色已变化，请刷新后重试");return}
+  if(r.role.formal>=r.role.capacity){toast("该角色已正式招满");return}
+  var hard=currentUserIsCandidate(x)?userMeetsRecruitHardRules(r):candidateMeetsHardRules(relationCandidate(x),r);
+  if(!hard.ok){toast("当前不能切换到该角色："+hard.reason);return}
+  x.recruitId=r.id;x.role=r.role.name;x.title=r.comp+" · "+r.role.name;x.conditionUpdated=true;
+  closeModal();toast("目标角色已调整；正式确认将按新角色重新校验");render();
+}
+
 function requestCard(x){
   refreshRelationExpiry(x);
   var mp={pending:["请求待处理",""],communication:["待沟通","green"],confirming:["正式确认中","warn"],joined:["已组队","blue"],ended:["已结束",""]},st=mp[x.status],act="",note="",asCandidate=currentUserIsCandidate(x),r=relationRecruit(x);
@@ -725,8 +751,9 @@ function requestCard(x){
   if(!asCandidate&&r&&!canManageRecruit(r)&&x.status!=="joined"&&x.status!=="ended"){
     act='<span class="status">已无队长权限</span>';note='<div class="notice warn" style="margin-top:8px">该队伍的队长身份已经转交，你不能继续处理候选人或正式确认。</div>';
   }else if(x.status==="communication"){
-    if(asCandidate)act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button><button class="btn primary" onclick="candidateStartConfirm('+x.id+')">发起正式确认</button>';
-    else act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button><button class="btn primary" onclick="captainStartConfirm('+x.id+')">发起正式确认</button>';
+    var roleSwitch=relationGroupRoles(x).length>1?'<button class="btn secondary" onclick="changeRelationRole('+x.id+')">调整角色</button>':'';
+    if(asCandidate)act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button>'+roleSwitch+'<button class="btn primary" onclick="candidateStartConfirm('+x.id+')">发起正式确认</button>';
+    else act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button>'+roleSwitch+'<button class="btn primary" onclick="captainStartConfirm('+x.id+')">发起正式确认</button>';
     note='<div class="contactReveal"><b>本次已授权联系方式</b><span>我的微信：'+e(state.userContact||"未授权")+'</span><span>对方：'+e(x.partyContact||"已授权联系方式")+'</span><small>中止沟通后平台停止后续授权，但无法收回已被保存的站外联系方式。</small></div>';
     if(x.conditionUpdated)note+='<div class="notice warn" style="margin-top:8px">该招募条件已更新，请重新查看最新任务、时间与目标。</div>';
   }
@@ -1322,6 +1349,8 @@ window.sendInvitation=sendInvitation;
 window.candidateMore=candidateMore;
 window.blockUser=blockUser;
 window.reportUser=reportUser;
+window.changeRelationRole=changeRelationRole;
+window.confirmRelationRoleChange=confirmRelationRoleChange;
 window.rejectReq=rejectReq;
 window.cancelReq=cancelReq;
 window.agreeReq=agreeReq;
