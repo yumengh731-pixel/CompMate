@@ -1038,8 +1038,8 @@ function renderManagedTeam(){
     '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.managedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
       teamMember("你",state.managedCaptain?"队长 / 产品":"产品","当前阶段投入 "+state.managedStageHours+"h / 周",true,false)+
-      (state.dataMemberRemoved?"":'<div class="request"><div><div class="requestTitle">林清禾 · '+(state.managedCaptainName==="林清禾"?"队长 / 数据分析":"数据分析")+'</div><div class="requestSub">当前阶段投入 10h / 周</div></div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'data\')">移除</button>':'')+'</div></div>')+
-      (state.memberRemoved?"":'<div class="request"><div><div class="requestTitle">陈予安 · '+(state.managedCaptainName==="陈予安"?"队长 / 前端开发":"前端开发")+'</div><div class="requestSub">'+e(frontendSub)+'</div>'+(state.frontendCurrentHours<state.frontendAgreedHours?'<div class="notice warn" style="margin-top:8px">当前投入低于原约定 '+state.frontendAgreedHours+'h / 周，需要继续协商。</div>':'')+'</div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&state.frontendCurrentHours<state.frontendAgreedHours?'<button class="btn text" onclick="resolveMemberHours()">处理投入变化</button>':'')+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'front\')">移除</button>':'')+'</div></div>')+
+      (state.dataMemberRemoved?"":'<div class="request"><div><div class="requestTitle">苏嘉 · '+(state.managedCaptainName==="苏嘉"?"队长 / 数据分析":"数据分析")+'</div><div class="requestSub">当前阶段投入 10h / 周</div></div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'data\')">移除</button>':'')+'</div></div>')+
+      (state.memberRemoved?"":'<div class="request"><div><div class="requestTitle">何川 · '+(state.managedCaptainName==="何川"?"队长 / 前端开发":"前端开发")+'</div><div class="requestSub">'+e(frontendSub)+'</div>'+(state.frontendCurrentHours<state.frontendAgreedHours?'<div class="notice warn" style="margin-top:8px">当前投入低于原约定 '+state.frontendAgreedHours+'h / 周，需要继续协商。</div>':'')+'</div><div class="requestActions"><span class="status">正式成员</span>'+(state.managedCaptain&&state.frontendCurrentHours<state.frontendAgreedHours?'<button class="btn text" onclick="resolveMemberHours()">处理投入变化</button>':'')+(state.managedCaptain?'<button class="btn text" onclick="removeManagedMember(\'front\')">移除</button>':'')+'</div></div>')+
       addedItems.map(function(item){return addedMemberRow(item.candidate,item.recruit)}).join("")+
     '</div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3>'+(state.managedCaptain?'<button class="btn primary" onclick="editManagedRecruit()">管理招募</button>':'')+'</div>'+(gaps.length?gaps.join(""):'<div class="notice good" style="margin-top:10px">当前角色已补齐。</div>')+'</div>'+
@@ -1071,8 +1071,8 @@ function confirmRemoveAddedCandidate(candidateId){
 function transferCaptain(){
   if(!state.managedCaptain){toast("只有当前队长可以转交队长身份");return}
   var addedItems=managedJoinedCandidates(),opts="";
-  if(!state.dataMemberRemoved)opts+='<button class="rolePick" onclick="confirmTransferCaptain(\'林清禾\')"><div><b>林清禾</b><span>数据分析 · 正式成员</span></div><small>设为队长 →</small></button>';
-  if(!state.memberRemoved)opts+='<button class="rolePick" onclick="confirmTransferCaptain(\'陈予安\')"><div><b>陈予安</b><span>前端开发 · 正式成员</span></div><small>设为队长 →</small></button>';
+  if(!state.dataMemberRemoved)opts+='<button class="rolePick" onclick="confirmTransferCaptain(\'苏嘉\')"><div><b>苏嘉</b><span>数据分析 · 正式成员</span></div><small>设为队长 →</small></button>';
+  if(!state.memberRemoved)opts+='<button class="rolePick" onclick="confirmTransferCaptain(\'何川\')"><div><b>何川</b><span>前端开发 · 正式成员</span></div><small>设为队长 →</small></button>';
   addedItems.forEach(function(item){opts+='<button class="rolePick" onclick="confirmTransferCaptain(\''+e(item.candidate.name)+'\')"><div><b>'+e(item.candidate.name)+'</b><span>'+e(item.recruit.role.name)+' · 正式成员</span></div><small>设为队长 →</small></button>'});
   modal('<h2>转交队长身份</h2><p class="subtitle">只能转交给当前正式成员。转交成功后，你立即按普通正式成员权限处理。</p>'+(opts?'<div class="rolePicker">'+opts+'</div>':'<div class="notice warn">当前没有其他正式成员，不能转交队长。你可以选择解散队伍。</div>')+'<div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button>'+(opts?'':'<button class="btn danger" onclick="closeModal();dissolveManagedTeam()">解散队伍</button>')+'</div>');
 }
@@ -1106,7 +1106,7 @@ function manageGapRole(id){
 
 function removeManagedMember(kind){
   if(!state.managedCaptain){toast("只有当前队长可以移除其他成员");return}
-  var label=kind==="data"?"林清禾 · 数据分析":"陈予安 · 前端开发";
+  var label=kind==="data"?"苏嘉 · 数据分析":"何川 · 前端开发";
   modal('<h2>移除成员？</h2><p class="subtitle">'+e(label)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveManagedMember(\''+kind+'\')">确认移除</button></div>');
 }
 function confirmRemoveManagedMember(kind){
@@ -1136,7 +1136,7 @@ function dissolveManagedTeam(){
 }
 function resolveMemberHours(){
   if(!state.managedCaptain){toast("只有当前队长可以处理成员投入变化");return}
-  modal('<h2>处理成员投入变化</h2><p class="subtitle">陈予安当前阶段预计投入 '+state.frontendCurrentHours+'h / 周，低于原约定 '+state.frontendAgreedHours+'h / 周。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">继续协商</button><button class="btn secondary" onclick="acceptFrontendAgreement()">接受新约定</button><button class="btn danger" onclick="closeModal();removeManagedMember(\'front\')">移除并恢复缺口</button></div>');
+  modal('<h2>处理成员投入变化</h2><p class="subtitle">何川当前阶段预计投入 '+state.frontendCurrentHours+'h / 周，低于原约定 '+state.frontendAgreedHours+'h / 周。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">继续协商</button><button class="btn secondary" onclick="acceptFrontendAgreement()">接受新约定</button><button class="btn danger" onclick="closeModal();removeManagedMember(\'front\')">移除并恢复缺口</button></div>');
 }
 function acceptFrontendAgreement(){state.frontendAgreedHours=state.frontendCurrentHours;closeModal();toast("已接受新的阶段约定投入");render()}
 function renderJoinedTeam(){
@@ -1146,8 +1146,8 @@ function renderJoinedTeam(){
     (state.joinedStageHours<r.role.hours?'<div class="notice warn" style="margin-top:12px">当前投入低于原约定 '+r.role.hours+'h / 周，请与队长继续协商新的投入安排。</div>':'')+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
       teamMember("顾闻","队长 / 产品","负责产品方案与整体推进",false,false)+
-      teamMember("林清禾","数据分析","当前阶段投入 10h / 周",false,false)+
-      teamMember("陈予安","前端开发","当前阶段投入 8h / 周",false,false)+
+      teamMember("顾宁","数据分析","当前阶段投入 10h / 周",false,false)+
+      teamMember("周澈","前端开发","当前阶段投入 8h / 周",false,false)+
       teamMember("你",r.role.name,"当前阶段投入 "+state.joinedStageHours+"h / 周",true,false)+
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
