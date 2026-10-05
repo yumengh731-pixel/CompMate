@@ -40,6 +40,7 @@ var state={
   relationships:[
     {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
     {id:202,type:"invitation",direction:"incoming",recruitId:2,title:"正大杯 · 市场调研岗",party:"许辰",role:"市场调研",status:"pending",time:"2 小时前",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"xuchen_demo",expiresAt:Date.now()+6*24*60*60*1000},
+    {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:13,title:"挑战杯 · 视觉设计岗",party:"周言",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"zhou_demo",expiresAt:Date.now()+7*24*60*60*1000},
     {id:203,type:"application",direction:"outgoing",recruitId:3,title:"互联网+ · 前端开发",party:"陈屿",role:"前端开发",status:"ended",time:"昨天",reason:"对方已暂停并结束本次请求",contact:false,initiator:null,reserved:false,reservedHours:0}
   ]
 };
@@ -95,6 +96,7 @@ function allRecruitments(){return recruits.concat(managedRecruitments)}
 function findRecruit(id){return allRecruitments().filter(function(x){return x.id===Number(id)})[0]||null}
 function activeManagedRecruit(){return findRecruit(state.activeRoleRecruitId)||managedRecruitments[0]}
 function roleFree(r){return Math.max(0,r.role.capacity-r.role.formal-r.role.reserved)}
+function canManageRecruit(r){return !!(r&&r.leader==="你"&&state.verified)}
 function isAwardGoal(t){return /冲|奖|省赛|金奖/.test(t||"")}
 function goalAligned(a,b){if(isAwardGoal(a))return isAwardGoal(b);return true}
 function hasUserContact(){return !!(state.userContact&&String(state.userContact).trim())}
@@ -169,7 +171,7 @@ function shell(){
     '<div class="shell"><aside class="sidebar">'+
       '<div class="brand"><div class="brandMark">C</div><div><div class="brandName">竞旅 CompMate</div><div class="brandSub">大学生竞赛组队平台</div></div></div>'+
       '<nav class="nav">'+navButton("home","首页")+navButton("explore","寻找")+navButton("progress","组队 / 进度",pending)+navButton("profile","我的")+'</nav>'+
-      '<div class="sideBottom"><div class="identity"><span class="dot"></span>'+(state.verified?"广东工业大学 · 已认证":"学校身份未认证")+'<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div><button class="sideGhost" onclick="demoShare()">演示：外部分享进入</button></div>'+
+      '<div class="sideBottom"><div class="identity"><span class="dot"></span>'+(state.verified?"广东工业大学 · 已认证":"学校身份未认证")+'<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div><button class="sideGhost" onclick="demoShare()">预览外部分享</button></div>'+
     '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">竞旅 CompMate</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><div class="timePill"><span>当前可投入</span><b>'+Math.max(0,remaining())+'h</b></div></div></header><div id="page"></div></main></div>'+
     (state.route!=="publish"?'<button class="fabPublish" onclick="beginPublish()"><span>＋</span><b>发布招募</b></button>':'')+
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
@@ -183,6 +185,7 @@ function go(r){
   window.scrollTo(0,0);
 }
 function render(){
+  state.relationships.forEach(refreshRelationExpiry);
   shell();
   var p=byId("page");
   if(state.route==="home")renderHome(p);
@@ -361,7 +364,7 @@ function relaxFilters(kind){
   toast("已放宽非核心筛选；不可绕过条件不会被放宽");render();
 }
 function openRolePicker(){
-  var rows=managedRecruitments.filter(function(r){return r.status!=="ended"}).map(function(r){
+  var rows=managedRecruitments.filter(function(r){return r.status!=="ended"&&canManageRecruit(r)}).map(function(r){
     return '<button class="rolePick '+(r.id===state.activeRoleRecruitId?"active":"")+'" onclick="chooseRole('+r.id+')"><div><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><span>'+e(r.role.task)+'</span></div><small>'+r.role.hours+'h / 周 · '+e(r.campus)+'</small></button>';
   }).join("");
   modal('<h2>切换招募岗位</h2><p class="subtitle">找队友必须绑定一个具体招募缺口。切换后候选人的时间、任务和推荐理由会重新计算。</p><div class="rolePicker">'+rows+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">关闭</button></div>');
@@ -475,11 +478,14 @@ function renderCandidate(p){
     '<aside class="panel sticky"><h3 class="sectionTitle">针对「'+e(r.role.name)+'」的判断</h3><div class="reasons" style="margin-top:12px"><b>匹配维度</b><br>'+fit.dims.join(" · ")+'</div>'+(!fit.timeOk?'<div class="notice warn" style="margin-top:10px">该同学当前可投入 '+c.hours+'h / 周，低于岗位要求 '+r.role.hours+'h / 周。</div>':'')+(!hard.ok?'<div class="notice warn" style="margin-top:10px">'+e(hard.reason)+'。资料仍可查看，但不能发起邀请。</div>':'')+'<div class="actions"><button class="btn secondary" onclick="candidateMore('+c.id+')">更多</button><button class="btn primary push" '+((hard.ok||existingInvite)?'':'disabled')+' onclick="'+(existingInvite?"state.progressView=\'relations\';go(\'progress\')":"inviteCandidate("+c.id+")")+'">'+(existingInvite?"查看邀请进度":hard.ok?"邀请沟通":"当前不可邀请")+'</button></div></aside></div>';
 }
 function activeInviteForCandidate(recruitId,candidateId){
-  return state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.recruitId===recruitId&&x.candidateId===candidateId&&x.status!=="ended"})[0]||null;
+  return state.relationships.filter(function(x){
+    return x.recruitId===recruitId&&x.candidateId===candidateId&&x.status!=="ended"&&!currentUserIsCandidate(x);
+  })[0]||null;
 }
 function inviteCandidate(id){
   var c=candidates.filter(function(x){return x.id===id})[0],r=activeManagedRecruit();
   if(!c||!r)return;
+  if(!canManageRecruit(r)){toast("只有当前队长可以处理候选人或发送邀请");return}
   if(activeInviteForCandidate(r.id,c.id)){toast("该候选人在此招募下已有进行中的邀请");state.progressView="relations";go("progress");return}
   if(!state.loggedIn||!state.verified){state.authReturn="invite";state.selectedCandidate=id;go("auth");return}
   if(!state.profileComplete){state.profileReturn="invite";state.selectedCandidate=id;go("profileEdit");toast("请先完成最小个人档案");return}
@@ -558,7 +564,8 @@ function progressRelations(){
   return '<div class="tabs">'+tabs.map(function(t){return '<button class="tab '+(state.tab===t[0]?"active":"")+'" onclick="state.tab=\''+t[0]+'\';render()">'+t[1]+'</button>'}).join("")+'</div><div class="list">'+(rs.map(requestCard).join("")||empty("当前没有该状态记录","切换其他状态查看。"))+'</div>';
 }
 function currentUserIsCandidate(x){
-  return !(x&&x.type==="invitation"&&x.direction==="outgoing");
+  if(!x)return true;
+  return (x.type==="application"&&x.direction==="outgoing")||(x.type==="invitation"&&x.direction==="incoming");
 }
 function requestCard(x){
   refreshRelationExpiry(x);
@@ -566,7 +573,7 @@ function requestCard(x){
   var task=r&&r.role?'<div class="requestTask">任务：'+e(r.role.task)+'</div>':'';
   var saturated=r&&r.role.formal<r.role.capacity&&roleFree(r)<=0;
   if(x.status==="pending"){
-    if(x.type==="invitation"&&x.direction==="incoming")act='<button class="btn secondary" onclick="rejectReq('+x.id+')">拒绝</button><button class="btn primary" onclick="agreeReq('+x.id+')">同意沟通</button>';
+    if((x.type==="invitation"&&x.direction==="incoming")||(x.type==="application"&&x.direction==="incoming"))act='<button class="btn secondary" onclick="rejectReq('+x.id+')">拒绝</button><button class="btn primary" onclick="agreeReq('+x.id+')">同意沟通</button>';
     else if(x.type==="invitation"&&x.direction==="outgoing")act='<button class="btn secondary" onclick="cancelReq('+x.id+')">撤回邀请</button><button class="btn text" onclick="simulateInviteAccepted('+x.id+')">对方同意</button>';
     else act='<button class="btn secondary" onclick="cancelReq('+x.id+')">取消申请</button>';
     note='<div class="relationMeta">请求有效期：'+e(formatExpiry(x))+'</div>';
@@ -595,7 +602,7 @@ function requestCard(x){
 }
 function rel(id){return state.relationships.filter(function(x){return x.id===id})[0]||null}
 function relationRecruit(x){return x?findRecruit(x.recruitId):null}
-function rejectReq(id){var x=rel(id);if(!x)return;x.status="ended";x.reason="你已拒绝本次邀请";toast("已拒绝，不产生负面标签");render()}
+function rejectReq(id){var x=rel(id);if(!x)return;x.status="ended";x.reason=x.type==="application"?"你已拒绝本次申请":"你已拒绝本次邀请";x.expiresAt=null;toast("已拒绝，不产生负面标签");render()}
 function cancelReq(id){var x=rel(id);if(!x)return;releaseReservation(x);x.status="ended";x.reason=x.type==="invitation"?"邀请已撤回":"申请已取消";toast(x.reason);render()}
 function agreeReq(id){
   var x=rel(id);if(!x)return;
@@ -661,6 +668,7 @@ function candidateStartConfirm(id){
 function confirmCandidateStart(id){var x=rel(id);if(!x)return;x.status="confirming";x.initiator="candidate";x.time="刚刚 · 等待队长最终确认";x.expiresAt=Date.now()+24*60*60*1000;x.conditionUpdated=false;closeModal();toast("确认请求已发送");render()}
 function captainStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  if(!canManageRecruit(r)){toast("只有当前队长可以发起队长侧正式确认");return}
   if(x.status!=="communication"){toast("当前关系不能发起正式确认");return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("角色已正式招满或招募已结束");return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("名额正在被其他候选人确认");return}
@@ -685,6 +693,7 @@ function openLeaderFinalizeCandidateConfirm(id){
 }
 function leaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  if(!canManageRecruit(r)){toast("只有当前队长可以完成最终确认");return}
   if(x.status!=="confirming"||x.initiator!=="candidate"){toast("当前不是候选人发起的确认");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){x.status="communication";x.initiator=null;x.expiresAt=null;toast("最终校验失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){x.status="ended";x.reason="角色已正式招满";toast("最终校验失败：角色已正式招满");render();return}
@@ -774,7 +783,7 @@ function transferCaptain(){
     (state.memberRemoved?'':'<button class="rolePick" onclick="confirmTransferCaptain(\'陈予安\')"><div><b>陈予安</b><span>前端开发 · 正式成员</span></div><small>设为队长 →</small></button>');
   modal('<h2>转交队长身份</h2><p class="subtitle">只能转交给当前正式成员。转交成功后，你立即按普通正式成员权限处理。</p><div class="rolePicker">'+opts+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button></div>');
 }
-function confirmTransferCaptain(name){state.managedCaptain=false;state.managedCaptainName=name;closeModal();toast("队长身份已转交给 "+name);render()}
+function confirmTransferCaptain(name){var r=activeManagedRecruit();state.managedCaptain=false;state.managedCaptainName=name;if(r)r.leader=name;closeModal();toast("队长身份已转交给 "+name+"；你的管理权限已立即更新");render()}
 function leaveManagedTeam(){
   if(state.managedCaptain){toast("队长退出前必须先转交队长身份");return}
   modal('<h2>退出该队伍？</h2><p class="subtitle">退出后你的角色恢复为空缺，相关正式投入不再计入你的剩余时间。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmLeaveManagedTeam()">确认退出</button></div>');
@@ -816,7 +825,7 @@ function simulateTeam(){
   if(r.role.formal<r.role.capacity)r.role.formal=r.role.capacity;
   r.status="full";
   if(existing){
-    releaseReservation(existing);existing.status="joined";existing.initiator=null;existing.time="演示数据 · 正式组队";
+    releaseReservation(existing);existing.status="joined";existing.initiator=null;existing.time="刚刚 · 正式组队";
   }else{
     state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:"星火队",role:r.role.name,status:"joined",time:"演示数据",contact:true,initiator:null,reserved:false,reservedHours:0});
   }
@@ -867,7 +876,7 @@ function renderProfileEdit(p){
     '<div class="field full"><label>希望承担的任务 <span class="req">*</span></label><div class="checkRow"><button class="check on">用户调研</button><button class="check on">商业分析</button><button class="check">产品策划</button><button class="check">数据分析</button></div></div>'+
     '<div class="field full"><label>技能标签 <span class="req">*</span></label><input class="input" value="Excel、报告写作、用户访谈"></div><div class="field"><label>可参与日期 <span class="req">*</span></label><input class="input" value="2026/10/05 - 2026/12/31"></div><div class="field"><label>参赛目标 <span class="req">*</span></label><select class="select"><option>优先冲奖</option><option>完整参赛</option><option>积累经验</option></select></div>'+
     '<div class="field full"><label>协作方式 <span class="req">*</span></label><input class="input" value="关键节点提前同步，出现延误及时说明"></div><div class="field full"><label>联系方式（隐私字段）</label><input class="input" id="profileContact" value="'+e(state.userContact)+'" placeholder="微信 / QQ / 手机至少一种"><div class="help">不会出现在公开档案；发起请求前至少填写一种，双方同意沟通后按次开放。</div></div><div class="field full"><label>成果证据链接（可选）</label><input class="input" id="evidenceUrl" value="'+e(state.evidenceUrl)+'" placeholder="仅支持 http / https"><div class="help">平台仅标记为“用户提供”，不对第三方内容真实性背书。</div></div><div class="field full"><label>经历与具体产出（可选）</label><textarea class="textarea">挑战杯项目负责人：负责需求调研、方案设计、团队推进与成果整合。</textarea></div></div>'+
-    '<div class="actions end"><button class="btn secondary" onclick="go(\'profile\')">取消</button><button class="btn primary" onclick="saveProfile()">保存档案</button></div></div><aside class="panel sticky"><h3 class="sectionTitle">档案规则</h3><div class="notice '+(hasUserContact()?"good":"warn")+'">'+(hasUserContact()?"当前最小字段完整；完成认证后可正常申请 / 邀请。":"当前未填写联系方式：可保存和浏览，但不能发起申请 / 邀请或完成待沟通闭环。")+'</div><div class="section"><p class="subtitle">平台不公开能力评分、责任心评分、人才等级或排行榜。</p></div><div class="section"><button class="btn secondary" onclick="state.verified=false;state.authReturn=\'profile\';go(\'auth\')">重新演示学校认证</button></div></aside></div>';
+    '<div class="actions end"><button class="btn secondary" onclick="go(\'profile\')">取消</button><button class="btn primary" onclick="saveProfile()">保存档案</button></div></div><aside class="panel sticky"><h3 class="sectionTitle">档案规则</h3><div class="notice '+(hasUserContact()?"good":"warn")+'">'+(hasUserContact()?"当前最小字段完整；完成认证后可正常申请 / 邀请。":"当前未填写联系方式：可保存和浏览，但不能发起申请 / 邀请或完成待沟通闭环。")+'</div><div class="section"><p class="subtitle">平台不公开能力评分、责任心评分、人才等级或排行榜。</p></div><div class="section"><button class="btn secondary" onclick="state.verified=false;state.authReturn=\'profile\';go(\'auth\')">重新认证</button></div></aside></div>';
 }
 function openEvidence(){
   var u=String(state.evidenceUrl||"").trim();
@@ -892,6 +901,12 @@ function saveProfile(){
 function beginPublish(){
   if(!state.loggedIn||!state.verified){state.authReturn="publish";go("auth");return}
   if(!state.profileComplete){state.profileReturn="publish";go("profileEdit");toast("请先补齐最小个人档案");return}
+  var r=activeManagedRecruit();
+  if(!canManageRecruit(r)){
+    var owned=managedRecruitments.filter(function(x){return canManageRecruit(x)&&x.status!=="ended"})[0];
+    if(!owned){toast("你当前没有可编辑的招募；新建招募入口将在本轮试点按需开放");return}
+    state.activeRoleRecruitId=owned.id;
+  }
   go("publish");
 }
 function periodInput(r,which){
@@ -937,7 +952,7 @@ function previewRecruit(){
   modal('<h2>招募预览</h2><div class="roleBox"><div class="meta">'+e(comp)+'</div><b>'+e(title)+'</b><p class="subtitle">'+e(byId("pubTask").value)+'</p><div class="badges"><span class="badge blue">'+e(role)+' · '+e(byId("pubCap").value)+' 人</span><span class="badge">'+e(byId("pubSkills").value)+'</span><span class="badge">'+e(byId("pubHours").value)+'h / 周</span></div><p class="subtitle">'+e(byId("pubTeam").value)+' · '+e(byId("pubProgress").value)+'</p></div><div class="modalFoot"><button class="btn primary" onclick="closeModal()">返回编辑</button></div>');
 }
 function saveRecruit(){
-  var r=activeManagedRecruit();
+  var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以编辑招募");return}
   var comp=normalizeCompetitionName(byId("pubComp").value),title=String(byId("pubTitle").value||"").trim(),role=String(byId("pubRole").value||"").trim(),task=String(byId("pubTask").value||"").trim(),skills=String(byId("pubSkills").value||"").split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean),target=String(byId("pubTarget").value||"").trim(),team=String(byId("pubTeam").value||"").trim(),progress=String(byId("pubProgress").value||"").trim(),collab=String(byId("pubCollab").value||"").trim();
   var cap=Number(byId("pubCap").value),hours=Number(byId("pubHours").value),start=byId("pubStart").value,end=byId("pubEnd").value,deadline=byId("pubDeadline").value,hard=byId("pubHard").value==="1";
   if(!comp||!role||!task||!skills.length||!target||!team||!progress||!start||!end||!deadline){toast("请补齐所有必填字段");return}
@@ -966,14 +981,14 @@ function saveRecruit(){
   r.status="active";toast(coreChanged?"招募已保存；相关候选人将看到条件更新提示":"招募已保存并发布");render();
 }
 function pauseRecruit(){
-  var r=activeManagedRecruit();
+  var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以暂停或恢复招募");return}
   if(r.status==="ended"){toast("主动结束的本轮招募不能直接恢复，请新建或复制招募");return}
   if(deadlinePassed(r)){toast("招募已过截止时间，需先设置新的截止时间后才能重新开放");return}
   r.status=r.status==="paused"?"active":"paused";
   toast(r.status==="paused"?"已暂停新的加入申请；截止前仍可主动邀请":"已恢复接收申请");render();
 }
 function endRecruit(){
-  var r=activeManagedRecruit();
+  var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以结束招募");return}
   state.relationships.forEach(function(x){
     if(x.recruitId===r.id&&x.status!=="joined"&&x.status!=="ended"){
       releaseReservation(x);x.status="ended";x.reason="队长已结束本轮招募";x.expiresAt=null;
@@ -983,7 +998,7 @@ function endRecruit(){
   toast("招募已结束，未完成的组队请求已关闭");render();
 }
 function coreChange(){
-  var r=activeManagedRecruit();
+  var r=activeManagedRecruit();if(!canManageRecruit(r)){toast("无权限：只有当前队长可以修改核心条件");return}
   var confirming=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status==="confirming"})[0];
   if(confirming){toast("当前存在正式确认中关系，必须先结束或撤回确认");return}
   modal('<h2>核心条件修改规则</h2><p class="subtitle">角色、任务、必需技能、最低投入、项目周期、参赛目标和硬性校区条件发生变化时，保存后会通知待处理 / 待沟通候选人。</p><div class="notice warn">已经形成的正式成员约定不会被招募编辑自动改写；需要在队伍内另行协商确认。</div><div class="modalFoot"><button class="btn primary" onclick="closeModal()">知道了</button></div>');
