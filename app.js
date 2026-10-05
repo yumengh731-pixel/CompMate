@@ -978,16 +978,17 @@ function confirmLeave(){
 /* PROFILE */
 function renderProfile(p){
   var pct=state.total?Math.min(100,Math.round(state.committed/state.total*100)):0;
-  p.innerHTML=demoBar()+'<div class="layout"><div class="panel"><div class="profileHero"><div class="avatar">'+e((state.profileName||"黄").charAt(0))+'</div><div><div class="bigTitle" style="margin:0">'+e(state.profileName)+'</div><div class="meta">广东工业大学 · '+e(state.profileCampus)+' · 大二 · 国际经济与贸易</div></div><span class="verifiedTag">'+(state.verified?"学校已认证":"未认证")+'</span></div>'+
+  p.innerHTML=demoBar()+'<div class="layout"><div class="panel"><div class="profileHero"><div class="avatar">'+e((state.profileName||"黄").charAt(0))+'</div><div><div class="bigTitle" style="margin:0">'+e(state.profileName)+'</div><div class="meta">广东工业大学 · '+e(state.profileCampus)+' · '+e(state.profileGrade)+' · '+e(state.profileMajor)+'</div></div><span class="verifiedTag">'+(state.verified?"学校已认证":"未认证")+'</span></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">我能承担的任务与技能</h3><button class="btn secondary" onclick="go(\'profileEdit\')">编辑档案</button></div><div class="badges">'+state.profileTasks.split(/[、,，]/).filter(Boolean).map(function(x){return '<span class="badge blue">'+e(x.trim())+'</span>'}).join("")+badges(state.profileSkills.slice(0,6))+'</div></div>'+
     '<div class="section"><h3 class="sectionTitle">相关经历与具体产出</h3><div class="roleBox"><b>挑战杯 · 项目负责人</b><p class="subtitle">负责需求调研、方案设计、团队推进与成果整合。</p><button class="btn text" onclick="openEvidence()">查看用户提供的成果链接</button></div><div class="roleBox"><b>行业经济分析大赛</b><p class="subtitle">负责资料检索、分析框架与报告撰写。</p></div></div></div>'+
-    '<aside class="panel sticky"><h3 class="sectionTitle">时间与目标</h3><div class="timeCapacityViz"><div class="timeCapacityNumbers"><div><b>'+Math.max(0,remaining())+'h</b><span>剩余可投入</span></div><small>总 '+state.total+'h / 周</small></div><div class="capacityTrack"><i style="width:'+pct+'%"></i></div><div class="capacityLegend"><span><i class="used"></i>已正式投入 '+state.committed+'h</span><span><i class="free"></i>剩余 '+Math.max(0,remaining())+'h</span></div></div><div class="section"><div class="kv"><div class="k">可参与日期</div><div>'+e(state.availStart)+' 至 '+e(state.availEnd)+'</div><div class="k">参赛目标</div><div>'+e(state.profileTarget)+'</div><div class="k">协作方式</div><div>'+e(state.profileCollab)+'</div><div class="k">联系方式</div><div>'+(hasUserContact()?'微信 · 已填写，按次授权':'未填写 · 不能发起申请 / 邀请')+'</div></div></div><div class="notice">学校认证只证明属于该学校，不代表能力水平。</div></aside></div>';
+    '<aside class="panel sticky"><h3 class="sectionTitle">时间与目标</h3><div class="timeCapacityViz"><div class="timeCapacityNumbers"><div><b>'+Math.max(0,remaining())+'h</b><span>剩余可投入</span></div><small>总 '+state.total+'h / 周</small></div><div class="capacityTrack"><i style="width:'+pct+'%"></i></div><div class="capacityLegend"><span><i class="used"></i>已正式投入 '+state.committed+'h</span><span><i class="free"></i>剩余 '+Math.max(0,remaining())+'h</span></div></div><div class="section"><div class="kv"><div class="k">可参与日期</div><div>'+e(state.availStart)+' 至 '+e(state.availEnd)+'</div><div class="k">参赛目标</div><div>'+e(state.profileTarget)+'</div><div class="k">协作方式</div><div>'+e(state.profileCollab)+'</div><div class="k">联系方式</div><div>'+(hasUserContact()?'微信 · 已填写，按次授权':'未填写 · 不能发起申请 / 邀请')+'</div></div></div><div class="notice">学校认证只证明属于该学校，不代表能力水平。时间信息为用户自行声明 / 约定值，平台不将其表述为客观验证时长。</div></aside></div>';
 }
 function renderProfileEdit(p){
-  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">最小可匹配档案</h2><p class="subtitle">经历和成果证明可后补；显示名称、学校 / 校区、任务、技能、可参与日期、每周时间、协作方式和参赛目标构成最小档案。</p><div class="formGrid">'+
+  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">最小可匹配档案</h2><p class="subtitle">经历和成果证明可后补；显示名称、学校 / 校区、年级、专业、任务、技能、可参与日期、每周时间、协作方式和参赛目标构成最小档案。</p><div class="formGrid">'+
     '<div class="field"><label>显示名称 <span class="req">*</span></label><input class="input" id="profileName" value="'+e(state.profileName)+'"></div>'+
     '<div class="field"><label>学校 / 校区 <span class="req">*</span></label><select class="select" id="profileCampus"><option '+(state.profileCampus==="龙洞校区"?"selected":"")+'>龙洞校区</option><option '+(state.profileCampus==="大学城校区"?"selected":"")+'>大学城校区</option></select><div class="help">首批试点学校固定为广东工业大学，保留校区筛选。</div></div>'+
-    '<div class="field"><label>年级 / 专业</label><input class="input" value="大二 / 国际经济与贸易"></div>'+
+    '<div class="field"><label>年级 <span class="req">*</span></label><input class="input" id="profileGrade" value="'+e(state.profileGrade)+'" placeholder="如：大二"></div>'+
+    '<div class="field"><label>专业 <span class="req">*</span></label><input class="input" id="profileMajor" value="'+e(state.profileMajor)+'" placeholder="如：国际经济与贸易"></div>'+
     '<div class="field"><label>每周总可投入 <span class="req">*</span></label><input class="input" id="totalHours" type="number" min="0" value="'+state.total+'"></div>'+
     '<div class="field full"><label>希望承担的角色 / 任务 <span class="req">*</span></label><input class="input" id="profileTasks" value="'+e(state.profileTasks)+'" placeholder="如：用户调研、商业分析"></div>'+
     '<div class="field full"><label>技能标签 <span class="req">*</span></label><input class="input" id="profileSkills" value="'+e(state.profileSkills.join("、"))+'" placeholder="至少 1 项"></div>'+
@@ -1008,26 +1009,24 @@ function openEvidence(){
   modal('<h2>即将离开 CompMate</h2><p class="subtitle">该链接由用户提供，平台不对第三方内容真实性或安全性背书。</p>'+(unknown?'<div class="notice warn">当前为未知域名，请注意防范钓鱼、付款诱导和个人信息泄露。</div>':'')+'<div class="roleBox" style="margin-top:10px">'+e(u)+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();toast(\'已确认外链风险；正式产品将打开新页面\')">继续前往</button></div>');
 }
 function saveProfile(){
-  var name=String(byId("profileName").value||"").trim(),campus=String(byId("profileCampus").value||"").trim(),tasks=String(byId("profileTasks").value||"").trim(),skills=String(byId("profileSkills").value||"").split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean),target=String(byId("profileTarget").value||"").trim(),collab=String(byId("profileCollab").value||"").trim();
+  var name=String(byId("profileName").value||"").trim(),campus=String(byId("profileCampus").value||"").trim(),grade=String(byId("profileGrade").value||"").trim(),major=String(byId("profileMajor").value||"").trim(),tasks=String(byId("profileTasks").value||"").trim(),skills=String(byId("profileSkills").value||"").split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean),target=String(byId("profileTarget").value||"").trim(),collab=String(byId("profileCollab").value||"").trim();
   var start=byId("availStart").value,end=byId("availEnd").value,hours=Number(byId("totalHours").value),contact=String(byId("profileContact").value||"").trim(),proof=String(byId("evidenceUrl").value||"").trim();
   if(!Number.isFinite(hours)||hours<0){toast("每周总可投入时间需为 0 或正数");return}
   if(start&&end&&new Date(start)>new Date(end)){toast("可参与开始日期不能晚于结束日期");return}
   if(proof&&!/^https?:\/\//i.test(proof)){toast("成果证据链接仅支持 http / https");return}
-  state.profileName=name;state.profileCampus=campus;state.userCampus=campus;state.profileTasks=tasks;state.profileSkills=skills;state.profileTarget=target;state.profileCollab=collab;state.availStart=start;state.availEnd=end;state.total=hours;state.userContact=contact;state.evidenceUrl=proof;
-  var missing=[];if(!name)missing.push("显示名称");if(!campus)missing.push("学校 / 校区");if(!tasks)missing.push("角色 / 任务");if(!skills.length)missing.push("技能标签");if(!start||!end)missing.push("可参与日期");if(!collab)missing.push("协作方式");if(!target)missing.push("参赛目标");
+  if(unsafePublicText([name,grade,major,tasks,skills.join(" "),collab].join(" "))){toast("公开档案字段中疑似包含联系方式或高风险引导，请改用独立联系方式字段");return}
+  state.profileName=name;state.profileCampus=campus;state.profileGrade=grade;state.profileMajor=major;state.userCampus=campus;state.profileTasks=tasks;state.profileSkills=skills;state.profileTarget=target;state.profileCollab=collab;state.availStart=start;state.availEnd=end;state.total=hours;state.userContact=contact;state.evidenceUrl=proof;
+  var missing=[];if(!name)missing.push("显示名称");if(!campus)missing.push("学校 / 校区");if(!grade)missing.push("年级");if(!major)missing.push("专业");if(!tasks)missing.push("角色 / 任务");if(!skills.length)missing.push("技能标签");if(!start||!end)missing.push("可参与日期");if(!collab)missing.push("协作方式");if(!target)missing.push("参赛目标");
   state.profileComplete=missing.length===0;
   if(!state.profileComplete){toast("草稿已保存；仍缺少："+missing.join("、"));render();return}
   toast("个人档案已保存");
   var ret=state.profileReturn;state.profileReturn="";
-  if(ret==="publish")beginPublish();
+  if(ret==="publish")beginPublish(state.publishNewRequested);
   else if(ret==="apply"){state.route="detail";render();setTimeout(function(){applyRecruit(state.selectedRecruit)},150)}
   else if(ret==="invite"){state.mode="people";state.route="candidate";render();setTimeout(function(){inviteCandidate(state.selectedCandidate)},150)}
   else if(ret==="progress"){state.progressView="relations";go("progress")}
   else go("profile");
 }
-
-
-/* PUBLISH */
 function editManagedRecruit(){
   if(!state.managedCaptain){toast("只有当前队长可以编辑该队伍招募");return}
   state.activeRoleRecruitId=state.managedTeamRecruitId;beginPublish();
