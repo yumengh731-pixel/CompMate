@@ -23,11 +23,21 @@ var state={
   profileReturn:"",
   pendingApplyRecruitId:null,
   memberRemoved:false,
+  managedCaptain:true,
+  managedCaptainName:"你",
+  frontendAgreedHours:8,
+  frontendCurrentHours:6,
+  userCampus:"龙洞校区",
+  profileSkills:["Excel","报告写作","用户访谈","商业分析","数据分析","可视化"],
+  userContact:"cm_demo_2026",
+  contactUnlockEvents:[],
+  reports:[],
+  evidenceUrl:"https://example.com/compmate-output",
   teamFilters:{campus:false,time:false,active:false,award:false,category:""},
   peopleFilters:{time:false,output:false,campus:false,target:false,capability:""},
   relationships:[
-    {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0},
-    {id:202,type:"invitation",direction:"incoming",recruitId:2,title:"正大杯 · 市场调研岗",party:"许辰",role:"市场调研",status:"pending",time:"2 小时前",contact:false,initiator:null,reserved:false,reservedHours:0},
+    {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
+    {id:202,type:"invitation",direction:"incoming",recruitId:2,title:"正大杯 · 市场调研岗",party:"许辰",role:"市场调研",status:"pending",time:"2 小时前",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"xuchen_demo",expiresAt:Date.now()+6*24*60*60*1000},
     {id:203,type:"application",direction:"outgoing",recruitId:3,title:"互联网+ · 前端开发",party:"陈屿",role:"前端开发",status:"ended",time:"昨天",reason:"对方已暂停并结束本次请求",contact:false,initiator:null,reserved:false,reservedHours:0}
   ]
 };
@@ -46,10 +56,10 @@ var managedRecruitments=[
 ];
 
 var candidates=[
-  {id:11,name:"林清禾",campus:"大学城校区",grade:"大二",major:"数据科学与大数据技术",roles:["数据分析","数学建模"],skills:["Python","SPSS","数据可视化"],hours:10,target:"冲省奖",proof:true,exp:"正大杯校赛二等奖 · 负责数据清洗、统计检验和结果可视化"},
-  {id:12,name:"陈予安",campus:"大学城校区",grade:"大二",major:"计算机科学与技术",roles:["前端开发","数据处理"],skills:["React","JavaScript","Python"],hours:8,target:"完整参赛",proof:true,exp:"互联网+校赛项目 · 负责前端页面与数据接口"},
-  {id:13,name:"周言",campus:"龙洞校区",grade:"大二",major:"工商管理",roles:["商业分析","用户调研"],skills:["访谈","Excel","报告写作"],hours:6,target:"冲奖",proof:true,exp:"行业经济分析大赛 · 负责访谈、资料分析与报告"},
-  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS"],hours:5,target:"积累经验",proof:false,exp:"社团招新视觉 · 负责海报与展示物料设计"}
+  {id:11,name:"林清禾",campus:"大学城校区",grade:"大二",major:"数据科学与大数据技术",roles:["数据分析","数学建模"],skills:["Python","SPSS","数据可视化","数据分析"],hours:10,target:"冲省奖",proof:true,contact:"lin_demo",exp:"正大杯校赛二等奖 · 负责数据清洗、统计检验和结果可视化"},
+  {id:12,name:"陈予安",campus:"大学城校区",grade:"大二",major:"计算机科学与技术",roles:["前端开发","数据处理"],skills:["React","JavaScript","Python","HTML/CSS"],hours:8,target:"完整参赛",proof:true,contact:"chen_demo",exp:"互联网+校赛项目 · 负责前端页面与数据接口"},
+  {id:13,name:"周言",campus:"龙洞校区",grade:"大二",major:"工商管理",roles:["商业分析","用户调研"],skills:["访谈","Excel","报告写作","商业分析"],hours:6,target:"冲奖",proof:true,contact:"zhou_demo",exp:"行业经济分析大赛 · 负责访谈、资料分析与报告"},
+  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS","视觉设计"],hours:5,target:"积累经验",proof:false,contact:"song_demo",exp:"社团招新视觉 · 负责海报与展示物料设计"}
 ];
 
 function e(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
@@ -61,6 +71,48 @@ function activeManagedRecruit(){return findRecruit(state.activeRoleRecruitId)||m
 function roleFree(r){return Math.max(0,r.role.capacity-r.role.formal-r.role.reserved)}
 function isAwardGoal(t){return /冲|奖|省赛|金奖/.test(t||"")}
 function goalAligned(a,b){if(isAwardGoal(a))return isAwardGoal(b);return true}
+function hasUserContact(){return !!(state.userContact&&String(state.userContact).trim())}
+function parseDeadline(r){
+  var m=String(r.deadline||"").match(/(\d{1,2})\/(\d{1,2})\s+(\d{1,2}):(\d{2})/);
+  if(!m)return null;
+  return new Date(2026,Number(m[1])-1,Number(m[2]),Number(m[3]),Number(m[4]));
+}
+function deadlinePassed(r){var d=parseDeadline(r);return d?Date.now()>d.getTime():false}
+function userMeetsRecruitHardRules(r){
+  if(!r)return {ok:false,reason:"招募不存在"};
+  if(r.status==="ended"||r.status==="full")return {ok:false,reason:r.status==="full"?"角色已招满":"招募已结束"};
+  if(deadlinePassed(r))return {ok:false,reason:"招募已过截止时间"};
+  if(r.hard&&r.campus!==state.userCampus)return {ok:false,reason:"该招募将校区设为不可放宽条件"};
+  var missing=(r.role.skills||[]).filter(function(x){return state.profileSkills.indexOf(x)<0});
+  if(missing.length)return {ok:false,reason:"缺少必需技能："+missing.join("、")};
+  return {ok:true,reason:""};
+}
+function candidateMeetsHardRules(c,r){
+  if(!c||!r)return {ok:false,reason:"候选人或招募不存在"};
+  if(state.blocked[c.id])return {ok:false,reason:"你已拉黑该候选人"};
+  if(r.status==="ended"||r.status==="full")return {ok:false,reason:r.status==="full"?"角色已招满":"招募已结束"};
+  if(deadlinePassed(r))return {ok:false,reason:"招募已过截止时间"};
+  if(r.hard&&c.campus!==r.campus)return {ok:false,reason:"该招募将校区设为不可放宽条件"};
+  var pool=c.skills.concat(c.roles);
+  var missing=(r.role.skills||[]).filter(function(x){return pool.indexOf(x)<0});
+  if(missing.length)return {ok:false,reason:"候选人缺少必需技能："+missing.join("、")};
+  return {ok:true,reason:""};
+}
+function formatExpiry(x){
+  if(!x||!x.expiresAt)return "";
+  var ms=x.expiresAt-Date.now();
+  if(ms<=0)return "已超时";
+  var h=Math.ceil(ms/3600000);
+  return h>24?"剩余 "+Math.ceil(h/24)+" 天":"剩余约 "+h+" 小时";
+}
+function normalizeCompetitionName(v){return String(v||"").trim().replace(/\s+/g," ").replace(/[＋+]/g,"+")}
+function unsafePublicText(v){return /(微信|vx|wechat|qq|手机号|1[3-9]\d{9}|加我|私聊付款|转账|代刷)/i.test(String(v||""))}
+function registerContactUnlock(){
+  var now=Date.now(),windowMs=10*60*1000;
+  state.contactUnlockEvents=state.contactUnlockEvents.filter(function(t){return now-t<windowMs});
+  if(state.contactUnlockEvents.length>=5)return false;
+  state.contactUnlockEvents.push(now);return true;
+}
 function toast(msg){var t=byId("toast");if(!t)return;t.textContent=msg;t.classList.add("show");clearTimeout(state.toastTimer);state.toastTimer=setTimeout(function(){t.classList.remove("show")},1800)}
 function modal(html){byId("modalRoot").innerHTML='<div class="modalBg" id="modalBg"><div class="modal">'+html+'</div></div>';byId("modalBg").onclick=function(x){if(x.target.id==="modalBg")closeModal()}}
 function closeModal(){byId("modalRoot").innerHTML=""}
@@ -130,6 +182,7 @@ function renderHome(p){
 
   p.innerHTML=
     '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 隐私联系方式</div></section>'+
+      '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的真实任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
     '<section class="homeWorkbench">'+
       '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、当前可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
       '<div class="smartRecommendList">'+recommended.map(smartRecommendRow).join("")+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
