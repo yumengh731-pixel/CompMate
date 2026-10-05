@@ -271,7 +271,7 @@ function progressPage(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communication=state.relationships.filter(function(x){return x.status==="communication"}).length;
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
-  var joined=state.relationships.filter(function(x){return x.status==="joined"}).length+(state.joined?1:0);
+  var joined=Math.max(state.relationships.filter(function(x){return x.status==="joined"}).length,state.joined?1:0);
 
   p.innerHTML=demoBar()+
   '<section class="progressHero"><div><span class="pageKicker">TEAMING PROGRESS</span><h2>组队 / 进度</h2><p>把“申请—沟通—确认—已组队”放在一条状态链里，不再让用户在两个 Tab 之间来回找。</p></div><div class="progressStats"><div><b>'+pending+'</b><span>待处理</span></div><div><b>'+communication+'</b><span>待沟通</span></div><div><b>'+confirming+'</b><span>确认中</span></div><div><b>'+joined+'</b><span>已组队</span></div></div></section>'+
