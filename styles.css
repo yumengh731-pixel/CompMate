@@ -1052,3 +1052,30 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   .rolePick small{text-align:left}
   .teamViewSwitch{width:100%;display:grid;grid-template-columns:1fr 1fr}
 }
+
+/* ===== V9 readability polish ===== */
+.smartRecMeta{font-size:10px}
+.smartRecMain p{font-size:11px}
+.smartRecTags span{font-size:10px}
+.smartRecReason span{font-size:9px}
+.smartRecReason b{font-size:11px}
+.smartRecReason small{font-size:9px}
+.reminderDate{font-size:10px}
+.reminderContent b{font-size:12px}
+.reminderContent strong{font-size:10px}
+.reminderContent small{font-size:9px}
+.filterChips button{font-size:10px}
+.categoryRibbon>span,.categoryRibbon button{font-size:10px}
+.resultTopline{font-size:10px}
+.teamResultMain>p,.personCapability p{font-size:11px}
+.teamResultFacts span,.personFit span{font-size:9px}
+.teamResultFacts b,.personFit b{font-size:11px}
+.matchBox b{font-size:10px}
+.matchBox small{font-size:9px}
+.rolePicker{display:grid;gap:9px;margin-top:14px}
+.rolePick{width:100%;border:1px solid var(--line);background:#fff;border-radius:12px;padding:12px;display:grid;grid-template-columns:1fr auto;gap:12px;text-align:left;align-items:center}
+.rolePick:hover,.rolePick.active{border-color:#bfc8da;background:#f7f9fc}
+.rolePick b{display:block;font-size:12px}
+.rolePick span{display:block;font-size:10px;color:var(--muted);margin-top:4px;line-height:1.45}
+.rolePick small{font-size:9px;color:#707782;text-align:right}
+.categoryRibbon button.active{background:#17191f;color:#fff;border-color:#17191f}
