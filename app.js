@@ -951,6 +951,8 @@ function finishJoin(x,r,hours){
     state.teamView="managed";
   }
   x.status="joined";x.initiator=null;x.joinedHours=hours;x.time="刚刚 · 正式组队成功";
+  if(r.restoredKind==="front")state.memberRemoved=false;
+  if(r.restoredKind==="data")state.dataMemberRemoved=false;
   if(asCandidate){
     var candidateGroupId=recruitGroupId(r);
     state.relationships.forEach(function(other){
@@ -973,6 +975,16 @@ function finishJoin(x,r,hours){
     state.relationships.forEach(function(other){
       if(other.id!==x.id&&other.recruitId===r.id&&other.status!=="joined"&&other.status!=="ended"){
         releaseReservation(other);other.status="ended";other.reason="名额已满";
+      }
+    });
+  }
+  var completedGroup=managedRecruitments.indexOf(r)>=0?managedGroup(r):[r];
+  if(completedGroup.length&&completedGroup.every(function(g){return g.role.formal>=g.role.capacity})){
+    var completedIds=completedGroup.map(function(g){return g.id});
+    completedGroup.forEach(function(g){g.status="full"});
+    state.relationships.forEach(function(other){
+      if(other.id!==x.id&&completedIds.indexOf(other.recruitId)>=0&&other.status!=="joined"&&other.status!=="ended"){
+        releaseReservation(other);other.status="ended";other.reason="所有角色已正式招满";
       }
     });
   }
@@ -1011,10 +1023,11 @@ function renderManagedTeam(){
   if(!state.managedMemberActive)return '<div class="panel empty"><h3>你已退出该队伍</h3><p>队长权限已转交，退出后不再显示成员管理操作。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
   var gaps=[];
   group.forEach(function(g){
-    if(g.role.formal<g.role.capacity)gaps.push('<div class="roleBox"><div class="between"><b>'+e(g.role.name)+' · '+(g.role.capacity-g.role.formal)+' 人</b><span class="status warn">待招募</span></div><p class="subtitle">'+e(g.role.task)+'</p></div>');
+    if(g.role.formal<g.role.capacity){
+      var stateText=g.status==="paused"?"暂停接收":g.status==="active"?"招募中":g.status==="ended"?"已结束":"待招募";
+      gaps.push('<div class="roleBox"><div class="between"><b>'+e(g.role.name)+' · '+(g.role.capacity-g.role.formal)+' 人</b><span class="status warn">'+stateText+'</span></div><p class="subtitle">'+e(g.role.task)+'</p>'+(state.managedCaptain?'<button class="btn text" onclick="manageGapRole('+g.id+')">配置 / 开放该角色</button>':'')+'</div>');
+    }
   });
-  if(state.memberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>前端开发 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">历史申请不会自动重新生效，由当前队长决定是否重新开放招募。</p></div>');
-  if(state.dataMemberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>数据分析 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">以角色 + 任务为单位恢复缺口，不拆成工时缺口。</p></div>');
   var members=1+managedOtherCount(),captainActions="";
   if(state.managedCaptain){
     captainActions='<button class="btn secondary" onclick="transferCaptain()">转交队长</button><button class="btn primary" onclick="editManagedRecruit()">管理招募</button>'+(managedOtherCount()===0?'<button class="btn danger" onclick="dissolveManagedTeam()">解散队伍</button>':'');
@@ -1069,12 +1082,38 @@ function editGroupNote(){
   modal('<h2>编辑入群说明</h2><p class="subtitle">仅正式成员可见，不公开展示群二维码。</p><div class="field"><label>入群说明</label><textarea class="textarea" id="groupNoteInput">'+e(state.groupNote)+'</textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveGroupNote()">保存</button></div>');
 }
 function saveGroupNote(){var v=String(byId("groupNoteInput").value||"").trim();state.groupNote=v;closeModal();toast("入群说明已更新");render()}
+function ensureRestoredRole(kind){
+  var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(base);
+  var existing=group.filter(function(g){return g.restoredKind===kind})[0];
+  if(existing)return existing;
+  var def=kind==="data"
+    ?{name:"数据分析",hours:10,task:"负责数据清洗、统计分析、可视化与结果提炼",skills:["Excel","数据分析","可视化"]}
+    :{name:"前端开发",hours:8,task:"负责产品页面、核心交互与前端实现",skills:["JavaScript","HTML/CSS","React"]};
+  var id=Date.now()+Math.floor(Math.random()*1000),gid=recruitGroupId(base);
+  var r={
+    id:id,groupId:gid,restoredKind:kind,category:base.category,comp:base.comp,title:base.title,school:base.school,campus:base.campus,leader:base.leader,status:"paused",
+    target:base.target,period:base.period,deadline:base.deadline,team:base.team,progress:base.progress,collab:base.collab,hard:base.hard,reasons:[],
+    role:{name:def.name,capacity:1,formal:0,reserved:0,hours:def.hours,task:def.task,skills:def.skills}
+  };
+  if(!base.groupId)base.groupId=gid;
+  managedRecruitments.push(r);return r;
+}
+function manageGapRole(id){
+  if(!state.managedCaptain){toast("只有当前队长可以管理角色缺口");return}
+  var r=findRecruit(id);if(!r||!canManageRecruit(r)){toast("该角色当前不可管理");return}
+  state.activeRoleRecruitId=id;beginPublish(false);
+}
+
 function removeManagedMember(kind){
   if(!state.managedCaptain){toast("只有当前队长可以移除其他成员");return}
   var label=kind==="data"?"林清禾 · 数据分析":"陈予安 · 前端开发";
   modal('<h2>移除成员？</h2><p class="subtitle">'+e(label)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveManagedMember(\''+kind+'\')">确认移除</button></div>');
 }
-function confirmRemoveManagedMember(kind){if(kind==="data")state.dataMemberRemoved=true;else state.memberRemoved=true;closeModal();toast("成员已移除，对应角色恢复为空缺");render()}
+function confirmRemoveManagedMember(kind){
+  if(kind==="data")state.dataMemberRemoved=true;else state.memberRemoved=true;
+  var gap=ensureRestoredRole(kind);
+  closeModal();toast("成员已移除，"+gap.role.name+"已恢复为角色缺口；由队长决定何时重新开放");render();
+}
 function removeMemberDemo(){removeManagedMember("front")}
 function confirmRemoveMember(){confirmRemoveManagedMember("front")}
 function leaveManagedTeam(){
@@ -1472,6 +1511,8 @@ window.openEvidence=openEvidence;
 window.openLeaderFinalizeCandidateConfirm=openLeaderFinalizeCandidateConfirm;
 window.openCandidateAcceptCaptainConfirm=openCandidateAcceptCaptainConfirm;
 window.confirmCaptainStart=confirmCaptainStart;
+window.ensureRestoredRole=ensureRestoredRole;
+window.manageGapRole=manageGapRole;
 window.removeAddedCandidate=removeAddedCandidate;
 window.confirmRemoveAddedCandidate=confirmRemoveAddedCandidate;
 window.transferCaptain=transferCaptain;
