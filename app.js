@@ -164,8 +164,14 @@ function userMatchReasons(r){
   var out=[],skills=(r.role&&r.role.skills)||[];
   var overlap=skills.filter(function(k){return state.profileSkills.indexOf(k)>=0});
   if(overlap.length)out.push("技能匹配："+overlap.slice(0,2).join("、"));
-  var taskText=(state.profileTasks||"")+" "+(r.role?r.role.name:"")+" "+(r.role?r.role.task:"");
-  if(r.role&&taskText.indexOf(r.role.name)>=0)out.push("任务方向相关");
+  var tasks=String(state.profileTasks||""),role=String(r.role&&r.role.name||"");
+  var taskRelated=tasks.indexOf(role)>=0||
+    (/数据|建模/.test(role)&&/数据|分析|建模/.test(tasks))||
+    (/市场|调研/.test(role)&&/调研|访谈|问卷|市场/.test(tasks))||
+    (/商业|报告/.test(role)&&/商业|分析|报告/.test(tasks))||
+    (/前端|开发/.test(role)&&/前端|开发|编程/.test(tasks))||
+    (/视觉|设计/.test(role)&&/视觉|设计|PPT/.test(tasks));
+  if(role&&taskRelated)out.push("任务方向相关");
   if(remainingFor(r)>=r.role.hours)out.push("时间满足要求");
   if(r.campus===state.userCampus)out.push("同校区");
   if(goalAligned(r.target,state.profileTarget))out.push("目标可对齐");
@@ -559,11 +565,11 @@ function renderDetail(p){
       '<div class="section"><h3 class="sectionTitle">队伍现状</h3><div class="kv" style="margin-top:12px"><div class="k">当前成员</div><div>'+e(r.team)+'</div><div class="k">当前进度</div><div>'+e(r.progress)+'</div><div class="k">参赛目标</div><div>'+e(r.target)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">招募截止</div><div>'+e(r.deadline)+'</div></div></div>'+
       '<div class="section"><h3 class="sectionTitle">当前角色缺口</h3><div class="roleBox"><b>'+e(ro.name)+' · 余 '+free+' 名</b><p class="subtitle">'+e(ro.task)+'</p><div class="badges">'+badges(ro.skills)+'<span class="badge blue">最低 '+ro.hours+'h / 周</span></div></div></div>'+
       '<div class="section"><h3 class="sectionTitle">协作预期</h3><p class="subtitle">'+e(r.collab)+'</p></div></div>'+
-      '<aside class="panel sticky"><h3 class="sectionTitle">申请前需要登录 / 认证</h3><p class="subtitle">公开分享仅展示招募信息，不展示任何私人联系方式或个性化匹配判断。</p><div class="notice">点击申请后再完成登录和学校身份认证，成功后会自动回到这条招募继续。</div><div class="actions"><button class="btn text" onclick="reportRecruit('+r.id+')">举报 / 反馈</button><button class="btn secondary" onclick="copyShareLink('+r.id+')">复制分享链接</button><button class="btn primary push" '+(publicCanApply?'':'disabled')+' onclick="applyRecruit('+r.id+')">'+(publicCanApply?'登录后申请':r.status==="paused"?'暂停接收申请':ro.formal>=ro.capacity?'已招满':deadlinePassed(r)?'已截止':'当前不可申请')+'</button></div></aside></div>';
+      '<aside class="panel sticky"><h3 class="sectionTitle">申请前需要登录 / 认证</h3><p class="subtitle">公开分享仅展示招募信息，不展示任何私人联系方式或个性化匹配判断。</p><div class="notice">点击申请后再完成登录和学校身份认证，成功后会自动回到这条招募继续。</div><div class="actions"><button class="btn text" onclick="reportRecruit('+r.id+')">举报 / 反馈</button><button class="btn secondary" onclick="copyShareLink('+r.id+')">复制分享链接</button><button class="btn primary push" '+(publicCanApply?'':'disabled')+' onclick="applyRecruit('+r.id+')">'+(publicCanApply?'登录后申请':deadlinePassed(r)?'已截止':r.status==="paused"?'暂停接收申请':ro.formal>=ro.capacity?'已招满':'当前不可申请')+'</button></div></aside></div>';
     return;
   }
   var canApply=r.status==="active"&&ro.formal<ro.capacity&&remainingFor(r)>=0&&!existing&&hard.ok&&!deadlinePassed(r);
-  var actionLabel=existing?relationButtonLabel(existing):(r.status==="paused"?"暂停接收申请":ro.formal>=ro.capacity?"已招满":remainingFor(r)<0?"当前时间不可申请":!hard.ok?hard.reason:"申请加入");
+  var actionLabel=existing?relationButtonLabel(existing):(deadlinePassed(r)?"已截止":r.status==="paused"?"暂停接收申请":ro.formal>=ro.capacity?"已招满":remainingFor(r)<0?"当前时间不可申请":!hard.ok?hard.reason:"申请加入");
   var actionClick=existing?"go('progress')":"applyRecruit("+r.id+")";
   p.innerHTML='<button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">← 返回寻找 · 找队伍</button><div class="layout"><div class="panel">'+
     '<div class="between"><div><div class="meta">'+e(r.comp)+' · '+e(r.school)+' '+e(r.campus)+'</div><div class="bigTitle">'+e(r.title)+'</div></div><span class="status '+st[1]+'">'+st[0]+'</span></div>'+
@@ -1308,6 +1314,7 @@ function createRecruitDraft(){
 }
 function addAdditionalRole(){
   var base=activeManagedRecruit();if(!base||!canManageRecruit(base)){toast("只有当前队长可以新增角色缺口");return}
+  if(base.isDraft){toast("请先保存并发布第一个角色，再新增其他角色缺口");return}
   if(publishFormChanged(base)){toast("当前角色还有未保存修改，请先保存后再新增角色");return}
   var gid=recruitGroupId(base),id=Date.now(),inheritPaused=managedGroupPaused(base);
   if(!base.groupId)base.groupId=gid;
