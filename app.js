@@ -453,6 +453,15 @@ function relationButtonLabel(x){
 }
 function renderDetail(p){
   var r=findRecruit(state.selectedRecruit)||recruits[0],ro=r.role,st=status(r.status),free=roleFree(r),existing=activeCandidateRelationForRecruit(r.id),hard=userMeetsRecruitHardRules(r);
+  if(!state.loggedIn){
+    p.innerHTML='<div class="publicRecruitDetail"><div class="panel"><div class="between"><div><div class="meta">'+e(r.comp)+' · '+e(r.school)+' '+e(r.campus)+'</div><div class="bigTitle">'+e(r.title)+'</div></div><span class="status '+st[1]+'">'+st[0]+'</span></div>'+
+      '<div class="badges"><span class="badge green">队长学校身份已认证</span><span class="badge">'+e(r.leader)+' · 队长</span></div>'+
+      '<div class="section"><h3 class="sectionTitle">队伍现状</h3><div class="kv" style="margin-top:12px"><div class="k">当前成员</div><div>'+e(r.team)+'</div><div class="k">当前进度</div><div>'+e(r.progress)+'</div><div class="k">参赛目标</div><div>'+e(r.target)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">招募截止</div><div>'+e(r.deadline)+'</div></div></div>'+
+      '<div class="section"><h3 class="sectionTitle">当前角色缺口</h3><div class="roleBox"><b>'+e(ro.name)+' · 余 '+free+' 名</b><p class="subtitle">'+e(ro.task)+'</p><div class="badges">'+badges(ro.skills)+'<span class="badge blue">最低 '+ro.hours+'h / 周</span></div></div></div>'+
+      '<div class="section"><h3 class="sectionTitle">协作预期</h3><p class="subtitle">'+e(r.collab)+'</p></div></div>'+
+      '<aside class="panel sticky"><h3 class="sectionTitle">申请前需要登录 / 认证</h3><p class="subtitle">公开分享仅展示招募信息，不展示任何私人联系方式或个性化匹配判断。</p><div class="notice">点击申请后再完成登录和学校身份认证，成功后会自动回到这条招募继续。</div><div class="actions"><button class="btn text" onclick="reportRecruit('+r.id+')">举报 / 反馈</button><button class="btn secondary" onclick="copyShareLink('+r.id+')">复制分享链接</button><button class="btn primary push" onclick="applyRecruit('+r.id+')">登录后申请</button></div></aside></div>';
+    return;
+  }
   var canApply=r.status==="active"&&free>0&&remaining()>=0&&!existing&&hard.ok;
   var actionLabel=existing?relationButtonLabel(existing):(r.status==="paused"?"暂停接收申请":free<=0?(ro.formal>=ro.capacity?"已招满":"名额确认中"):remaining()<0?"当前时间不可申请":!hard.ok?hard.reason:"申请加入");
   var actionClick=existing?"go('progress')":"applyRecruit("+r.id+")";
@@ -1014,13 +1023,18 @@ function editManagedRecruit(){
   if(!state.managedCaptain){toast("只有当前队长可以编辑该队伍招募");return}
   state.activeRoleRecruitId=state.managedTeamRecruitId;beginPublish();
 }
+function createRecruitDraft(){
+  var id=Date.now();
+  managedRecruitments.push({id:id,category:"innovation",comp:"挑战杯 · 大挑",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],role:{name:"待补角色",capacity:1,formal:0,reserved:0,hours:6,task:"请填写加入后需要承担的具体任务",skills:["待填写"]}});
+  state.activeRoleRecruitId=id;return findRecruit(id);
+}
 function beginPublish(){
   if(!state.loggedIn||!state.verified){state.authReturn="publish";go("auth");return}
   if(!state.profileComplete){state.profileReturn="publish";go("profileEdit");toast("请先补齐最小个人档案");return}
   var r=activeManagedRecruit();
   if(!canManageRecruit(r)){
     var owned=managedRecruitments.filter(function(x){return canManageRecruit(x)&&x.status!=="ended"})[0];
-    if(!owned){toast("你当前没有可编辑的招募；新建招募入口将在本轮试点按需开放");return}
+    if(!owned)owned=createRecruitDraft();
     state.activeRoleRecruitId=owned.id;
   }
   go("publish");
