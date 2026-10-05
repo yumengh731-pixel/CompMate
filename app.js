@@ -202,7 +202,32 @@ function shell(){
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
 function demoBar(){
-  return '<details class="demoGuide"><summary>演示指引</summary><div><span>建议路径：寻找 → 招募详情 → 申请 / 沟通 → 正式确认 → 组队</span><button onclick="go(\'explore\')">从“寻找”开始</button></div></details>';
+  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方的响应。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button></div></div></details>';
+}
+function simulateNextRemoteAction(){
+  var outgoingApp=state.relationships.filter(function(x){return x.type==="application"&&x.direction==="outgoing"&&x.status==="pending"})[0];
+  if(outgoingApp){simulateRemoteAgree(outgoingApp.id);return}
+  var outgoingInvite=state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&x.status==="pending"})[0];
+  if(outgoingInvite){simulateInviteAccepted(outgoingInvite.id);return}
+  var waitingLeader=state.relationships.filter(function(x){return currentUserIsCandidate(x)&&x.status==="confirming"&&x.initiator==="candidate"})[0];
+  if(waitingLeader){remoteLeaderFinalizeCandidateConfirm(waitingLeader.id);return}
+  var waitingCandidate=state.relationships.filter(function(x){return !currentUserIsCandidate(x)&&x.status==="confirming"&&x.initiator==="captain"})[0];
+  if(waitingCandidate){candidateAcceptCaptainConfirm(waitingCandidate.id);return}
+  toast("当前没有需要模拟的对方响应");
+}
+function simulateRemoteAgree(id){
+  var x=rel(id);if(!x||x.status!=="pending")return;
+  if(!hasUserContact()||!x.partyContact){toast("双方联系方式条件尚未满足");return}
+  x.status="communication";x.contact=true;x.expiresAt=null;x.time="刚刚 · 对方已同意沟通";toast("已模拟对方同意沟通");render();
+}
+function remoteLeaderFinalizeCandidateConfirm(id){
+  var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  refreshRelationExpiry(x);if(x.status!=="confirming"||x.initiator!=="candidate"){toast("该确认当前不能由队长处理");render();return}
+  var eligible=formalEligibility(x,r);if(!eligible.ok){x.status="communication";x.initiator=null;x.expiresAt=null;toast("对方最终校验失败："+eligible.reason);render();return}
+  if(r.role.formal>=r.role.capacity){x.status="ended";x.reason="角色已正式招满";toast("对方最终校验：角色已正式招满");render();return}
+  if(r.role.formal+r.role.reserved>=r.role.capacity){toast("对方最终校验：名额正在与其他候选人确认中");return}
+  if(relationCandidateAvailable(x)<r.role.hours){toast("对方最终校验：当前可投入时间不足");return}
+  finishJoin(x,r,r.role.hours);
 }
 function go(r){
   if(!state.loggedIn&&r!=="detail"&&r!=="auth"){state.authReturn="browse";state.route="auth";render();window.scrollTo(0,0);return}
@@ -608,14 +633,14 @@ function requestCard(x){
   var saturated=r&&r.role.formal<r.role.capacity&&roleFree(r)<=0;
   if(x.status==="pending"){
     if((x.type==="invitation"&&x.direction==="incoming")||(x.type==="application"&&x.direction==="incoming"))act='<button class="btn secondary" onclick="rejectReq('+x.id+')">拒绝</button><button class="btn primary" onclick="agreeReq('+x.id+')">同意沟通</button>';
-    else if(x.type==="invitation"&&x.direction==="outgoing")act='<button class="btn secondary" onclick="cancelReq('+x.id+')">撤回邀请</button><button class="btn text" onclick="simulateInviteAccepted('+x.id+')">对方同意</button>';
+    else if(x.type==="invitation"&&x.direction==="outgoing")act='<button class="btn secondary" onclick="cancelReq('+x.id+')">撤回邀请</button><span class="status">等待对方处理</span>';
     else act='<button class="btn secondary" onclick="cancelReq('+x.id+')">取消申请</button>';
     note='<div class="relationMeta">请求有效期：'+e(formatExpiry(x))+'</div>';
   }
   if(!asCandidate&&r&&!canManageRecruit(r)&&x.status!=="joined"&&x.status!=="ended"){
     act='<span class="status">已无队长权限</span>';note='<div class="notice warn" style="margin-top:8px">该队伍的队长身份已经转交，你不能继续处理候选人或正式确认。</div>';
   }else if(x.status==="communication"){
-    if(asCandidate)act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button><button class="btn primary" onclick="candidateStartConfirm('+x.id+')">发起正式确认</button><button class="btn text" onclick="captainStartConfirm('+x.id+')">查看队长发起流程</button>';
+    if(asCandidate)act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button><button class="btn primary" onclick="candidateStartConfirm('+x.id+')">发起正式确认</button>';
     else act='<button class="btn secondary" onclick="endComm('+x.id+')">中止沟通</button><button class="btn primary" onclick="captainStartConfirm('+x.id+')">发起正式确认</button>';
     note='<div class="contactReveal"><b>本次已授权联系方式</b><span>我的微信：'+e(state.userContact||"未授权")+'</span><span>对方：'+e(x.partyContact||"已授权联系方式")+'</span><small>中止沟通后平台停止后续授权，但无法收回已被保存的站外联系方式。</small></div>';
     if(x.conditionUpdated)note+='<div class="notice warn" style="margin-top:8px">该招募条件已更新，请重新查看最新任务、时间与目标。</div>';
@@ -623,10 +648,10 @@ function requestCard(x){
   if((asCandidate||!r||canManageRecruit(r))&&x.status==="confirming"){
     if(x.initiator==="captain"){
       if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">暂不加入</button><button class="btn primary" onclick="openCandidateAcceptCaptainConfirm('+x.id+')">确认加入</button>';
-      else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回确认</button><button class="btn primary" onclick="openCandidateAcceptCaptainConfirm('+x.id+')">查看候选人确认</button>';
+      else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回确认</button><span class="status">等待候选人确认</span>';
       note='<div class="notice warn" style="margin-top:8px">队长发起：已临时预留角色名额'+(asCandidate?"和你的约定投入":"；候选人时间不会计入队长个人时间账本")+'。'+e(formatExpiry(x))+'</div>';
     }else{
-      if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回确认</button><button class="btn primary" onclick="openLeaderFinalizeCandidateConfirm('+x.id+')">查看队长最终确认</button>';
+      if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回确认</button><span class="status">等待队长最终确认</span>';
       else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">拒绝</button><button class="btn primary" onclick="openLeaderFinalizeCandidateConfirm('+x.id+')">最终确认</button>';
       note='<div class="notice" style="margin-top:8px">候选人发起：暂不预留名额；队长最终确认时按最新名额、时间和条件重新校验。'+e(formatExpiry(x))+'</div>';
     }
