@@ -1474,7 +1474,7 @@ function saveRecruit(){
   var newPeriod=periodLabel(start,end),newDeadline=mdhm(deadline),newSkills=skills.join("|"),oldSkills=r.role.skills.join("|");
   var skillChanged=oldSkills!==newSkills;
   var roleCoreChanged=r.role.name!==role||r.role.capacity!==cap||r.role.task!==task||r.role.hours!==hours;
-  var commonCoreChanged=r.comp!==comp||r.period!==newPeriod||r.target!==target||r.hard!==hard;
+  var commonCoreChanged=r.comp!==comp||periodInput(r,"start")!==start||periodInput(r,"end")!==end||r.target!==target||r.hard!==hard;
   var coreChanged=roleCoreChanged||commonCoreChanged,conditionChanged=coreChanged||skillChanged;
   var groupIds=group.map(function(g){return g.id});
   var confirming=state.relationships.filter(function(x){
