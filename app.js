@@ -613,10 +613,10 @@ function demoShare(id){
 function showInvalidOriginalRecruit(id,reason){
   var original=findRecruit(id),cat=original?teamCategory(original):"";
   var alternatives=recruits.filter(function(r){
-    return r.id!==Number(id)&&!state.blockedRecruitIds[r.id]&&r.status==="active"&&!deadlinePassed(r)&&roleFree(r)>0&&(!cat||teamCategory(r)===cat);
+    return r.id!==Number(id)&&!state.blockedRecruitIds[r.id]&&r.status==="active"&&!deadlinePassed(r)&&r.role.formal<r.role.capacity&&(!cat||teamCategory(r)===cat);
   }).slice(0,2);
   state.pendingApplyRecruitId=null;
-  var cards=alternatives.map(function(r){return '<button class="rolePick" onclick="closeModal();openRecruit('+r.id+')"><div><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><span>'+e(r.role.task)+'</span></div><small>查看 →</small></button>'}).join("");
+  var cards=alternatives.map(function(r){return '<button class="rolePick" onclick="closeModal();openRecruit('+r.id+')"><div><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><span>'+e(r.role.task)+'</span></div><small>'+(roleFree(r)<=0?"名额确认中 · 仍可申请沟通":"查看 →")+'</small></button>'}).join("");
   modal('<h2>原招募当前无法继续申请</h2><div class="notice warn">'+e(reason||"原招募已失效")+'</div><p class="subtitle" style="margin-top:12px">'+(cards?"可以查看以下同类有效招募：":"当前暂无同类有效招募，可返回寻找页调整筛选。")+'</p>'+(cards?'<div class="rolePicker">'+cards+'</div>':'')+'<div class="modalFoot"><button class="btn secondary" onclick="closeModal();state.mode=\'teams\';go(\'explore\')">返回寻找</button></div>');
 }
 function demoExpiredShare(){closeModal();showInvalidOriginalRecruit(4,"原分享对应的角色已经正式招满，不能继续提交申请。")}
@@ -684,6 +684,7 @@ function blockUser(id){
       releaseReservation(x);
       x.status="ended";
       x.reason="已拉黑，未完成关系同时结束";
+      x.expiresAt=null;
     }
   });
   closeModal();toast("已拉黑，未完成关系与临时预留已释放");state.mode="people";go("explore");
@@ -775,7 +776,7 @@ function requestCard(x){
     if((x.type==="invitation"&&x.direction==="incoming")||(x.type==="application"&&x.direction==="incoming"))act='<button class="btn secondary" onclick="rejectReq('+x.id+')">拒绝</button><button class="btn primary" onclick="agreeReq('+x.id+')">同意沟通</button>';
     else if(x.type==="invitation"&&x.direction==="outgoing")act='<button class="btn secondary" onclick="cancelReq('+x.id+')">撤回邀请</button><span class="status">等待对方处理</span>';
     else act='<button class="btn secondary" onclick="cancelReq('+x.id+')">取消申请</button>';
-    note='<div class="relationMeta">请求有效期：'+e(formatExpiry(x))+'</div>';
+    note='<div class="relationMeta">请求有效期：'+e(formatExpiry(x))+'</div>'+(x.conditionUpdated?'<div class="notice warn" style="margin-top:8px">该招募条件已更新，请重新查看最新任务、时间与目标后再决定是否继续。</div>':'');
   }
   if(!asCandidate&&r&&!canManageRecruit(r)&&x.status!=="joined"&&x.status!=="ended"){
     act='<span class="status">已无队长权限</span>';note='<div class="notice warn" style="margin-top:8px">该队伍的队长身份已经转交，你不能继续处理候选人或正式确认。</div>';
@@ -811,7 +812,11 @@ function openJoinedRelationTeam(id){
 }
 function relationRecruit(x){return x?findRecruit(x.recruitId):null}
 function rejectReq(id){var x=rel(id);if(!x)return;x.status="ended";x.reason=x.type==="application"?"你已拒绝本次申请":"你已拒绝本次邀请";x.expiresAt=null;toast("已拒绝，不产生负面标签");render()}
-function cancelReq(id){var x=rel(id);if(!x)return;releaseReservation(x);x.status="ended";x.reason=x.type==="invitation"?"邀请已撤回":"申请已取消";toast(x.reason);render()}
+function cancelReq(id){
+  var x=rel(id);if(!x)return;
+  releaseReservation(x);x.status="ended";x.reason=x.type==="invitation"?"邀请已撤回":"申请已取消";x.expiresAt=null;
+  toast(x.reason);render();
+}
 function agreeReq(id){
   var x=rel(id);if(!x)return;
   if(!hasUserContact()){toast("请先补充并授权至少一种联系方式");state.profileReturn="progress";go("profileEdit");return}
@@ -909,7 +914,11 @@ function confirmCaptainStart(id){
   x.status="confirming";x.initiator="captain";x.time="刚刚 · 队长发起 · 名额确认中";x.expiresAt=Date.now()+config.formalConfirmMs;x.conditionUpdated=false;
   closeModal();toast("已临时预留角色名额"+(x.reservedOnCurrentUser?"与时间":""));render();
 }
-function rejectConfirm(id){var x=rel(id);if(!x)return;releaseReservation(x);x.status="communication";x.initiator=null;x.time="刚刚 · 回到待沟通";toast("本次正式确认已结束，待沟通关系保留");render()}
+function rejectConfirm(id){
+  var x=rel(id);if(!x)return;
+  releaseReservation(x);x.status="communication";x.initiator=null;x.time="刚刚 · 回到待沟通";x.expiresAt=null;
+  toast("本次正式确认已结束，待沟通关系保留");render();
+}
 function openLeaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次正式确认已失效，已回到待沟通");render();return}
@@ -1007,7 +1016,9 @@ function progressTeam(){
 }
 function managedJoinedCandidates(){
   var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],ids=managedGroup(base).map(function(g){return g.id});
-  return state.relationships.filter(function(x){return x.type==="invitation"&&x.direction==="outgoing"&&ids.indexOf(x.recruitId)>=0&&x.status==="joined"&&x.candidateId}).map(function(x){
+  return state.relationships.filter(function(x){
+    return ids.indexOf(x.recruitId)>=0&&x.status==="joined"&&x.candidateId;
+  }).map(function(x){
     return {relation:x,candidate:candidates.filter(function(c){return c.id===x.candidateId})[0],recruit:findRecruit(x.recruitId)};
   }).filter(function(x){return x.candidate&&x.recruit});
 }
@@ -1051,10 +1062,13 @@ function addedMemberRow(c,r){
 }
 function removeAddedCandidate(candidateId){
   if(!state.managedCaptain){toast("只有当前队长可以移除其他成员");return}
-  var c=candidates.filter(function(x){return x.id===candidateId})[0],r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
-  if(!c||!r)return;
-  if(state.managedCaptainName===c.name){toast("不能直接移除当前队长，请先转交队长身份");return}
-  modal('<h2>移除成员？</h2><p class="subtitle">'+e(c.name)+' · '+e(r.role.name)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveAddedCandidate('+candidateId+')">确认移除</button></div>');
+  var cnd=candidates.filter(function(x){return x.id===candidateId})[0],base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
+  if(!cnd||!base)return;
+  if(state.managedCaptainName===cnd.name){toast("不能直接移除当前队长，请先转交队长身份");return}
+  var ids=managedGroup(base).map(function(g){return g.id});
+  var joined=state.relationships.filter(function(x){return x.candidateId===candidateId&&ids.indexOf(x.recruitId)>=0&&x.status==="joined"})[0];
+  var rr=joined?relationRecruit(joined):base;
+  modal('<h2>移除成员？</h2><p class="subtitle">'+e(cnd.name)+' · '+e(rr.role.name)+'。移除后对应角色恢复为空缺，历史申请不会自动重新生效。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmRemoveAddedCandidate('+candidateId+')">确认移除</button></div>');
 }
 function confirmRemoveAddedCandidate(candidateId){
   var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],ids=managedGroup(base).map(function(g){return g.id});
@@ -1076,7 +1090,12 @@ function transferCaptain(){
   addedItems.forEach(function(item){opts+='<button class="rolePick" onclick="confirmTransferCaptain(\''+e(item.candidate.name)+'\')"><div><b>'+e(item.candidate.name)+'</b><span>'+e(item.recruit.role.name)+' · 正式成员</span></div><small>设为队长 →</small></button>'});
   modal('<h2>转交队长身份</h2><p class="subtitle">只能转交给当前正式成员。转交成功后，你立即按普通正式成员权限处理。</p>'+(opts?'<div class="rolePicker">'+opts+'</div>':'<div class="notice warn">当前没有其他正式成员，不能转交队长。你可以选择解散队伍。</div>')+'<div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button>'+(opts?'':'<button class="btn danger" onclick="closeModal();dissolveManagedTeam()">解散队伍</button>')+'</div>');
 }
-function confirmTransferCaptain(name){var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];state.managedCaptain=false;state.managedCaptainName=name;if(r)r.leader=name;closeModal();toast("队长身份已转交给 "+name+"；你的管理权限已立即更新");render()}
+function confirmTransferCaptain(name){
+  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];
+  state.managedCaptain=false;state.managedCaptainName=name;
+  if(r)managedGroup(r).forEach(function(g){g.leader=name});
+  closeModal();toast("队长身份已转交给 "+name+"；你在该招募全部角色下的管理权限已立即更新");render();
+}
 function editGroupNote(){
   if(!state.managedCaptain){toast("只有当前队长可以维护入群说明");return}
   modal('<h2>编辑入群说明</h2><p class="subtitle">仅正式成员可见，不公开展示群二维码。</p><div class="field"><label>入群说明</label><textarea class="textarea" id="groupNoteInput">'+e(state.groupNote)+'</textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="saveGroupNote()">保存</button></div>');
