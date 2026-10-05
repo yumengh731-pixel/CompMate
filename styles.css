@@ -1162,3 +1162,32 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   .publicMain{padding:14px 12px 32px}
   .contactReveal{padding:9px}
 }
+
+
+/* ===== PRD acceptance states ===== */
+.stateFrame{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:20px;
+  display:grid;
+  gap:12px;
+}
+.stateFrame p{
+  margin:2px 0 6px;
+  color:var(--muted);
+  font-size:11px;
+}
+.stateSkeleton{
+  height:54px;
+  border-radius:12px;
+  background:linear-gradient(90deg,#f0f2f5 0%,#f7f8fa 50%,#f0f2f5 100%);
+  background-size:220% 100%;
+  animation:compmateSkeleton 1.2s linear infinite;
+}
+.stateSkeleton.wide{height:84px}
+.stateSkeleton.short{width:72%}
+@keyframes compmateSkeleton{
+  from{background-position:200% 0}
+  to{background-position:-20% 0}
+}
