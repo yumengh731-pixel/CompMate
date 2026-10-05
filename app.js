@@ -316,8 +316,10 @@ function renderHome(p){
 }
 function smartRecommendRow(r){
   var timeOk=remainingFor(r)>=r.role.hours;
+  var reasons=(r.reasons||[]).slice(0,1);
+  if(timeOk)reasons.push("时间满足要求");
   return '<article class="smartRecommendRow" onclick="openRecruit('+r.id+')"><div class="smartRecMain"><div class="smartRecMeta">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(r.role.task)+'</p><div class="smartRecTags"><span>'+e(r.role.name)+'</span><span>'+r.role.hours+'h / 周</span><span>'+e(r.target)+'</span></div></div>'+
-    '<div class="smartRecReason"><span>匹配维度</span><div class="matchDims"><i>任务契合</i><i class="'+(timeOk?"ok":"warn")+'">'+(timeOk?"时间满足":"时间风险")+'</i><i>目标可对齐</i></div><small>'+r.reasons.join(" · ")+' · 剩余 '+roleFree(r)+' 个名额</small></div><span class="smartRecArrow">→</span></article>';
+    '<div class="smartRecReason"><span>为什么可能适合你</span><div class="matchDims">'+reasons.slice(0,2).map(function(x){return '<i>'+e(x)+'</i>'}).join("")+'</div><small>剩余 '+roleFree(r)+' 个名额</small></div><span class="smartRecArrow">→</span></article>';
 }
 function reminderRow(date,comp,label,sub,tone){
   return '<div class="reminderRow '+(tone||"")+'"><div class="reminderDate">'+date+'</div><div class="reminderLine"><span></span></div><div class="reminderContent"><b>'+e(comp)+'</b><strong>'+e(label)+'</strong><small>'+e(sub)+'</small></div></div>';
@@ -452,7 +454,7 @@ function applyExploreFilters(){
   }
 }
 function relaxEmpty(kind,title,sub){
-  return '<div class="panel empty"><h3>'+e(title)+'</h3><p>'+e(sub)+'</p><button class="btn secondary" onclick="relaxFilters(\''+kind+'\')">一键放宽非核心条件</button></div>';
+  return '<div class="panel empty"><h3>'+e(title)+'</h3><p>'+e(sub)+'</p><div class="actions" style="justify-content:center"><button class="btn secondary" onclick="relaxFilters(\''+kind+'\')">一键放宽非核心条件</button><button class="btn primary" onclick="beginPublish(true)">发布招募</button></div></div>';
 }
 function relaxFilters(kind){
   var relaxed=[];
