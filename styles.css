@@ -511,3 +511,443 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   .findChoice{padding:14px}
   .findChoiceIcon{width:42px;height:42px}
 }
+
+
+/* ===== V6 IA: Home / Explore / Progress / My ===== */
+
+/* Global FAB replaces the oversized header action */
+.fabPublish{
+  position:fixed;
+  right:28px;
+  bottom:28px;
+  z-index:58;
+  border:0;
+  background:#17191f;
+  color:#fff;
+  border-radius:999px;
+  padding:12px 16px;
+  display:flex;
+  align-items:center;
+  gap:7px;
+  box-shadow:0 12px 32px rgba(17,24,39,.18);
+  font-size:12px;
+}
+.fabPublish span{font-size:18px;line-height:1}.fabPublish b{font-size:11px}
+
+/* Demo hint is present but does not dominate the product UI */
+.demoGuide{
+  margin-bottom:12px;
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:12px;
+  overflow:hidden;
+}
+.demoGuide summary{
+  cursor:pointer;
+  list-style:none;
+  padding:9px 12px;
+  font-size:10px;
+  font-weight:750;
+  color:#68707b;
+}
+.demoGuide summary::-webkit-details-marker{display:none}
+.demoGuide[open] summary{border-bottom:1px solid var(--line)}
+.demoGuide>div{
+  padding:10px 12px;
+  display:flex;
+  justify-content:space-between;
+  gap:12px;
+  align-items:center;
+  font-size:10px;
+  color:var(--muted);
+}
+.demoGuide button{
+  border:0;
+  background:#17191f;
+  color:#fff;
+  border-radius:8px;
+  padding:7px 9px;
+  font-size:9px;
+}
+
+/* Homepage is now a workbench, not a nested navigation menu */
+.compactBrand{
+  min-height:66px;
+  margin-bottom:14px;
+}
+.homeWorkbench{
+  display:grid;
+  grid-template-columns:minmax(0,1.65fr) minmax(300px,.65fr);
+  gap:16px;
+  margin-bottom:14px;
+}
+.homeStatusGrid{
+  display:grid;
+  grid-template-columns:1fr 1.2fr 1fr;
+  gap:11px;
+  margin-bottom:14px;
+}
+.statusBoard,.timeBoard,.todoBoard{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:16px;
+  padding:14px;
+}
+.statusBoardHead span{
+  display:block;
+  font-size:8px;
+  letter-spacing:.12em;
+  color:#969da8;
+  font-weight:800;
+}
+.statusBoardHead h3{
+  margin:3px 0 0;
+  font-size:14px;
+}
+.statusNumbers{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:7px;
+  margin-top:12px;
+}
+.statusNumbers button{
+  border:0;
+  border-radius:10px;
+  background:#f6f7f9;
+  padding:10px 7px;
+  text-align:left;
+}
+.statusNumbers b{
+  display:block;
+  font-size:18px;
+}
+.statusNumbers span{
+  display:block;
+  margin-top:2px;
+  font-size:8px;
+  color:var(--muted);
+}
+.timeBoardMain{
+  margin-top:12px;
+}
+.timeBoardMain>div:first-child{
+  display:flex;
+  align-items:baseline;
+  justify-content:space-between;
+  gap:10px;
+}
+.timeBoardMain b{font-size:24px}
+.timeBoardMain span{font-size:9px;color:var(--muted)}
+.timeBoardMain small{
+  display:block;
+  margin-top:6px;
+  font-size:8px;
+  color:#7d8590;
+}
+.miniTimeBar{
+  height:7px;
+  background:#eceff3;
+  border-radius:999px;
+  overflow:hidden;
+  margin-top:9px;
+}
+.miniTimeBar i{
+  display:block;
+  height:100%;
+  background:#252932;
+  border-radius:999px;
+}
+.todoBoard{
+  cursor:pointer;
+  background:linear-gradient(145deg,#fbfcff,#f5f7fb);
+}
+.todoBoard>b{
+  display:block;
+  margin-top:13px;
+  font-size:12px;
+}
+.todoBoard p{
+  margin:4px 0 10px;
+  font-size:9px;
+  color:var(--muted);
+}
+.todoBoard em{
+  font-style:normal;
+  font-size:9px;
+  color:var(--blue);
+}
+
+/* Recommendation cards: stronger title + roomier tags */
+.smartRecMain>b{
+  font-size:14px;
+  font-weight:850;
+  letter-spacing:-.01em;
+}
+.smartRecTags span{
+  padding:5px 8px;
+  border-radius:7px;
+  background:#f0f2f5;
+  border:1px solid #e7e9ed;
+}
+.matchDims{
+  display:flex;
+  gap:5px;
+  flex-wrap:wrap;
+  margin:2px 0;
+}
+.matchDims i{
+  font-style:normal;
+  font-size:8px;
+  padding:4px 6px;
+  border-radius:6px;
+  background:#eef3ff;
+  color:#365fb9;
+}
+.matchDims i.ok{
+  background:#eaf7f0;
+  color:#187a54;
+}
+.matchDims i.warn{
+  background:#fff4de;
+  color:#936000;
+}
+
+/* Explore owns all proactive discovery */
+.exploreHeader{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px 20px;
+  margin-bottom:11px;
+}
+.exploreHeader h2{
+  font-size:24px;
+  margin:3px 0 5px;
+}
+.exploreHeader p{
+  margin:0;
+  font-size:10px;
+  color:var(--muted);
+  line-height:1.55;
+}
+.exploreSwitch{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;
+  margin-bottom:11px;
+}
+.exploreSwitch button{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:13px;
+  padding:12px 14px;
+  display:grid;
+  gap:3px;
+  text-align:left;
+}
+.exploreSwitch button b{font-size:13px}
+.exploreSwitch button span{font-size:9px;color:var(--muted)}
+.exploreSwitch button.active{
+  background:#17191f;
+  color:#fff;
+  border-color:#17191f;
+}
+.exploreSwitch button.active span{color:#b7bec8}
+.categoryRibbon{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin:-2px 0 12px;
+}
+.categoryRibbon>span{
+  font-size:9px;
+  color:var(--muted);
+}
+.categoryRibbon button{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:999px;
+  padding:6px 9px;
+  font-size:9px;
+  color:#5e6671;
+}
+.categoryRibbon button:hover{background:#f7f8fa}
+
+/* Cards keep match explanations qualitative instead of a misleading global score */
+.resultTags span{
+  padding:5px 8px;
+  border:1px solid #e5e8ec;
+  background:#f5f6f8;
+}
+.matchBox{
+  padding:8px 9px;
+  border-radius:9px;
+  background:#f7f9fc;
+}
+.personCapability p,.teamResultMain>p{
+  font-size:10px;
+  line-height:1.6;
+}
+
+/* Combined teaming/progress tab */
+.progressHero{
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  padding:18px 20px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:18px;
+  align-items:center;
+  margin-bottom:11px;
+}
+.progressHero h2{
+  font-size:24px;
+  margin:3px 0 5px;
+}
+.progressHero p{
+  margin:0;
+  max-width:680px;
+  font-size:10px;
+  line-height:1.55;
+  color:var(--muted);
+}
+.progressStats{
+  display:grid;
+  grid-template-columns:repeat(4,72px);
+  gap:6px;
+}
+.progressStats>div{
+  border-radius:10px;
+  background:#f6f7f9;
+  padding:9px;
+}
+.progressStats b{
+  display:block;
+  font-size:17px;
+}
+.progressStats span{
+  display:block;
+  margin-top:2px;
+  font-size:8px;
+  color:var(--muted);
+}
+.progressSwitch{
+  display:inline-flex;
+  padding:4px;
+  border-radius:11px;
+  background:#e9ebef;
+  margin-bottom:12px;
+}
+.progressSwitch button{
+  border:0;
+  background:transparent;
+  border-radius:8px;
+  padding:8px 13px;
+  color:#6f7680;
+  font-size:10px;
+  font-weight:750;
+}
+.progressSwitch button.active{
+  background:#fff;
+  color:#17191f;
+  box-shadow:0 1px 5px rgba(0,0,0,.06);
+}
+.teamSnapshot{
+  max-width:900px;
+}
+
+/* Profile time capacity visualization */
+.timeCapacityViz{
+  margin-top:13px;
+  padding:14px;
+  border-radius:14px;
+  background:#f7f8fa;
+}
+.timeCapacityNumbers{
+  display:flex;
+  justify-content:space-between;
+  align-items:baseline;
+}
+.timeCapacityNumbers b{
+  display:block;
+  font-size:27px;
+}
+.timeCapacityNumbers span{
+  display:block;
+  margin-top:2px;
+  font-size:9px;
+  color:var(--muted);
+}
+.timeCapacityNumbers small{
+  font-size:9px;
+  color:#747c87;
+}
+.capacityTrack{
+  height:10px;
+  border-radius:999px;
+  background:#dfe4eb;
+  overflow:hidden;
+  margin:12px 0 9px;
+}
+.capacityTrack i{
+  display:block;
+  height:100%;
+  border-radius:999px;
+  background:#252932;
+}
+.capacityLegend{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+}
+.capacityLegend span{
+  font-size:8px;
+  color:#68707b;
+  display:flex;
+  align-items:center;
+  gap:5px;
+}
+.capacityLegend i{
+  width:7px;
+  height:7px;
+  border-radius:50%;
+}
+.capacityLegend i.used{background:#252932}
+.capacityLegend i.free{background:#dfe4eb}
+
+/* 4-tab mobile nav */
+.mobileNav{
+  grid-template-columns:repeat(4,1fr);
+}
+
+@media(max-width:1050px){
+  .homeWorkbench{grid-template-columns:1fr}
+  .homeStatusGrid{grid-template-columns:1fr 1fr}
+  .todoBoard{grid-column:1/-1}
+  .progressHero{grid-template-columns:1fr}
+}
+@media(max-width:820px){
+  .fabPublish{
+    right:14px;
+    bottom:78px;
+    padding:11px 13px;
+  }
+  .fabPublish b{display:none}
+  .homeStatusGrid{grid-template-columns:1fr}
+  .todoBoard{grid-column:auto}
+  .progressStats{grid-template-columns:repeat(4,1fr)}
+}
+@media(max-width:520px){
+  .smartRecommendRow{
+    grid-template-columns:1fr auto;
+  }
+  .smartRecReason{
+    grid-column:1/-1;
+  }
+  .exploreSwitch{grid-template-columns:1fr 1fr}
+  .progressHero{padding:15px}
+  .progressStats{grid-template-columns:repeat(2,1fr)}
+  .demoGuide>div{align-items:flex-start;flex-direction:column}
+}
