@@ -223,8 +223,26 @@ function shell(){
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
 function demoBar(){
-  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方的响应。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button></div></div></details>';
+  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
 }
+function simulatePageState(kind){
+  state.demoPageState=kind;render();
+}
+function clearPageState(){
+  state.demoPageState="normal";render();
+}
+function renderDemoPageState(p){
+  if(state.demoPageState==="loading"){
+    p.innerHTML='<div class="stateFrame"><div class="stateSkeleton wide"></div><div class="stateSkeleton"></div><div class="stateSkeleton short"></div><p>正在加载；当前筛选、已填内容与业务状态都会保留。</p><button class="btn secondary" onclick="clearPageState()">结束状态演示</button></div>';
+    return true;
+  }
+  if(state.demoPageState==="error"){
+    p.innerHTML='<div class="panel empty"><h3>操作失败，请稍后重试</h3><p>网络 / 服务异常不会写入最终业务状态；当前筛选、已填内容和关系状态均已保留。</p><button class="btn primary" onclick="clearPageState()">重试</button></div>';
+    return true;
+  }
+  return false;
+}
+
 function simulateNextRemoteAction(){
   var outgoingApp=state.relationships.filter(function(x){return x.type==="application"&&x.direction==="outgoing"&&x.status==="pending"})[0];
   if(outgoingApp){simulateRemoteAgree(outgoingApp.id);return}
@@ -258,6 +276,7 @@ function render(){
   state.relationships.forEach(refreshRelationExpiry);
   shell();
   var p=byId("page");
+  if(renderDemoPageState(p))return;
   if(state.route==="home")renderHome(p);
   else if(state.route==="explore")renderExplore(p);
   else if(state.route==="detail")renderDetail(p);
@@ -1209,6 +1228,8 @@ function completeAuth(){
 /* EXPORT */
 window.state=state;
 window.render=render;
+window.simulatePageState=simulatePageState;
+window.clearPageState=clearPageState;
 window.go=go;
 window.openRecruit=openRecruit;
 window.openCandidate=openCandidate;
