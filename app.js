@@ -542,7 +542,7 @@ function renderManagedTeam(){
   if(state.memberRemoved)gaps.push('<div class="roleBox"><div class="between"><b>前端开发 · 1 人</b><span class="status warn">成员移除后恢复</span></div><p class="subtitle">历史申请不会自动重新生效，由队长决定是否重新开放招募。</p></div>');
   var members=3+(added?1:0)-(state.memberRemoved?1:0);
   return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">CompMate 项目队</div><div class="subtitle">队长视角：管理正式成员、角色投入与剩余缺口。</div></div><span class="status green">进行中</span></div>'+
-    '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.currentStageHours+'h</b><span>我的当前投入</span></div></div>'+
+    '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.managedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
       teamMember("你","队长 / 产品","负责需求、产品方案与整体推进",true,false)+
       teamMember("林清禾","数据分析","当前阶段投入 10h / 周",false,false)+
@@ -555,13 +555,13 @@ function renderManagedTeam(){
 function renderJoinedTeam(){
   var r=findRecruit(state.joinedRecruitId)||recruits[0];
   return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我加入的队伍</div><div class="bigTitle">星火队</div><div class="subtitle">成员视角：查看角色任务、阶段投入、队伍缺口与退出操作。</div></div><span class="status green">已组队</span></div>'+
-    '<div class="stats"><div class="stat"><b>4</b><span>正式成员</span></div><div class="stat"><b>1</b><span>剩余角色缺口</span></div><div class="stat"><b>'+state.currentStageHours+'h</b><span>我的当前投入</span></div></div>'+
+    '<div class="stats"><div class="stat"><b>4</b><span>正式成员</span></div><div class="stat"><b>1</b><span>剩余角色缺口</span></div><div class="stat"><b>'+state.joinedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     (state.joinedStageHours<r.role.hours?'<div class="notice warn" style="margin-top:12px">当前投入低于原约定 '+r.role.hours+'h / 周，请与队长继续协商新的投入安排。</div>':'')+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
       teamMember("顾闻","队长 / 产品","负责产品方案与整体推进",false,false)+
       teamMember("林清禾","数据分析","当前阶段投入 10h / 周",false,false)+
       teamMember("陈予安","前端开发","当前阶段投入 8h / 周",false,false)+
-      teamMember("你",r.role.name,"当前阶段投入 "+state.currentStageHours+"h / 周",true,false)+
+      teamMember("你",r.role.name,"当前阶段投入 "+state.joinedStageHours+"h / 周",true,false)+
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">剩余角色缺口</h3><span class="status warn">视觉设计 · 1 人</span></div><p class="subtitle">是否重新开放招募由队长决定，历史申请不会自动恢复。</p></div>'+
