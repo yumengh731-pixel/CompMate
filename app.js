@@ -164,7 +164,7 @@ function renderTeamSearch(){
   return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div><div class="filterChips">'+
     filterButton("team","campus","同校 / 同校区",state.teamFilters.campus)+filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
     '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("team","innovation","创新创业")+categoryButton("team","market","市场调研")+categoryButton("team","tech","科技科研")+categoryButton("team","math","数学建模")+'</div>'+
-    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+recruits.length+' 条 Demo 结果</span></div><span>任务、时间和风险分开呈现</span></div>'+
+    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+recruits.length+' 条结果</span></div><span>任务、时间和风险分开呈现</span></div>'+
     '<div id="hallList" class="teamResultList">'+recruits.map(teamResultRow).join("")+'</div>';
 }
 function renderPeopleSearch(r){
@@ -268,7 +268,7 @@ function applyExploreFilters(){
   }else{
     var teams=filteredTeams(q);
     box.innerHTML=teams.map(teamResultRow).join("")||empty("没有严格匹配结果","可以放宽非核心条件；硬条件仍保留。");
-    if(byId("resultCount"))byId("resultCount").textContent=teams.length+" 条 Demo 结果";
+    if(byId("resultCount"))byId("resultCount").textContent=teams.length+" 条结果";
   }
 }
 function openRolePicker(){
@@ -295,7 +295,9 @@ function personResultRow(c){
 /* RECRUITMENT DETAIL / APPLY */
 function openRecruit(id){state.selectedRecruit=id;state.route="detail";render();window.scrollTo(0,0)}
 function activeApplicationForRecruit(id){
-  return state.relationships.filter(function(x){return x.type==="application"&&x.recruitId===id&&x.status!=="ended"})[0]||null;
+  return state.relationships.filter(function(x){
+    return x.recruitId===id&&x.status!=="ended"&&currentUserIsCandidate(x);
+  })[0]||null;
 }
 function relationButtonLabel(x){
   if(!x)return"申请加入";
@@ -398,7 +400,17 @@ function sendInvitation(candidateId,recruitId){
 function candidateMore(id){
   modal('<h2>更多操作</h2><p class="subtitle">平台不做公开能力评分；拉黑只影响未来新的搜索、推荐、申请与邀请。</p><div class="modalFoot"><button class="btn secondary" onclick="reportUser('+id+')">举报</button><button class="btn danger" onclick="blockUser('+id+')">拉黑</button></div>');
 }
-function blockUser(id){state.blocked[id]=true;closeModal();toast("已拉黑，不再出现在新的推荐中");state.mode="people";go("explore")}
+function blockUser(id){
+  state.blocked[id]=true;
+  state.relationships.forEach(function(x){
+    if(x.candidateId===id&&x.status!=="joined"&&x.status!=="ended"){
+      releaseReservation(x);
+      x.status="ended";
+      x.reason="已拉黑，未完成关系同时结束";
+    }
+  });
+  closeModal();toast("已拉黑，未完成关系与临时预留已释放");state.mode="people";go("explore");
+}
 function reportUser(id){
   closeModal();modal('<h2>提交举报</h2><div class="field"><label>举报原因</label><select class="select"><option>虚假经历 / 招募</option><option>骚扰</option><option>站外支付诱导</option><option>其他</option></select></div><div class="field" style="margin-top:10px"><label>补充说明</label><textarea class="textarea"></textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast(\'举报已记录，等待处理\')">提交</button></div>');
 }
@@ -666,9 +678,23 @@ function pauseRecruit(){
   if(state.ownStatus==="ended"){toast("主动结束的本轮招募不直接恢复，请新建或复制");return}
   state.ownStatus=state.ownStatus==="paused"?"active":"paused";r.status=state.ownStatus;toast(state.ownStatus==="paused"?"已暂停新的加入申请；仍可主动邀请":"已恢复接收申请");render();
 }
-function endRecruit(){state.ownStatus="ended";managedRecruitments[0].status="ended";toast("本轮招募已结束，正式成员关系不受影响");render()}
+function endRecruit(){
+  var r=managedRecruitments[0];
+  state.relationships.forEach(function(x){
+    if(x.recruitId===r.id&&x.status!=="joined"&&x.status!=="ended"){
+      releaseReservation(x);
+      x.status="ended";
+      x.reason="队长已结束本轮招募";
+    }
+  });
+  state.ownStatus="ended";r.status="ended";
+  toast("本轮招募已结束，未组队关系已收口；正式成员不受影响");render();
+}
 function coreChange(){
-  modal('<h2>修改核心条件</h2><p class="subtitle">任务、最低投入、项目周期、参赛目标等变化，需要通知待沟通候选人；若角色存在正式确认中关系，需先结束对应确认。</p><div class="notice warn">保存后，相关候选人会看到“招募条件已更新”。已经形成的正式成员约定不会被自动改写。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast(\'条件已更新并通知相关候选人\')">确认修改</button></div>');
+  var r=managedRecruitments[0];
+  var confirming=state.relationships.filter(function(x){return x.recruitId===r.id&&x.status==="confirming"})[0];
+  if(confirming){toast("该岗位存在正式确认中关系，请先结束或撤回确认");return}
+  modal('<h2>修改核心条件</h2><p class="subtitle">任务、最低投入、项目周期、参赛目标等变化，需要通知待沟通候选人。</p><div class="notice warn">保存后，相关候选人会看到“招募条件已更新”。已经形成的正式成员约定不会被自动改写。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="closeModal();toast(\'条件已更新并通知相关候选人\')">确认修改</button></div>');
 }
 
 /* AUTH */
