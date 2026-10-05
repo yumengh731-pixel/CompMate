@@ -945,7 +945,7 @@ function candidateStartConfirm(id){
 function confirmCandidateStart(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(x.status!=="communication"){closeModal();toast("关系状态已变化，请重新操作");render();return}
-  var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能发起正式确认："+eligibility.reason);render();return}
+  var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能进入组队确认："+eligibility.reason);render();return}
   if(r.role.formal>=r.role.capacity){closeModal();toast("该角色已正式招满");render();return}
   if(remainingFor(r)<r.role.hours){closeModal();toast("当前可投入时间低于最新岗位要求，请先更新真实可投入时间");render();return}
   x.status="confirming";x.initiator="candidate";x.time="刚刚 · 等待队长确认";x.expiresAt=Date.now()+config.formalConfirmMs;x.conditionUpdated=false;
@@ -954,8 +954,8 @@ function confirmCandidateStart(id){
 function captainStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!canManageRecruit(r)){toast("只有当前队长可以发起队长侧正式确认");return}
-  if(x.status!=="communication"){toast("当前关系不能发起正式确认");return}
-  var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能发起正式确认："+eligibility.reason);return}
+  if(x.status!=="communication"){toast("当前关系不能进入组队确认");return}
+  var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能进入组队确认："+eligibility.reason);return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("角色已正式招满或招募已结束");return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("名额正在被其他候选人确认");return}
   var candidateAvailable=relationCandidateAvailable(x);
@@ -967,7 +967,7 @@ function confirmCaptainStart(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!canManageRecruit(r)){closeModal();toast("只有当前队长可以发起队长侧正式确认");render();return}
   if(x.status!=="communication"){closeModal();toast("关系状态已变化，请刷新后重试");render();return}
-  var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能发起正式确认："+eligibility.reason);render();return}
+  var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能进入组队确认："+eligibility.reason);render();return}
   if(r.role.formal>=r.role.capacity){closeModal();toast("角色已正式招满");render();return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){closeModal();toast("名额正在被其他候选人确认");render();return}
   var candidateAvailable=relationCandidateAvailable(x);if(candidateAvailable<r.role.hours){closeModal();toast("候选人最新可投入时间不足");render();return}
