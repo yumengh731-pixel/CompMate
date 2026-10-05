@@ -66,10 +66,10 @@ var managedRecruitments=[
 ];
 
 var candidates=[
-  {id:11,name:"林清禾",campus:"大学城校区",grade:"大二",major:"数据科学与大数据技术",roles:["数据分析","数学建模"],skills:["Python","SPSS","数据可视化","数据分析"],hours:10,target:"冲省奖",proof:true,contact:"lin_demo",exp:"正大杯校赛二等奖 · 负责数据清洗、统计检验和结果可视化"},
-  {id:12,name:"陈予安",campus:"大学城校区",grade:"大二",major:"计算机科学与技术",roles:["前端开发","数据处理"],skills:["React","JavaScript","Python","HTML/CSS"],hours:8,target:"完整参赛",proof:true,contact:"chen_demo",exp:"互联网+校赛项目 · 负责前端页面与数据接口"},
-  {id:13,name:"周言",campus:"龙洞校区",grade:"大二",major:"工商管理",roles:["商业分析","用户调研"],skills:["访谈","Excel","报告写作","商业分析"],hours:6,target:"冲奖",proof:true,contact:"zhou_demo",exp:"行业经济分析大赛 · 负责访谈、资料分析与报告"},
-  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS","视觉设计"],hours:5,target:"积累经验",proof:false,contact:"song_demo",exp:"社团招新视觉 · 负责海报与展示物料设计"}
+  {id:11,name:"林清禾",campus:"大学城校区",grade:"大二",major:"数据科学与大数据技术",roles:["数据分析","数学建模"],skills:["Python","SPSS","数据可视化","数据分析"],hours:10,target:"冲省奖",proof:true,contact:"lin_demo",availStart:"2026-10-05",availEnd:"2026-12-31",exp:"正大杯校赛二等奖 · 负责数据清洗、统计检验和结果可视化"},
+  {id:12,name:"陈予安",campus:"大学城校区",grade:"大二",major:"计算机科学与技术",roles:["前端开发","数据处理"],skills:["React","JavaScript","Python","HTML/CSS"],hours:8,target:"完整参赛",proof:true,contact:"chen_demo",availStart:"2026-10-01",availEnd:"2026-11-30",exp:"互联网+校赛项目 · 负责前端页面与数据接口"},
+  {id:13,name:"周言",campus:"龙洞校区",grade:"大二",major:"工商管理",roles:["商业分析","用户调研"],skills:["访谈","Excel","报告写作","商业分析"],hours:6,target:"冲奖",proof:true,contact:"zhou_demo",availStart:"2026-10-05",availEnd:"2026-12-20",exp:"行业经济分析大赛 · 负责访谈、资料分析与报告"},
+  {id:14,name:"宋禾",campus:"龙洞校区",grade:"大一",major:"工业设计",roles:["视觉设计"],skills:["Figma","PPT","PS","视觉设计"],hours:5,target:"积累经验",proof:false,contact:"song_demo",availStart:"2026-10-20",availEnd:"2026-12-31",exp:"社团招新视觉 · 负责海报与展示物料设计"}
 ];
 
 function e(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
@@ -84,6 +84,14 @@ function periodsOverlap(a,b){
   var x=periodRange(a),y=periodRange(b);if(!x||!y)return true;
   return x.start<=y.end&&y.start<=x.end;
 }
+function availabilityOverlaps(start,end,r){
+  var pr=periodRange(r);if(!pr||!start||!end)return true;
+  var a=new Date(start+"T00:00:00"),b=new Date(end+"T23:59:59");
+  return a<=pr.end&&pr.start<=b;
+}
+function userAvailabilityOverlaps(r){return availabilityOverlaps(state.availStart,state.availEnd,r)}
+function candidateAvailabilityOverlaps(c,r){return availabilityOverlaps(c.availStart,c.availEnd,r)}
+
 function remainingFor(r){
   if(!r)return remaining();
   var used=0,managed=activeManagedRecruit();
@@ -119,6 +127,7 @@ function userMeetsRecruitHardRules(r){
   if(r.status==="ended"||r.status==="full")return {ok:false,reason:r.status==="full"?"角色已招满":"招募已结束"};
   if(deadlinePassed(r))return {ok:false,reason:"招募已过截止时间"};
   if(r.hard&&r.campus!==state.userCampus)return {ok:false,reason:"该招募将校区设为不可放宽条件"};
+  if(!userAvailabilityOverlaps(r))return {ok:false,reason:"你的可参与日期与项目周期不重叠"};
   var missing=(r.role.skills||[]).filter(function(x){return state.profileSkills.indexOf(x)<0});
   if(missing.length)return {ok:false,reason:"缺少必需技能："+missing.join("、")};
   return {ok:true,reason:""};
@@ -129,6 +138,7 @@ function candidateMeetsHardRules(c,r){
   if(r.status==="ended"||r.status==="full")return {ok:false,reason:r.status==="full"?"角色已招满":"招募已结束"};
   if(deadlinePassed(r))return {ok:false,reason:"招募已过截止时间"};
   if(r.hard&&c.campus!==r.campus)return {ok:false,reason:"该招募将校区设为不可放宽条件"};
+  if(!candidateAvailabilityOverlaps(c,r))return {ok:false,reason:"候选人的可参与日期与项目周期不重叠"};
   var pool=c.skills.concat(c.roles);
   var missing=(r.role.skills||[]).filter(function(x){return pool.indexOf(x)<0});
   if(missing.length)return {ok:false,reason:"候选人缺少必需技能："+missing.join("、")};
@@ -214,7 +224,7 @@ function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
-  var recommended=recruits.filter(function(r){return r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&remainingFor(r)>=r.role.hours}).slice(0,3);
+  var recommended=recruits.filter(function(r){return r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&userAvailabilityOverlaps(r)&&remainingFor(r)>=r.role.hours}).slice(0,3);
   var used=Math.max(0,state.committed+state.reserved);
   var pct=state.total?Math.min(100,Math.round(used/state.total*100)):0;
   var pendingAction=state.pendingApplyRecruitId?'<article class="todoBoard pendingResume" onclick="continuePendingApply()"><div class="statusBoardHead"><span>CONTINUE</span><h3>继续此前申请</h3></div><b>'+e(findRecruit(state.pendingApplyRecruitId)?findRecruit(state.pendingApplyRecruitId).title:"原招募")+'</b><p>认证曾中断，招募仍有效时可以继续。</p><em>继续申请 →</em></article>':
@@ -333,13 +343,14 @@ function candidateFit(c,r){
     (r.role.name.indexOf("数据")>=0&&/数据|建模/.test(roleText));
   var timeOk=c.hours>=r.role.hours;
   var campusOk=c.campus===r.campus;
-  var targetOk=goalAligned(r.target,c.target);
+  var targetOk=goalAligned(r.target,c.target),dateOk=candidateAvailabilityOverlaps(c,r);
   var dims=[];
   dims.push(taskMatch?"任务相关":"任务需确认");
   dims.push(timeOk?"时间满足":"时间不足");
   if(targetOk)dims.push("目标可对齐");
+  dims.push(dateOk?"日期匹配":"日期不匹配");
   if(campusOk)dims.push("同校区");
-  return {taskMatch:taskMatch,timeOk:timeOk,campusOk:campusOk,targetOk:targetOk,overlap:overlap,dims:dims};
+  return {taskMatch:taskMatch,timeOk:timeOk,campusOk:campusOk,targetOk:targetOk,dateOk:dateOk,overlap:overlap,dims:dims};
 }
 function filteredCandidates(q){
   q=(q||"").toLowerCase();
@@ -348,7 +359,7 @@ function filteredCandidates(q){
     if(state.blocked[c.id])return false;
     if(q&&JSON.stringify(c).toLowerCase().indexOf(q)<0)return false;
     var fit=candidateFit(c,r);
-    if(state.peopleFilters.time&&!fit.timeOk)return false;
+    if(state.peopleFilters.time&&(!fit.timeOk||!fit.dateOk))return false;
     if(state.peopleFilters.output&&!c.proof)return false;
     if(state.peopleFilters.campus&&!fit.campusOk)return false;
     if(state.peopleFilters.target&&!fit.targetOk)return false;
@@ -469,16 +480,20 @@ function demoShare(id){
   state.loggedIn=false;state.verified=false;if(id)state.selectedRecruit=id;state.pendingApplyRecruitId=null;state.route="detail";render();
   modal('<h2>外部分享访问</h2><p class="subtitle">当前模拟从微信群打开分享链接的未登录访客。访客可以先查看完整公开招募，点击申请时再登录 / 学校认证。</p><div class="modalFoot"><button class="btn primary" onclick="closeModal()">查看招募</button></div>');
 }
-function demoExpiredShare(){
-  closeModal();
-  var a=recruits[0],b=recruits[4];
-  modal('<h2>原招募已失效</h2><div class="notice warn">原分享对应的角色已经正式招满，不能继续提交申请。</div><p class="subtitle" style="margin-top:12px">你仍可查看同类有效招募：</p><div class="rolePicker"><button class="rolePick" onclick="closeModal();openRecruit('+a.id+')"><div><b>'+e(a.comp)+' · '+e(a.role.name)+'</b><span>'+e(a.role.task)+'</span></div><small>查看 →</small></button><button class="rolePick" onclick="closeModal();openRecruit('+b.id+')"><div><b>'+e(b.comp)+' · '+e(b.role.name)+'</b><span>'+e(b.role.task)+'</span></div><small>查看 →</small></button></div>');
+function showInvalidOriginalRecruit(id,reason){
+  var original=findRecruit(id),cat=original?teamCategory(original):"";
+  var alternatives=recruits.filter(function(r){return r.id!==Number(id)&&r.status==="active"&&!deadlinePassed(r)&&roleFree(r)>0&&(!cat||teamCategory(r)===cat)}).slice(0,2);
+  state.pendingApplyRecruitId=null;
+  var cards=alternatives.map(function(r){return '<button class="rolePick" onclick="closeModal();openRecruit('+r.id+')"><div><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><span>'+e(r.role.task)+'</span></div><small>查看 →</small></button>'}).join("");
+  modal('<h2>原招募当前无法继续申请</h2><div class="notice warn">'+e(reason||"原招募已失效")+'</div><p class="subtitle" style="margin-top:12px">'+(cards?"可以查看以下同类有效招募：":"当前暂无同类有效招募，可返回寻找页调整筛选。")+'</p>'+(cards?'<div class="rolePicker">'+cards+'</div>':'')+'<div class="modalFoot"><button class="btn secondary" onclick="closeModal();state.mode=\'teams\';go(\'explore\')">返回寻找</button></div>');
 }
+function demoExpiredShare(){closeModal();showInvalidOriginalRecruit(4,"原分享对应的角色已经正式招满，不能继续提交申请。")}
 function continuePendingApply(){
   var id=state.pendingApplyRecruitId;
   if(!id){go("explore");return}
-  state.selectedRecruit=id;state.route="detail";render();
-  setTimeout(function(){applyRecruit(id)},150);
+  var r=findRecruit(id),hard=r?userMeetsRecruitHardRules(r):{ok:false,reason:"原招募不存在"};
+  if(!r||r.status!=="active"||roleFree(r)<=0||deadlinePassed(r)||!hard.ok){showInvalidOriginalRecruit(id,!r?"原招募不存在":r.status!=="active"?"原招募当前不接收申请":roleFree(r)<=0?"原角色当前没有可提交名额":deadlinePassed(r)?"原招募已过截止时间":hard.reason);return}
+  state.selectedRecruit=id;state.route="detail";render();setTimeout(function(){applyRecruit(id)},150);
 }
 
 /* CANDIDATE / INVITE */
@@ -655,12 +670,14 @@ function formalEligibility(x,r){
   if(currentUserIsCandidate(x)){
     if(state.blockedRecruitIds[r.id])return {ok:false,reason:"双方存在拉黑关系"};
     if(r.hard&&r.campus!==state.userCampus)return {ok:false,reason:"最新校区硬条件不满足"};
+    if(!userAvailabilityOverlaps(r))return {ok:false,reason:"你的可参与日期与最新项目周期不匹配"};
     var miss=(r.role.skills||[]).filter(function(k){return state.profileSkills.indexOf(k)<0});
     if(miss.length)return {ok:false,reason:"最新必需技能条件不满足："+miss.join("、")};
   }else{
     var c=relationCandidate(x);if(!c)return {ok:false,reason:"候选人资料不存在"};
     if(state.blocked[c.id])return {ok:false,reason:"双方存在拉黑关系"};
     if(r.hard&&c.campus!==r.campus)return {ok:false,reason:"最新校区硬条件不满足"};
+    if(!candidateAvailabilityOverlaps(c,r))return {ok:false,reason:"候选人的可参与日期与最新项目周期不匹配"};
     var pool=c.skills.concat(c.roles),missing=(r.role.skills||[]).filter(function(k){return pool.indexOf(k)<0});
     if(missing.length)return {ok:false,reason:"候选人不满足最新必需技能："+missing.join("、")};
   }
@@ -1051,7 +1068,7 @@ function completeAuth(){
   state.loggedIn=true;state.verified=true;
   var ret=state.authReturn;state.authReturn="";
   if(ret==="publish"){toast("认证成功");beginPublish();return}
-  if(ret==="apply"){state.pendingApplyRecruitId=null;state.route="detail";render();setTimeout(function(){applyRecruit(state.selectedRecruit)},150);return}
+  if(ret==="apply"){var rr=findRecruit(state.selectedRecruit),hh=rr?userMeetsRecruitHardRules(rr):{ok:false,reason:"原招募不存在"};if(!rr||rr.status!=="active"||roleFree(rr)<=0||deadlinePassed(rr)||!hh.ok){showInvalidOriginalRecruit(state.selectedRecruit,!rr?"原招募不存在":rr.status!=="active"?"原招募当前不接收申请":roleFree(rr)<=0?"原角色当前没有可提交名额":deadlinePassed(rr)?"原招募已过截止时间":hh.reason);return}state.pendingApplyRecruitId=null;state.route="detail";render();setTimeout(function(){applyRecruit(state.selectedRecruit)},150);return}
   if(ret==="invite"){state.mode="people";state.route="candidate";render();setTimeout(function(){inviteCandidate(state.selectedCandidate)},150);return}
   toast("认证成功");go("profile");
 }
