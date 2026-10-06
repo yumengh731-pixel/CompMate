@@ -329,7 +329,7 @@ function shell(){
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
 function demoBar(){
-  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
+  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态；组队后管理完整展开一支预置的多角色队伍，不重复铺多队伍管理页面。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
 }
 function simulatePageState(kind){
   state.demoPageState=kind;render();
