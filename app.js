@@ -58,7 +58,7 @@ var state={
   demoPageState:"normal",
   reports:[],
   evidenceUrl:"https://example.com/compmate-output",
-  teamFilters:{campus:false,time:false,active:true,award:false,category:"",query:""},
+  teamFilters:{campus:false,time:false,active:true,award:false,category:"",competition:"",roleTask:"",schoolCampus:"",query:""},
   peopleFilters:{time:false,output:false,campus:false,target:false,capability:"",query:""},
   relationships:[
     {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
@@ -495,13 +495,42 @@ function renderExplore(p){
     '<div class="exploreSwitch"><button class="'+(isTeams?"active":"")+'" onclick="state.mode=\'teams\';render()"><b>找队伍</b><span>我要加入一支队伍</span></button><button class="'+(!isTeams?"active":"")+'" onclick="state.mode=\'people\';render()"><b>找队友</b><span>我的队伍还缺人</span></button></div>'+
     (isTeams?renderTeamSearch():renderPeopleSearch(r));
 }
+function teamFilterValues(kind){
+  var seen={},out=[];
+  recruits.forEach(function(r){
+    var v=kind==="competition"?r.comp:kind==="roleTask"?r.role.name:(r.school+"|"+r.campus);
+    if(!seen[v]){seen[v]=true;out.push(v)}
+  });
+  return out;
+}
+function teamDimensionButton(key,value,label){
+  var active=(state.teamFilters[key]||"")===value;
+  var safeValue=String(value).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+  return '<button class="'+(active?"active":"")+'" onclick="setTeamDimension(\''+key+'\',\''+safeValue+'\')">'+e(label)+'</button>';
+}
+function teamDimensionOptions(key,values){
+  var html=teamDimensionButton(key,"","全部");
+  values.forEach(function(v){
+    var label=key==="schoolCampus"?v.replace("|"," · "):v;
+    html+=teamDimensionButton(key,v,label);
+  });
+  return html;
+}
+function setTeamDimension(key,value){
+  state.teamFilters[key]=value;
+  render();
+}
 function renderTeamSearch(){
   var list=filteredTeams(state.teamFilters.query||"");
-  return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.teamFilters.query||"")+'" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div><div class="filterChips">'+
-    filterButton("team","campus","同校区",state.teamFilters.campus)+filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
-    '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("team","innovation","创新创业")+categoryButton("team","market","市场调研")+categoryButton("team","tech","科技科研")+categoryButton("team","math","数学建模")+'</div>'+
-    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div><span>任务、时间和风险分开呈现</span></div>'+
-    '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽非核心筛选；招募有效性、拉黑和不可放宽条件仍会保留。"))+'</div>';
+  return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.teamFilters.query||"")+'" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div>'+
+    '<div class="teamFilterGroups">'+
+      '<div class="teamFilterGroup"><span class="teamFilterLabel">竞赛</span><div class="teamFilterOptions">'+teamDimensionOptions("competition",teamFilterValues("competition"))+'</div></div>'+
+      '<div class="teamFilterGroup"><span class="teamFilterLabel">角色 / 任务</span><div class="teamFilterOptions">'+teamDimensionOptions("roleTask",teamFilterValues("roleTask"))+'</div></div>'+
+      '<div class="teamFilterGroup"><span class="teamFilterLabel">学校 / 校区</span><div class="teamFilterOptions">'+teamDimensionOptions("schoolCampus",teamFilterValues("schoolCampus"))+'</div></div>'+
+    '</div><div class="filterChips auxiliaryFilters"><span class="auxiliaryLabel">辅助条件</span>'+
+    filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
+    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div><span>按竞赛、角色 / 任务、学校 / 校区筛选</span></div>'+
+    '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色 / 任务、学校 / 校区及其他非核心筛选；招募有效性与不可放宽条件仍保留。"))+'</div>';
 }
 function renderPeopleSearch(r){
   if(!r||!canManageRecruit(r)||!recruitIsPublished(r)||r.status==="full"||r.status==="ended"||deadlinePassed(r))return '<div class="panel empty"><h3>当前没有可继续邀请的招募缺口</h3><p>找队友必须绑定一条已经发布的招募。未发布草稿只能继续编辑，不能向候选人发送邀请。</p><button class="btn primary" onclick="beginPublish(true)">继续 / 发布招募</button></div>';
@@ -555,6 +584,9 @@ function filteredTeams(q){
   return recruits.filter(function(r){
     if(state.blockedRecruitIds[r.id])return false;
     if(q&&JSON.stringify(r).toLowerCase().indexOf(q)<0)return false;
+    if(state.teamFilters.competition&&r.comp!==state.teamFilters.competition)return false;
+    if(state.teamFilters.roleTask&&r.role.name!==state.teamFilters.roleTask)return false;
+    if(state.teamFilters.schoolCampus&&(r.school+"|"+r.campus)!==state.teamFilters.schoolCampus)return false;
     if(state.teamFilters.campus&&r.campus!==state.userCampus)return false;
     if(state.teamFilters.time&&remainingFor(r)<r.role.hours)return false;
     if(state.teamFilters.active&&(r.status!=="active"||deadlinePassed(r)))return false;
@@ -609,7 +641,7 @@ function applyExploreFilters(){
     if(byId("resultCount"))byId("resultCount").textContent=people.length+" 人";
   }else{
     var teams=filteredTeams(q);
-    box.innerHTML=teams.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽校区、时间、冲奖目标和方向筛选；招募有效性与不可放宽条件仍保留。");
+    box.innerHTML=teams.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色 / 任务、学校 / 校区及其他非核心筛选；招募有效性与不可放宽条件仍保留。");
     if(byId("resultCount"))byId("resultCount").textContent=teams.length+" 条结果";
   }
 }
@@ -619,11 +651,14 @@ function relaxEmpty(kind,title,sub){
 function relaxFilters(kind){
   var relaxed=[];
   if(kind==="team"){
+    if(state.teamFilters.competition)relaxed.push("竞赛");
+    if(state.teamFilters.roleTask)relaxed.push("角色 / 任务");
+    if(state.teamFilters.schoolCampus)relaxed.push("学校 / 校区");
     if(state.teamFilters.campus)relaxed.push("校区优先");
     if(state.teamFilters.time)relaxed.push("时间可行");
     if(state.teamFilters.award)relaxed.push("冲奖目标");
     if(state.teamFilters.category)relaxed.push("竞赛方向");
-    state.teamFilters={campus:false,time:false,active:true,award:false,category:"",query:state.teamFilters.query||""};
+    state.teamFilters={campus:false,time:false,active:true,award:false,category:"",competition:"",roleTask:"",schoolCampus:"",query:state.teamFilters.query||""};
   }else{
     if(state.peopleFilters.time)relaxed.push("时间满足");
     if(state.peopleFilters.output)relaxed.push("成果产出");
@@ -1380,8 +1415,22 @@ function renderJoinedTeam(){
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">当前岗位剩余缺口</h3>'+(free?'<span class="status warn">'+e(r.role.name)+' · '+free+' 人</span>':'<span class="status green">当前岗位已补齐</span>')+'</div><p class="subtitle">其他角色是否重新开放招募由队长决定，历史申请不会自动恢复。</p></div>'+
-    '<div class="section"><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：请联系队长 '+e(r.leader)+' 获取项目群信息。</p></div>'+
+    '<div class="section groupJoinSection"><div class="between"><div><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：联系队长 '+e(r.leader)+' 获取项目群信息。</p></div><button class="btn primary" onclick="contactCaptainForGroup()">联系队长入群</button></div><div class="meta">队长联系方式沿用双方待沟通阶段已经授权的信息，不在公开招募页展示。</div></div>'+
     '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="openReport(\'team\','+r.id+',\''+e(teamName)+'\')">举报问题</button></div></div>';
+}
+function contactCaptainForGroup(){
+  var r=findRecruit(state.joinedRecruitId)||recruits[0];
+  var x=state.relationships.filter(function(a){return a.status==="joined"&&a.recruitId===r.id&&currentUserIsCandidate(a)})[0];
+  var contact=x&&x.partyContact?x.partyContact:"";
+  modal('<h2>联系队长入群</h2><p class="subtitle">仅正式成员可见。请通过此前双方沟通阶段已经授权的联系方式联系队长，由队长提供项目群信息。</p><div class="roleBox"><div class="kv"><div class="k">队长</div><div>'+e(r.leader)+'</div><div class="k">已授权联系方式</div><div>'+(contact?e(contact):'沿用此前已授权联系方式')+'</div></div></div><div class="notice" style="margin-top:12px">CompMate 不公开展示群二维码；队长转交后，这里将显示当前队长。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button>'+(contact?'<button class="btn primary" onclick="copyCaptainContact()">复制队长联系方式</button>':'')+'</div>');
+}
+function copyCaptainContact(){
+  var r=findRecruit(state.joinedRecruitId)||recruits[0];
+  var x=state.relationships.filter(function(a){return a.status==="joined"&&a.recruitId===r.id&&currentUserIsCandidate(a)})[0];
+  var contact=x&&x.partyContact?x.partyContact:"";
+  if(!contact){toast("请使用此前已授权的联系方式联系队长");return}
+  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(contact).catch(function(){});
+  toast("已复制队长联系方式");
 }
 function teamMember(name,role,sub,self,removable){
   return '<div class="request"><div><div class="requestTitle">'+e(name)+' · '+e(role)+'</div><div class="requestSub">'+e(sub)+'</div></div><div class="requestActions">'+(self?'<span class="status green">本人</span>':'<span class="status">正式成员</span>')+(removable?'<button class="btn text" onclick="removeMemberDemo()">移除</button>':'')+'</div></div>';
