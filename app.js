@@ -921,10 +921,19 @@ function confirmRelationRoleChange(id,newRecruitId){
   closeModal();toast("目标角色已调整；组队确认将按新角色重新校验");render();
 }
 
+function openRelationContext(id){
+  var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  if(!currentUserIsCandidate(x)&&x.candidateId){
+    state.selectedCandidate=x.candidateId;state.activeRoleRecruitId=x.recruitId;go("candidate");return;
+  }
+  state.selectedRecruit=x.recruitId;go("detail");
+}
 function requestCard(x){
   refreshRelationExpiry(x);
   var mp={pending:["请求待处理",""],communication:["待沟通","green"],confirming:["双方确认中","warn"],joined:["已组队","blue"],ended:["已结束",""]},st=mp[x.status],act="",note="",asCandidate=currentUserIsCandidate(x),r=relationRecruit(x);
   var task=r&&r.role?'<div class="requestTask">任务：'+e(r.role.task)+'</div>':'';
+  var contextAction=r?'<button class="btn text" onclick="openRelationContext('+x.id+')">'+(!asCandidate&&x.candidateId?"查看候选人":"查看招募")+'</button>':"";
+  var message=(x.otherRole?'<div class="requestSub">可接受其他角色：'+e(x.otherRole)+'</div>':"")+(x.note?'<div class="requestSub">说明：'+e(x.note)+'</div>':"");
   var saturated=r&&r.role.formal<r.role.capacity&&roleFree(r)<=0;
   if(x.status==="pending"){
     if((x.type==="invitation"&&x.direction==="incoming")||(x.type==="application"&&x.direction==="incoming"))act='<button class="btn secondary" onclick="rejectReq('+x.id+')">拒绝</button><button class="btn primary" onclick="agreeReq('+x.id+')">同意沟通</button>';
@@ -956,7 +965,7 @@ function requestCard(x){
   if(saturated&&(x.status==="pending"||x.status==="communication"||(x.status==="confirming"&&x.initiator==="candidate")))note+='<div class="notice warn" style="margin-top:8px">该角色名额正在与其他候选人确认中；当前关系保留，可等待预留释放。</div>';
   if(x.status==="joined")act=asCandidate?'<button class="btn primary" onclick="openJoinedRelationTeam('+x.id+')">查看队伍</button>':'<button class="btn primary" onclick="state.progressView=\'team\';state.teamView=\'managed\';render()">查看队伍</button>';
   if(x.status==="ended")act='<button class="btn text" onclick="reportRelation('+x.id+')">举报 / 反馈</button><button class="btn secondary" onclick="blockRelationParty('+x.id+')">拉黑对方</button>';
-  return '<div class="request"><div class="requestMain"><div class="between"><div class="requestTitle">'+e(x.title)+'</div><span class="status '+st[1]+'">'+st[0]+'</span></div><div class="requestSub">'+e(x.party)+' · '+e(x.role)+' · '+e(x.time)+'</div>'+task+note+(x.status==="ended"?'<div class="requestSub">'+e(x.reason||"本次关系已结束")+'</div>':'')+'</div><div class="requestActions">'+act+'</div></div>';
+  return '<div class="request"><div class="requestMain"><div class="between"><div class="requestTitle">'+e(x.title)+'</div><span class="status '+st[1]+'">'+st[0]+'</span></div><div class="requestSub">'+e(x.party)+' · '+e(x.role)+' · '+e(x.time)+'</div>'+task+message+note+(x.status==="ended"?'<div class="requestSub">'+e(x.reason||"本次关系已结束")+'</div>':'')+'</div><div class="requestActions">'+contextAction+act+'</div></div>';
 }
 function rel(id){return state.relationships.filter(function(x){return x.id===id})[0]||null}
 function openJoinedRelationTeam(id){
