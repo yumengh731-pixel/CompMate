@@ -1334,6 +1334,7 @@ function confirmRemoveManagedMember(kind){
   if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能移除成员");render();return}
   if((kind==="data"&&state.dataMemberRemoved)||(kind==="front"&&state.memberRemoved)){closeModal();toast("该成员已不在队伍中");render();return}
   if(kind==="data")state.dataMemberRemoved=true;else state.memberRemoved=true;
+  var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0];adjustTeamCount(base,-1);
   var gap=ensureRestoredRole(kind);
   closeModal();toast("成员已移除，"+gap.role.name+"已恢复为角色缺口；由队长决定何时重新开放");render();
 }
@@ -1345,7 +1346,7 @@ function leaveManagedTeam(){
 }
 function confirmLeaveManagedTeam(){
   var gap=ensureRestoredRole("product"),released=state.managedStageHours,r=findRecruit(state.managedTeamRecruitId)||activeManagedRecruit();
-  state.managedMemberActive=false;if(r)managedGroup(r).forEach(function(g){g.ownerActive=false});
+  state.managedMemberActive=false;if(r){managedGroup(r).forEach(function(g){g.ownerActive=false});adjustTeamCount(r,-1)}
   state.committed=Math.max(0,state.committed-released);state.managedStageHours=0;closeModal();toast("已退出队伍；"+gap.role.name+"已恢复为空缺，由当前队长决定是否重新开放");render()
 }
 function dissolveManagedTeam(){
