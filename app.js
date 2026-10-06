@@ -486,8 +486,8 @@ function reminderRow(date,comp,label,sub,tone){
 function renderExplore(p){
   var isTeams=state.mode!=="people";
   var r=activeManagedRecruit();
-  if(!isTeams&&(!canManageRecruit(r)||!recruitIsPublished(r))){
-    var owned=managedRecruitments.filter(function(x){return x.status!=="ended"&&recruitIsPublished(x)&&canManageRecruit(x)})[0];
+  if(!isTeams&&(!canManageRecruit(r)||!recruitIsPublished(r)||r.status==="full"||r.status==="ended"||deadlinePassed(r))){
+    var owned=managedRecruitments.filter(function(x){return x.status!=="ended"&&x.status!=="full"&&!deadlinePassed(x)&&recruitIsPublished(x)&&canManageRecruit(x)})[0];
     if(owned){state.activeRoleRecruitId=owned.id;r=owned}
   }
   p.innerHTML=
@@ -504,7 +504,7 @@ function renderTeamSearch(){
     '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽非核心筛选；招募有效性、拉黑和不可放宽条件仍会保留。"))+'</div>';
 }
 function renderPeopleSearch(r){
-  if(!r||!canManageRecruit(r)||!recruitIsPublished(r))return '<div class="panel empty"><h3>当前没有已发布的可管理招募缺口</h3><p>找队友必须绑定一条已经发布的招募。未发布草稿只能继续编辑，不能向候选人发送邀请。</p><button class="btn primary" onclick="beginPublish(true)">继续 / 发布招募</button></div>';
+  if(!r||!canManageRecruit(r)||!recruitIsPublished(r)||r.status==="full"||r.status==="ended"||deadlinePassed(r))return '<div class="panel empty"><h3>当前没有可继续邀请的招募缺口</h3><p>找队友必须绑定一条已经发布的招募。未发布草稿只能继续编辑，不能向候选人发送邀请。</p><button class="btn primary" onclick="beginPublish(true)">继续 / 发布招募</button></div>';
   var list=filteredCandidates(state.peopleFilters.query||"");
   return '<section class="roleContext"><div class="roleContextMain"><span>当前招募岗位</span><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><small>'+e(r.role.task)+' · 最低 '+r.role.hours+'h / 周</small></div><div class="roleRequirement"><span>关键技能 · 用于匹配</span><b>'+e(r.role.skills.join(" · "))+'</b></div><button class="btn secondary" onclick="openRolePicker()">切换岗位</button></section>'+
     '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.peopleFilters.query||"")+'" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div><div class="filterChips">'+
