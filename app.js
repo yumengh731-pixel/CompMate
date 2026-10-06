@@ -70,14 +70,14 @@ var state={
 
 var recruits=[
   {id:1,category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"10/18 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
-  {id:2,category:"market",comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学",campus:"大学城校区",leader:"许辰",status:"active",target:"完整参赛并争取省赛",period:"10/10 - 12/10",deadline:"10/20 20:00",team:"现有 4 人",progress:"正在设计正式问卷",collab:"线上协作为主，每周一次集中同步。",hard:false,reasons:["有访谈经验","目标一致"],role:{name:"市场调研",capacity:1,formal:0,reserved:1,hours:6,task:"访谈提纲、用户访谈、问卷设计与洞察整理",skills:["用户访谈","问卷设计","报告写作"]}},
+  {id:2,category:"market",comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学",campus:"大学城校区",leader:"许辰",status:"active",target:"完整参赛并争取省赛",period:"10/10 - 12/10",deadline:"10/20 20:00",team:"现有 4 人",progress:"正在设计正式问卷",collab:"线上协作为主，每周一次集中同步。",hard:false,reasons:["有访谈经验","目标一致"],role:{name:"市场调研",capacity:1,formal:0,reserved:0,hours:6,task:"访谈提纲、用户访谈、问卷设计与洞察整理",skills:["用户访谈","问卷设计","报告写作"]}},
   {id:3,category:"innovation",comp:"互联网+",title:"寻找前端开发同学",school:"广东工业大学",campus:"龙洞校区",leader:"陈屿",status:"paused",target:"冲校赛金奖",period:"10/01 - 11/25",deadline:"10/22 18:00",team:"现有 3 人",progress:"产品方向已确定",collab:"每两天线上同步开发进度。",hard:true,reasons:["技能高度匹配"],role:{name:"前端开发",capacity:2,formal:1,reserved:0,hours:10,task:"实现产品 Demo、核心交互和路演展示页面",skills:["JavaScript","React","HTML/CSS"]}},
   {id:4,category:"math",comp:"数学建模竞赛",title:"建模队补一名编程队友",school:"广东工业大学",campus:"龙洞校区",leader:"林深",status:"full",target:"稳定完赛",period:"11/01 - 12/01",deadline:"10/12 22:00",team:"现有 3 人",progress:"已完成组队",collab:"赛前每周训练，比赛期间集中协作。",hard:false,reasons:["跨专业互补"],role:{name:"编程 / 建模",capacity:1,formal:1,reserved:0,hours:14,task:"Python 求解、模型验证、结果整理",skills:["Python","数学建模"]}},
   {id:5,category:"market",comp:"行业经济分析大赛",title:"招募商业分析与报告撰写队友",school:"广东工业大学",campus:"龙洞校区",leader:"叶知",status:"active",target:"冲校奖",period:"10/08 - 11/30",deadline:"10/24 21:00",team:"现有 2 人",progress:"已完成资料框架",collab:"线上协作为主，周末集中讨论。",hard:false,reasons:["商业分析经历相关","同校区"],role:{name:"商业分析",capacity:2,formal:0,reserved:0,hours:6,task:"行业资料检索、分析框架搭建、核心结论与报告撰写",skills:["Excel","商业分析","报告写作"]}}
 ];
 
 var managedRecruitments=[
-  {id:901,category:"innovation",comp:"挑战杯 · 大挑",title:"CompMate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],role:{name:"视觉设计",capacity:1,formal:0,reserved:0,hours:6,task:"负责路演 PPT 视觉、海报与产品展示物料",skills:["PPT","Figma","视觉设计"]}},
+  {id:901,category:"innovation",comp:"挑战杯 · 大挑",title:"CompMate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],ownerRole:"产品 / 项目推进",ownerHours:8,ownerActive:true,role:{name:"视觉设计",capacity:1,formal:0,reserved:0,hours:6,task:"负责路演 PPT 视觉、海报与产品展示物料",skills:["PPT","Figma","视觉设计"]}},
   {id:902,category:"market",comp:"行业经济分析大赛",title:"商业分析岗位招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲校奖",period:"10/08 - 11/30",deadline:"10/24 21:00",team:"现有 2 人",progress:"资料框架已完成",collab:"周末集中讨论，任务延误提前说明。",hard:false,reasons:[],role:{name:"商业分析",capacity:1,formal:0,reserved:0,hours:6,task:"行业资料检索、分析框架、报告撰写与汇报",skills:["Excel","商业分析","报告写作"]}}
 ];
 
@@ -90,7 +90,38 @@ var candidates=[
 
 function e(s){return String(s==null?"":s).replace(/[&<>"']/g,function(m){return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]})}
 function byId(id){return document.getElementById(id)}
-function remaining(){return state.total-state.committed-state.reserved}
+function periodContainsDate(r,d){
+  var pr=periodRange(r);if(!pr)return true;
+  d=d||new Date();return pr.start<=d&&d<=pr.end;
+}
+function managedOwnerCommitments(){
+  var seen={},out=[];
+  managedRecruitments.forEach(function(r){
+    var gid=recruitGroupId(r);if(seen[gid]||r.isDraft||r.isDraftRole)return;
+    seen[gid]=true;
+    var rep=managedGroup(r)[0]||r,hours=Number(rep.ownerHours)||0;
+    if(rep.ownerActive!==false&&hours>0)out.push({r:rep,hours:hours});
+  });
+  return out;
+}
+function currentWeekFormalUsed(){
+  var used=0,now=new Date();
+  managedOwnerCommitments().forEach(function(x){if(periodContainsDate(x.r,now))used+=x.hours});
+  state.relationships.forEach(function(x){
+    var r=relationRecruit(x);
+    if(x.status==="joined"&&currentUserIsCandidate(x)&&r&&periodContainsDate(r,now))used+=x.joinedHours||r.role.hours||0;
+  });
+  return used;
+}
+function currentWeekReservedUsed(){
+  var used=0,now=new Date();
+  state.relationships.forEach(function(x){
+    var r=relationRecruit(x);
+    if(x.reserved&&x.reservedOnCurrentUser&&r&&periodContainsDate(r,now))used+=x.reservedHours||0;
+  });
+  return used;
+}
+function remaining(){return state.total-currentWeekFormalUsed()-currentWeekReservedUsed()}
 function periodRange(r){
   if(r&&r.periodStart&&r.periodEnd){
     return {start:new Date(r.periodStart+"T00:00:00"),end:new Date(r.periodEnd+"T23:59:59")};
@@ -114,8 +145,8 @@ function candidateAvailabilityOverlaps(c,r){return availabilityOverlaps(c.availS
 
 function remainingFor(r){
   if(!r)return remaining();
-  var used=0,managed=findRecruit(state.managedTeamRecruitId);
-  if(state.managedMemberActive&&managed&&periodsOverlap(managed,r))used+=state.managedStageHours;
+  var used=0;
+  managedOwnerCommitments().forEach(function(x){if(periodsOverlap(x.r,r))used+=x.hours});
   state.relationships.forEach(function(x){
     var rr=relationRecruit(x);
     if(!rr||!periodsOverlap(rr,r))return;
@@ -157,15 +188,25 @@ function candidateRemainingFor(c,r,excludeRelationId){
 function canManageRecruit(r){return !!(r&&r.leader==="你"&&state.verified)}
 function recruitIsPublished(r){return !!(r&&!r.isDraft&&!r.isDraftRole)}
 function isAwardGoal(t){return /冲|奖|省赛|金奖/.test(t||"")}
-function goalAligned(a,b){if(isAwardGoal(a))return isAwardGoal(b);return true}
+function goalBucket(t){
+  t=String(t||"");
+  if(/冲|奖|省赛|金奖/.test(t))return "award";
+  if(/完整|完赛|稳定完赛/.test(t))return "complete";
+  if(/积累|体验|学习|经验/.test(t))return "growth";
+  return "other";
+}
+function goalAligned(a,b){
+  var x=goalBucket(a),y=goalBucket(b);
+  return x!=="other"&&y!=="other"&&x===y;
+}
 function hasUserContact(){return !!(state.userContact&&String(state.userContact).trim())}
 function publisherBasicComplete(){
   return !!(String(state.profileName||"").trim()&&String(state.profileCampus||"").trim()&&String(state.profileGrade||"").trim()&&String(state.profileMajor||"").trim());
 }
 function remainingLabel(v){v=Number(v)||0;return v>=0?v+"h":"已超额 "+Math.abs(v)+"h"}
 function timeCapacityMeta(){
-  var r=remaining(),parts=["总可投入 "+state.total+"h","正式占用 "+state.committed+"h"];
-  if(state.reserved)parts.push("确认中暂占 "+state.reserved+"h");
+  var r=remaining(),formal=currentWeekFormalUsed(),reserved=currentWeekReservedUsed(),parts=["总可投入 "+state.total+"h","本周正式占用 "+formal+"h"];
+  if(reserved)parts.push("本周确认中暂占 "+reserved+"h");
   parts.push(r<0?"已超额 "+Math.abs(r)+"h":"剩余 "+r+"h");
   return parts.join(" · ");
 }
@@ -435,7 +476,7 @@ function renderExplore(p){
 function renderTeamSearch(){
   var list=filteredTeams(state.teamFilters.query||"");
   return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.teamFilters.query||"")+'" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div><div class="filterChips">'+
-    filterButton("team","campus","同校 / 同校区",state.teamFilters.campus)+filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
+    filterButton("team","campus","同校区",state.teamFilters.campus)+filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
     '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("team","innovation","创新创业")+categoryButton("team","market","市场调研")+categoryButton("team","tech","科技科研")+categoryButton("team","math","数学建模")+'</div>'+
     '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div><span>任务、时间和风险分开呈现</span></div>'+
     '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽非核心筛选；招募有效性、拉黑和不可放宽条件仍会保留。"))+'</div>';
@@ -524,7 +565,8 @@ function filteredCandidates(q){
   var r=activeManagedRecruit();
   return candidates.filter(function(c){
     if(state.blocked[c.id])return false;
-    if(q&&JSON.stringify(c).toLowerCase().indexOf(q)<0)return false;
+    var publicText=[c.name,c.campus,c.grade,c.major,c.roles.join(" "),c.skills.join(" "),c.target,c.exp].join(" ").toLowerCase();
+    if(q&&publicText.indexOf(q)<0)return false;
     var fit=candidateFit(c,r);
     if(state.peopleFilters.time&&(!fit.timeOk||!fit.dateOk))return false;
     if(state.peopleFilters.output&&!c.proof)return false;
@@ -808,7 +850,7 @@ function renderProgress(p){
   var joined=Math.max(state.relationships.filter(function(x){return x.status==="joined"}).length,state.joined?1:0);
   p.innerHTML=demoBar()+
     '<section class="progressHero"><div><span class="pageKicker">TEAMING PROGRESS</span><h2>组队中心</h2><p>“申请 / 邀请中心”和“我的队伍”统一归档，但仍保持两类页面职责清晰。</p></div><div class="progressStats"><div><b>'+pending+'</b><span>待处理</span></div><div><b>'+communication+'</b><span>待沟通</span></div><div><b>'+confirming+'</b><span>确认中</span></div><div><b>'+joined+'</b><span>已组队</span></div></div></section>'+
-    '<div class="progressSwitch"><button class="'+(state.progressView==="relations"?"active":"")+'" onclick="state.progressView=\'relations\';render()">申请 / 邀请中心</button><button class="'+(state.progressView==="team"?"active":"")+'" onclick="state.progressView=\'team\';render()">我的队伍</button></div>'+
+    '<div class="progressSwitch"><button class="'+(state.progressView==="relations"?"active":"")+'" onclick="state.progressView=\'relations\';render()">关系进度</button><button class="'+(state.progressView==="team"?"active":"")+'" onclick="state.progressView=\'team\';render()">我的队伍</button></div>'+
     (state.progressView==="relations"?progressRelations():progressTeam());
 }
 function refreshRelationExpiry(x){
