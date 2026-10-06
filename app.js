@@ -997,6 +997,7 @@ function agreeReq(id){
 }
 function confirmAgree(id){
   var x=rel(id);if(!x)return;
+  refreshRelationExpiry(x);
   if(x.status!=="pending"){closeModal();toast("请求状态已变化，请按最新状态继续");render();return}
   var r=relationRecruit(x);
   if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){closeModal();toast("队长权限已变化，不能继续处理该请求");render();return}
@@ -1058,6 +1059,7 @@ function candidateStartConfirm(id){
 }
 function confirmCandidateStart(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  refreshRelationExpiry(x);
   if(x.status!=="communication"){closeModal();toast("关系状态已变化，请重新操作");render();return}
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能进入组队确认："+eligibility.reason);render();return}
   if(r.role.formal>=r.role.capacity){closeModal();toast("该角色已正式招满");render();return}
@@ -1079,6 +1081,7 @@ function captainStartConfirm(id){
 }
 function confirmCaptainStart(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  refreshRelationExpiry(x);
   if(!canManageRecruit(r)){closeModal();toast("只有当前队长可以发送正式加入邀请");render();return}
   if(x.status!=="communication"){closeModal();toast("关系状态已变化，请刷新后重试");render();return}
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){closeModal();toast("当前不能进入组队确认："+eligibility.reason);render();return}
@@ -1102,6 +1105,7 @@ function openLeaderFinalizeCandidateConfirm(id){
 }
 function leaderFinalizeCandidateConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次组队确认已超时或失效，已回到待沟通");render();return}
   if(!canManageRecruit(r)){toast("只有当前队长可以确认组队");return}
   if(x.status!=="confirming"||x.initiator!=="candidate"){toast("当前不是候选人发起的确认");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){x.status="communication";x.initiator=null;x.expiresAt=null;toast("最终校验失败："+eligible.reason);render();return}
@@ -1117,6 +1121,7 @@ function openCandidateAcceptCaptainConfirm(id){
 }
 function candidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
+  refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次组队确认已超时或失效，已回到待沟通");render();return}
   if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("该确认中暂占已失效");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){releaseReservation(x);x.status="ended";x.reason="角色已正式招满";x.expiresAt=null;toast("确认失败：角色已正式招满");render();return}
