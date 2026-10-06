@@ -982,12 +982,12 @@ function openJoinedRelationTeam(id){
 }
 function relationRecruit(x){return x?findRecruit(x.recruitId):null}
 function rejectReq(id){
-  var x=rel(id),r=relationRecruit(x);if(!x)return;
+  var x=rel(id),r=relationRecruit(x);if(!x)return;refreshRelationExpiry(x);if(x.status!=="pending"){toast("该请求已失效或已处理");render();return}
   if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){toast("队长权限已变化，不能处理该请求");render();return}
   x.status="ended";x.reason=x.type==="application"?"你已拒绝本次申请":"你已拒绝本次邀请";x.expiresAt=null;toast("已拒绝，不产生负面标签");render();
 }
 function cancelReq(id){
-  var x=rel(id),r=relationRecruit(x);if(!x)return;
+  var x=rel(id),r=relationRecruit(x);if(!x)return;refreshRelationExpiry(x);if(x.status!=="pending"){toast("该请求已失效或已处理");render();return}
   if(!currentUserIsCandidate(x)&&r&&!canManageRecruit(r)){toast("队长权限已变化，不能撤回该邀请");render();return}
   releaseReservation(x);x.status="ended";x.reason=x.type==="invitation"?"邀请已撤回":"申请已取消";x.expiresAt=null;
   toast(x.reason);render();
@@ -1358,7 +1358,7 @@ function dissolveManagedTeam(){
       releaseReservation(x);x.status="ended";x.reason="队伍已解散";x.expiresAt=null;
     }
   });
-  group.forEach(function(g){g.status="ended"});
+  group.forEach(function(g){g.status="ended";g.ownerActive=false});
   state.teamDissolved=true;state.managedMemberActive=false;state.committed=Math.max(0,state.committed-state.managedStageHours);state.managedStageHours=0;
   closeModal();toast("队伍已解散，全部角色招募、未完成请求与确认中暂占已关闭");render();
 }
