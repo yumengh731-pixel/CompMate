@@ -1488,6 +1488,18 @@ function editManagedRecruit(){
   state.activeRoleRecruitId=state.managedTeamRecruitId;
   beginPublish(false);
 }
+function discardRecruitDraft(){
+  var r=activeManagedRecruit();if(!r||(!r.isDraft&&!r.isDraftRole)){toast("当前不是未发布草稿");return}
+  var gid=recruitGroupId(r);
+  if(r.isDraft){
+    managedRecruitments=managedRecruitments.filter(function(g){return recruitGroupId(g)!==gid});
+  }else{
+    managedRecruitments=managedRecruitments.filter(function(g){return g.id!==r.id});
+  }
+  var fallback=managedRecruitments.filter(function(g){return recruitIsPublished(g)&&canManageRecruit(g)&&g.status!=="ended"})[0];
+  if(fallback){state.activeRoleRecruitId=fallback.id;toast("未发布草稿已放弃");beginPublish(false);return}
+  toast("未发布草稿已放弃");go("home");
+}
 function createRecruitDraft(){
   var existing=managedRecruitments.filter(function(r){return r.isDraft&&canManageRecruit(r)})[0];
   if(existing){state.activeRoleRecruitId=existing.id;return existing}
@@ -1594,7 +1606,7 @@ function renderPublish(p){
     '<div class="field"><label>参赛目标 <span class="req">*</span></label><input class="input" id="pubTarget" value="'+e(r.target)+'"></div>'+
     '<div class="field full"><label>协作预期</label><input class="input" id="pubCollab" value="'+e(r.collab)+'" placeholder="同步频率、关键节点沟通等"></div>'+
     '</div>'+
-    '<div class="actions"><button class="btn secondary" onclick="previewRecruit()">预览</button><button class="btn primary push" onclick="saveRecruit()">'+((r.isDraft||r.isDraftRole)?"保存并发布":"保存修改")+'</button></div></div>'+
+    '<div class="actions">'+((r.isDraft||r.isDraftRole)?'<button class="btn text" onclick="discardRecruitDraft()">放弃草稿</button>':'')+'<button class="btn secondary" onclick="previewRecruit()">预览</button><button class="btn primary push" onclick="saveRecruit()">'+((r.isDraft||r.isDraftRole)?"保存并发布":"保存修改")+'</button></div></div>'+
     '<aside class="panel sticky"><h3 class="sectionTitle">招募生命周期</h3><div class="list" style="margin-top:12px"><button class="btn secondary" onclick="pauseRecruit()">'+(managedGroupPaused(r)?"恢复接收申请":"暂停接收新申请")+'</button><button class="btn secondary" onclick="coreChange()">修改核心条件说明</button><button class="btn danger" onclick="endRecruit()">结束本轮招募</button></div><div class="section"><div class="notice">暂停仅停止新的加入申请；截止前且未主动结束时仍可主动邀请。结束招募会关闭尚未组队的关系并释放确认中暂占。</div></div><div class="section"><div class="meta">招募人数必须是正整数，且不得低于“正式成员 + 当前确认中暂占名额”。</div></div></aside></div>';
 }
 function previewRecruit(){
