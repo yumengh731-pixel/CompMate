@@ -1343,7 +1343,11 @@ function leaveManagedTeam(){
   if(state.managedCaptain){toast("队长退出前必须先转交队长身份；无其他正式成员时可解散队伍");return}
   modal('<h2>退出该队伍？</h2><p class="subtitle">退出后你的角色恢复为空缺，相关正式投入不再计入你的剩余时间。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmLeaveManagedTeam()">确认退出</button></div>');
 }
-function confirmLeaveManagedTeam(){var gap=ensureRestoredRole("product"),released=state.managedStageHours;state.managedMemberActive=false;state.committed=Math.max(0,state.committed-released);state.managedStageHours=0;closeModal();toast("已退出队伍；"+gap.role.name+"已恢复为空缺，由当前队长决定是否重新开放");render()}
+function confirmLeaveManagedTeam(){
+  var gap=ensureRestoredRole("product"),released=state.managedStageHours,r=findRecruit(state.managedTeamRecruitId)||activeManagedRecruit();
+  state.managedMemberActive=false;if(r)managedGroup(r).forEach(function(g){g.ownerActive=false});
+  state.committed=Math.max(0,state.committed-released);state.managedStageHours=0;closeModal();toast("已退出队伍；"+gap.role.name+"已恢复为空缺，由当前队长决定是否重新开放");render()
+}
 function dissolveManagedTeam(){
   if(!state.managedCaptain){toast("只有当前队长可以解散队伍");return}
   if(managedOtherCount()>0){toast("仍有其他正式成员，请先转交队长；不能直接解散");return}
@@ -1394,7 +1398,11 @@ function saveStageHours(){
     state.joinedStageHours=v;
     var joinedRel=state.relationships.filter(function(x){return x.status==="joined"&&x.recruitId===state.joinedRecruitId&&currentUserIsCandidate(x)})[0];
     if(joinedRel)joinedRel.joinedHours=v;
-  }else state.managedStageHours=v;
+  }else{
+    state.managedStageHours=v;
+    var managed=findRecruit(state.managedTeamRecruitId)||activeManagedRecruit();
+    if(managed)managedGroup(managed).forEach(function(g){g.ownerHours=v});
+  }
   state.committed=Math.max(0,state.committed+delta);
   closeModal();toast(v<r.role.hours?"已更新：当前投入低于原约定，请继续协商":"阶段投入已更新");render();
 }
@@ -1484,7 +1492,7 @@ function createRecruitDraft(){
   var existing=managedRecruitments.filter(function(r){return r.isDraft&&canManageRecruit(r)})[0];
   if(existing){state.activeRoleRecruitId=existing.id;return existing}
   var id=Date.now();
-  managedRecruitments.push({id:id,groupId:id,isDraft:true,category:"innovation",comp:"挑战杯 · 大挑",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],role:{name:"",capacity:1,formal:0,reserved:0,hours:6,task:"",skills:[]}});
+  managedRecruitments.push({id:id,groupId:id,isDraft:true,category:"innovation",comp:"挑战杯 · 大挑",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],ownerRole:"",ownerHours:0,ownerActive:true,role:{name:"",capacity:1,formal:0,reserved:0,hours:6,task:"",skills:[]}});
   state.activeRoleRecruitId=id;return findRecruit(id);
 }
 function addAdditionalRole(){
@@ -1573,6 +1581,7 @@ function renderPublish(p){
     '<div class="field"><label>学校 / 校区</label><input class="input" value="'+e(r.school)+' / '+e(r.campus)+'" disabled></div>'+
     '<div class="field"><label>学校 / 校区是否为不可放宽条件</label><select class="select" id="pubHard"><option value="0" '+(!r.hard?"selected":"")+'>否，可跨校区沟通</option><option value="1" '+(r.hard?"selected":"")+'>是，不满足不可申请 / 邀请</option></select></div>'+
     '<div class="field full"><label>队伍现状 <span class="req">*</span></label><input class="input" id="pubTeam" value="'+e(r.team)+'" placeholder="如：现有 3 人，产品 / 前端 / 商业各 1 人"></div>'+
+    (r.isDraft?'<div class="field"><label>我的队内角色 <span class="req">*</span></label><input class="input" id="pubOwnerRole" value="'+e(r.ownerRole||"")+'" placeholder="如：产品 / 项目推进"></div><div class="field"><label>我在本队约定投入 <span class="req">*</span></label><input class="input" id="pubOwnerHours" type="number" min="1" step="1" value="'+(r.ownerHours||"")+'"><div class="help">你作为初始正式成员，该投入会计入本项目周期的时间占用。</div></div>':"")+
     '<div class="field full"><label>当前进度 <span class="req">*</span></label><input class="input" id="pubProgress" value="'+e(r.progress)+'" placeholder="如：已完成选题与访谈框架"></div>'+
     '<div class="field"><label>缺口角色 <span class="req">*</span></label><input class="input" id="pubRole" value="'+e(r.role.name)+'" placeholder="如：数据分析 / 前端开发"></div>'+
     '<div class="field"><label>招募人数 <span class="req">*</span></label><input class="input" id="pubCap" type="number" min="1" step="1" value="'+r.role.capacity+'"></div>'+
@@ -1599,7 +1608,8 @@ function saveRecruit(){
   if(group.some(function(g){return g.status==="ended"})){toast("主动结束的本轮招募不能直接恢复，请新建或复制招募");return}
   var comp=normalizeCompetitionName(byId("pubComp").value),title=String(byId("pubTitle").value||"").trim(),role=String(byId("pubRole").value||"").trim(),task=String(byId("pubTask").value||"").trim(),skills=String(byId("pubSkills").value||"").split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean),target=String(byId("pubTarget").value||"").trim(),team=String(byId("pubTeam").value||"").trim(),progress=String(byId("pubProgress").value||"").trim(),collab=String(byId("pubCollab").value||"").trim();
   var cap=Number(byId("pubCap").value),hours=Number(byId("pubHours").value),start=byId("pubStart").value,end=byId("pubEnd").value,deadline=byId("pubDeadline").value,hard=byId("pubHard").value==="1";
-  if(!comp||!role||!task||!skills.length||!target||!team||!progress||!start||!end||!deadline){toast("请补齐所有必填字段");return}
+  var ownerRole=byId("pubOwnerRole")?String(byId("pubOwnerRole").value||"").trim():String(r.ownerRole||""),ownerHours=byId("pubOwnerHours")?Number(byId("pubOwnerHours").value):Number(r.ownerHours||0),publishingDraft=!!r.isDraft;
+  if(!comp||!role||!task||!skills.length||!target||!team||!progress||!start||!end||!deadline||(publishingDraft&&(!ownerRole||!(ownerHours>0)))){toast("请补齐所有必填字段");return}
   if(!Number.isInteger(cap)||cap<=0){toast("招募人数必须为正整数");return}
   if(!(hours>0)){toast("最低每周投入必须大于 0");return}
   if(title.length>30){toast("招募标题不能超过 30 字");return}
@@ -1608,6 +1618,10 @@ function saveRecruit(){
   if(startDate>endDate){toast("项目开始日期不能晚于结束日期");return}
   if(deadlineDate<=new Date()){toast("新发布招募的截止时间必须晚于当前时间");return}
   if(deadlineDate>endDate){toast("招募截止时间不能晚于项目结束日期");return}
+  if(publishingDraft){
+    var ownerAvail=remainingFor({periodStart:start,periodEnd:end,period:periodLabel(start,end),role:r.role});
+    if(ownerHours>ownerAvail){toast("你在本队的约定投入会使该项目周期时间超额，请先调整");return}
+  }
   var occupied=r.role.formal+r.role.reserved;if(cap<occupied){toast("招募人数不能低于正式成员 + 有效预留");return}
   if(unsafePublicText([comp,title,team,progress,role,task,skills.join(" "),target,collab].join(" "))){toast("公开文本中疑似包含联系方式或高风险引导，请修改后再发布");return}
   if(!title)title=comp+" · 招募"+role;
@@ -1622,7 +1636,7 @@ function saveRecruit(){
   })[0];
   if(coreChanged&&confirming){toast(commonCoreChanged?"同一招募中存在双方确认中的关系，请先结束或撤回确认":"该岗位存在双方确认中的关系，请先结束或撤回当前确认");return}
   group.forEach(function(g){
-    g.comp=comp;g.title=title;g.team=team;g.progress=progress;g.collab=collab;g.target=target;g.period=newPeriod;g.periodStart=start;g.periodEnd=end;g.deadline=newDeadline;g.deadlineAt=deadline;g.hard=hard;g.category=r.category;
+    g.comp=comp;g.title=title;g.team=team;g.progress=progress;g.collab=collab;g.target=target;g.period=newPeriod;g.periodStart=start;g.periodEnd=end;g.deadline=newDeadline;g.deadlineAt=deadline;g.hard=hard;g.category=r.category;if(publishingDraft){g.ownerRole=ownerRole;g.ownerHours=ownerHours;g.ownerActive=true;}
   });
   r.role.capacity=cap;r.role.hours=hours;r.role.task=task;r.role.name=role;r.role.skills=skills;
   state.relationships.forEach(function(x){
@@ -1632,7 +1646,7 @@ function saveRecruit(){
     var affected=((roleCoreChanged||skillChanged)&&x.recruitId===r.id)||(commonCoreChanged&&groupIds.indexOf(x.recruitId)>=0);
     if(conditionChanged&&affected&&(x.status==="pending"||x.status==="communication"))x.conditionUpdated=true;
   });
-  var publishingDraft=!!r.isDraft,publishingRole=!!r.isDraftRole,inheritPaused=!!r.inheritPaused;
+  var publishingRole=!!r.isDraftRole,inheritPaused=!!r.inheritPaused;
   group.forEach(function(g){
     if(g.role.formal>=g.role.capacity){g.status="full";return}
     if(g.id===r.id&&publishingDraft){g.status="active";return}
