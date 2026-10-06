@@ -1688,7 +1688,7 @@ function coreChange(){
 /* AUTH */
 function renderAuth(p){
   var action=state.authReturn==="publish"?"发布招募":state.authReturn==="apply"?"继续申请":state.authReturn==="invite"?"继续邀请":"继续使用";
-  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">学校身份认证</h2><p class="subtitle">认证只验证“属于该学校”，不代表能力水平。</p><div class="formGrid"><div class="field full"><label>账号 / 登录信息</label><input class="input" id="loginAccount" value="demo_user@gdut.edu.cn"><div class="help">未登录用户从分享链接申请时，先完成登录，再进行学校身份认证。</div></div><div class="field"><label>学校</label><input class="input" value="广东工业大学"></div><div class="field"><label>校区</label><select class="select"><option>龙洞校区</option><option>大学城校区</option></select></div><div class="field full"><label>认证方式</label><select class="select"><option>校园邮箱验证码</option><option>运营白名单 / 人工核验</option></select></div><div class="field full"><label>校园邮箱</label><input class="input" value="demo@gdut.edu.cn"></div></div><div class="actions end"><button class="btn text" onclick="authHelp()">认证遇到问题</button><button class="btn secondary" onclick="interruptAuth()">暂不认证</button><button class="btn primary" onclick="completeAuth()">完成认证并'+action+'</button></div></div><aside class="panel sticky"><div class="notice">产品逻辑只依赖“已认证 / 未认证”结果；具体认证方案可按工作室资源选择低成本实现。</div></aside></div>';
+  p.innerHTML='<div class="layout"><div class="panel"><h2 class="sectionTitle">学校身份认证</h2><p class="subtitle">认证只验证“属于该学校”，不代表能力水平。</p><div class="formGrid"><div class="field full"><label>账号 / 登录信息</label><input class="input" id="loginAccount" value="demo_user@gdut.edu.cn"><div class="help">未登录用户从分享链接申请时，先完成登录，再进行学校身份认证。</div></div><div class="field"><label>学校</label><input class="input" value="广东工业大学"></div><div class="field"><label>校区</label><select class="select" id="authCampus"><option '+(state.userCampus==="龙洞校区"?"selected":"")+'>龙洞校区</option><option '+(state.userCampus==="大学城校区"?"selected":"")+'>大学城校区</option></select></div><div class="field full"><label>认证方式</label><select class="select"><option>校园邮箱验证码</option><option>运营白名单 / 人工核验</option></select></div><div class="field full"><label>校园邮箱</label><input class="input" value="demo@gdut.edu.cn"></div></div><div class="actions end"><button class="btn text" onclick="authHelp()">认证遇到问题</button><button class="btn secondary" onclick="interruptAuth()">暂不认证</button><button class="btn primary" onclick="completeAuth()">完成认证并'+action+'</button></div></div><aside class="panel sticky"><div class="notice">产品逻辑只依赖“已认证 / 未认证”结果；具体认证方案可按工作室资源选择低成本实现。</div></aside></div>';
 }
 function authHelp(){modal('<h2>认证未完成</h2><p class="subtitle">可以重试校园邮箱验证码，或改用当前试点允许的运营 / 人工核验方式。已填写内容和待恢复申请不会被清空。</p><div class="modalFoot"><button class="btn primary" onclick="closeModal()">返回重试</button></div>')}
 function interruptAuth(){
@@ -1699,6 +1699,7 @@ function interruptAuth(){
 }
 function completeAuth(){
   state.loggedIn=true;state.verified=true;
+  if(byId("authCampus")){state.userCampus=byId("authCampus").value;state.profileCampus=state.userCampus;}
   var ret=state.authReturn;state.authReturn="";
   if(ret==="publish"){toast("认证成功");beginPublish(state.publishNewRequested);return}
   if(ret==="apply"){
