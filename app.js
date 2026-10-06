@@ -433,6 +433,21 @@ function relationNeedsMyAction(x){
   }
   return false;
 }
+function homeNextActionCard(){
+  if(state.pendingApplyRecruitId){
+    var rr=findRecruit(state.pendingApplyRecruitId);
+    return '<article class="todoBoard pendingResume" onclick="continuePendingApply()"><div class="statusBoardHead"><span>CONTINUE</span><h3>继续此前申请</h3></div><b>'+e(rr?rr.title:"原招募")+'</b><p>认证曾中断，招募仍有效时可以继续。</p><em>继续申请 →</em></article>';
+  }
+  var confirms=state.relationships.filter(function(x){return x.status==="confirming"&&relationNeedsMyAction(x)});
+  if(confirms.length)return '<article class="todoBoard" onclick="state.tab=\'confirming\';go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>完成组队确认</h3></div><b>有 '+confirms.length+' 条确认等待你处理</b><p>先核对最新角色、时间与条件，再完成最终确认。</p><em>进入组队 / 进度 →</em></article>';
+  var incoming=state.relationships.filter(function(x){return x.status==="pending"&&x.direction==="incoming"});
+  if(incoming.length)return '<article class="todoBoard" onclick="state.tab=\'pending\';go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>处理新的申请 / 邀请</h3></div><b>'+incoming.length+' 条请求等待你处理</b><p>先查看对方或招募详情，再决定是否进入沟通。</p><em>进入组队 / 进度 →</em></article>';
+  var comm=state.relationships.filter(function(x){return x.status==="communication"});
+  if(comm.length)return '<article class="todoBoard" onclick="state.tab=\'communication\';go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>继续待沟通关系</h3></div><b>'+comm.length+' 条关系正在沟通</b><p>确认任务、时间和目标后，再决定是否发起组队确认。</p><em>查看待沟通 →</em></article>';
+  var waiting=state.relationships.filter(function(x){return (x.status==="pending"&&x.direction==="outgoing")||(x.status==="confirming"&&!relationNeedsMyAction(x))});
+  if(waiting.length)return '<article class="todoBoard" onclick="go(\'progress\')"><div class="statusBoardHead"><span>WAITING</span><h3>等待对方响应</h3></div><b>'+waiting.length+' 条关系正在等待</b><p>当前没有需要你立即确认的动作。</p><em>查看进度 →</em></article>';
+  return '<article class="todoBoard" onclick="go(\'explore\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>继续寻找</h3></div><b>当前没有待处理关系</b><p>可以主动浏览招募或围绕现有缺口寻找队友。</p><em>进入寻找 →</em></article>';
+}
 function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
