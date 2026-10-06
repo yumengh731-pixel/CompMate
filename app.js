@@ -425,6 +425,14 @@ function homeDeadlineRows(){
   rows=rows.filter(function(x){return x.r&&x.date}).sort(function(a,b){return a.date-b.date}).slice(0,4);
   return rows.length?rows.map(function(x){return reminderRow(deadlineShort(x.r),x.r.comp,x.label,x.sub,x.tone)}).join(""):'<div class="notice">当前没有与你相关的近期招募节点。</div>';
 }
+function relationNeedsMyAction(x){
+  if(!x)return false;
+  if(x.status==="pending")return x.direction==="incoming";
+  if(x.status==="confirming"){
+    return (x.initiator==="captain"&&currentUserIsCandidate(x))||(x.initiator==="candidate"&&!currentUserIsCandidate(x));
+  }
+  return false;
+}
 function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
