@@ -1233,3 +1233,77 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   .roleGapTabs{display:grid;grid-template-columns:1fr 1fr}
   .roleGapTab{min-width:0}
 }
+
+
+/* ===== V19 explicit team filters + formal-member group entry ===== */
+.teamFilterGroups{
+  display:grid;
+  gap:8px;
+  margin-top:10px;
+  padding-top:2px;
+}
+.teamFilterGroup{
+  display:grid;
+  grid-template-columns:86px minmax(0,1fr);
+  gap:10px;
+  align-items:start;
+  padding:8px 0;
+  border-bottom:1px solid #f0f1f3;
+}
+.teamFilterGroup:last-child{border-bottom:0}
+.teamFilterLabel{
+  font-size:10px;
+  font-weight:800;
+  color:#525a66;
+  padding-top:7px;
+}
+.teamFilterOptions{
+  display:flex;
+  flex-wrap:wrap;
+  gap:7px;
+}
+.teamFilterOptions button{
+  border:1px solid var(--line);
+  background:#fff;
+  border-radius:9px;
+  padding:7px 10px;
+  font-size:10px;
+  color:#606772;
+  transition:.14s ease;
+}
+.teamFilterOptions button:hover{border-color:#cfd4dc}
+.teamFilterOptions button.active{
+  background:#17191f;
+  color:#fff;
+  border-color:#17191f;
+}
+.auxiliaryFilters{
+  padding-top:9px;
+  margin-top:2px;
+  border-top:1px solid #f0f1f3;
+  align-items:center;
+}
+.auxiliaryLabel{
+  font-size:9px;
+  color:var(--muted);
+  font-weight:750;
+  margin-right:2px;
+}
+.groupJoinSection .between{
+  align-items:center;
+  gap:14px;
+}
+.groupJoinSection .meta{margin-top:8px}
+
+@media(max-width:820px){
+  .teamFilterGroup{grid-template-columns:1fr;gap:6px}
+  .teamFilterLabel{padding-top:0}
+  .groupJoinSection .between{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:520px){
+  .teamFilterOptions{display:grid;grid-template-columns:1fr 1fr}
+  .teamFilterOptions button{text-align:left}
+  .auxiliaryFilters{display:grid;grid-template-columns:1fr 1fr}
+  .auxiliaryLabel{grid-column:1/-1}
+  .groupJoinSection .btn{width:100%}
+}
