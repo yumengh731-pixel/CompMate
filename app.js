@@ -453,17 +453,16 @@ function renderHome(p){
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
   var recommended=recruits.filter(function(r){return r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&userAvailabilityOverlaps(r)&&remainingFor(r)>=r.role.hours&&userRecommendationQualified(r)}).slice(0,3);
-  var used=Math.max(0,state.committed+state.reserved);
+  var used=Math.max(0,currentWeekFormalUsed()+currentWeekReservedUsed());
   var pct=state.total?Math.min(100,Math.round(used/state.total*100)):0;
-  var pendingAction=state.pendingApplyRecruitId?'<article class="todoBoard pendingResume" onclick="continuePendingApply()"><div class="statusBoardHead"><span>CONTINUE</span><h3>继续此前申请</h3></div><b>'+e(findRecruit(state.pendingApplyRecruitId)?findRecruit(state.pendingApplyRecruitId).title:"原招募")+'</b><p>认证曾中断，招募仍有效时可以继续。</p><em>继续申请 →</em></article>':
-    '<article class="todoBoard" onclick="go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>下一步</h3></div><b>处理 '+pending+' 条新邀请 / 申请</b><p>在沟通前先确认任务、时间和目标。</p><em>进入组队 / 进度 →</em></article>';
+  var pendingAction=homeNextActionCard();
 
   p.innerHTML=
     '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 隐私联系方式</div></section>'+
       '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的真实任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
     '<section class="homeWorkbench">'+
       '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
-      '<div class="smartRecommendList">'+recommended.map(smartRecommendRow).join("")+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
+      '<div class="smartRecommendList">'+(recommended.length?recommended.map(smartRecommendRow).join(""):'<div class="notice">暂无高质量推荐，可前往组队大厅主动筛选；系统不会用弱匹配填满推荐位。</div>')+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
       '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><span>MY DEADLINES</span><h2>与你相关的竞赛节点</h2><p>只展示正在找队、沟通 / 确认中或你已发布招募的近期节点。</p></div></div>'+
       '<div class="reminderTimeline">'+homeDeadlineRows()+'</div></aside>'+
     '</section>'+
