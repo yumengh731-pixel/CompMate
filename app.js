@@ -78,7 +78,7 @@ var recruits=[
 
 var managedRecruitments=[
   {id:901,category:"innovation",comp:"挑战杯 · 大挑",title:"CompMate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],ownerRole:"产品 / 项目推进",ownerHours:8,ownerActive:true,role:{name:"视觉设计",capacity:1,formal:0,reserved:0,hours:6,task:"负责路演 PPT 视觉、海报与产品展示物料",skills:["PPT","Figma","视觉设计"]}},
-  {id:902,category:"market",comp:"行业经济分析大赛",title:"商业分析岗位招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲校奖",period:"10/08 - 11/30",deadline:"10/24 21:00",team:"现有 2 人",progress:"资料框架已完成",collab:"周末集中讨论，任务延误提前说明。",hard:false,reasons:[],role:{name:"商业分析",capacity:1,formal:0,reserved:0,hours:6,task:"行业资料检索、分析框架、报告撰写与汇报",skills:["Excel","商业分析","报告写作"]}}
+  {id:902,groupId:901,category:"innovation",comp:"挑战杯 · 大挑",title:"CompMate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],role:{name:"数据分析",capacity:1,formal:0,reserved:0,hours:8,task:"负责问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}}
 ];
 
 var candidates=[
