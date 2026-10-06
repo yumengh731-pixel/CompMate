@@ -723,7 +723,7 @@ function applyRecruit(id){
   var short=remainingFor(r)<r.role.hours,reservationBusy=roleFree(r)<=0&&r.role.formal<r.role.capacity,skillGap=userSkillGap(r);
   modal('<h2>提交加入申请</h2><p class="subtitle">申请只代表愿意进一步沟通，不会直接加入队伍或占用正式名额。</p>'+
     (short?'<div class="notice warn">该项目周期剩余 '+remainingLabel(remainingFor(r))+' / 周，低于岗位 '+r.role.hours+'h / 周。可以申请沟通，但正式组队前必须满足最新时间要求。</div>':'<div class="notice good">该项目周期剩余 '+remainingLabel(remainingFor(r))+' / 周，岗位要求 '+r.role.hours+'h / 周，时间条件满足。</div>')+(skillGap.length?'<div class="notice warn" style="margin-top:8px">'+e(skillGapCopy(skillGap))+'</div>':'')+(reservationBusy?'<div class="notice warn" style="margin-top:8px">当前可用名额正在与其他候选人确认中；这不等于正式招满，你仍可提交沟通申请。</div>':'')+
-    '<div class="formGrid" style="margin-top:14px"><div class="field"><label>首选角色</label><input class="input" value="'+e(r.role.name)+'"></div><div class="field"><label>可接受其他角色</label><input class="input" value="可协商"></div><div class="field full"><label>补充说明</label><textarea class="textarea">我有相关项目经历，希望进一步了解具体分工和时间安排。</textarea></div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitApplication('+id+')">提交申请</button></div>');
+    '<div class="formGrid" style="margin-top:14px"><div class="field"><label>首选角色</label><input class="input" value="'+e(r.role.name)+'" disabled></div><div class="field"><label>可接受其他角色</label><input class="input" id="applyOtherRole" value="可协商"></div><div class="field full"><label>补充说明</label><textarea class="textarea" id="applyNote">我有相关项目经历，希望进一步了解具体分工和时间安排。</textarea></div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="submitApplication('+id+')">提交申请</button></div>');
 }
 function submitApplication(id){
   var r=findRecruit(id);
@@ -735,7 +735,8 @@ function submitApplication(id){
   }
   var hard=userMeetsRecruitHardRules(r);if(!hard.ok){closeModal();toast(hard.reason);render();return}
   if(remainingFor(r)<0){closeModal();toast("当前承诺时间已超出声明总时间，请先调整");render();return}
-  state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:r.leader,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"team_contact",expiresAt:Date.now()+config.pendingRequestMs});
+  var otherRole=byId("applyOtherRole")?String(byId("applyOtherRole").value||"").trim():"",noteText=byId("applyNote")?String(byId("applyNote").value||"").trim():"";
+  state.relationships.unshift({id:Date.now(),type:"application",direction:"outgoing",recruitId:r.id,title:r.comp+" · "+r.role.name,party:r.leader,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"team_contact",otherRole:otherRole,note:noteText,expiresAt:Date.now()+config.pendingRequestMs});
   state.pendingApplyRecruitId=null;
   closeModal();toast("申请已提交，等待队长处理");state.progressView="relations";state.tab="all";go("progress");
 }
@@ -811,7 +812,7 @@ function inviteCandidate(id){
   if(r.status==="full"||r.status==="ended"||deadlinePassed(r)){toast("该招募当前不能继续邀请");return}
   var hard=candidateMeetsHardRules(c,r);if(!hard.ok){toast(hard.reason);return}
   var fit=candidateFit(c,r),skillGap=candidateSkillGap(c,r);
-  modal('<h2>邀请 '+e(c.name)+' 沟通</h2><p class="subtitle">本次邀请绑定「'+e(r.comp)+' · '+e(r.role.name)+'」，不会直接占用名额。</p><div class="kv"><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">最低投入</div><div>'+r.role.hours+'h / 周</div><div class="k">该周期可投入</div><div>'+remainingLabel(fit.available)+' / 周</div></div>'+(!fit.timeOk?'<div class="notice warn" style="margin-top:10px">时间低于当前岗位要求，建议先沟通是否能调整。</div>':'')+(skillGap.length?'<div class="notice warn" style="margin-top:10px">'+e(skillGapCopy(skillGap))+'</div>':'')+'<div class="field" style="margin-top:12px"><label>邀请说明</label><textarea class="textarea">你的经历与当前任务比较匹配，希望进一步聊聊具体分工和时间安排。</textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="sendInvitation('+c.id+','+r.id+')">发送邀请</button></div>');
+  modal('<h2>邀请 '+e(c.name)+' 沟通</h2><p class="subtitle">本次邀请绑定「'+e(r.comp)+' · '+e(r.role.name)+'」，不会直接占用名额。</p><div class="kv"><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">最低投入</div><div>'+r.role.hours+'h / 周</div><div class="k">该周期可投入</div><div>'+remainingLabel(fit.available)+' / 周</div></div>'+(!fit.timeOk?'<div class="notice warn" style="margin-top:10px">时间低于当前岗位要求，建议先沟通是否能调整。</div>':'')+(skillGap.length?'<div class="notice warn" style="margin-top:10px">'+e(skillGapCopy(skillGap))+'</div>':'')+'<div class="field" style="margin-top:12px"><label>邀请说明</label><textarea class="textarea" id="inviteNote">你的经历与当前任务比较匹配，希望进一步聊聊具体分工和时间安排。</textarea></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn primary" onclick="sendInvitation('+c.id+','+r.id+')">发送邀请</button></div>');
 }
 function sendInvitation(candidateId,recruitId){
   var c=candidates.filter(function(x){return x.id===candidateId})[0],r=findRecruit(recruitId);
@@ -823,7 +824,8 @@ function sendInvitation(candidateId,recruitId){
   if(!canManageRecruit(r)){closeModal();toast("只有当前队长可以发送邀请");render();return}
   if(r.status==="full"||r.status==="ended"||deadlinePassed(r)){closeModal();toast("该招募当前不能继续邀请");render();return}
   var hard=candidateMeetsHardRules(c,r);if(!hard.ok){closeModal();toast(hard.reason);render();return}
-  state.relationships.unshift({id:Date.now(),type:"invitation",direction:"outgoing",recruitId:r.id,candidateId:c.id,title:r.comp+" · "+r.role.name,party:c.name,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:c.contact,expiresAt:Date.now()+config.pendingRequestMs});
+  var noteText=byId("inviteNote")?String(byId("inviteNote").value||"").trim():"";
+  state.relationships.unshift({id:Date.now(),type:"invitation",direction:"outgoing",recruitId:r.id,candidateId:c.id,title:r.comp+" · "+r.role.name,party:c.name,role:r.role.name,status:"pending",time:"刚刚",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:c.contact,note:noteText,expiresAt:Date.now()+config.pendingRequestMs});
   closeModal();toast("邀请已发送，可在组队 / 进度查看");state.progressView="relations";state.tab="all";go("progress");
 }
 function candidateMore(id){
