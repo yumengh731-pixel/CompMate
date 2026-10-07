@@ -355,7 +355,7 @@ function shell(){
       '<div class="brand"><div class="brandMark">C</div><div><div class="brandName">竞旅 CompMate</div><div class="brandSub">大学生竞赛组队平台</div></div></div>'+
       '<nav class="nav">'+navButton("home","首页")+navButton("explore","寻找")+navButton("progress","组队 / 进度",pending)+navButton("profile","我的")+'</nav>'+
       '<div class="sideBottom"><div class="identity"><span class="dot"></span>'+(state.verified?"广东工业大学 · 已认证":"学校身份未认证")+'<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div><button class="sideGhost" onclick="demoShare()">预览外部分享</button></div>'+
-    '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">竞旅 CompMate</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><div class="timePill"><span>'+(remaining()<0?"已超出可投入":"剩余可投入")+'</span><b>'+remainingLabel(remaining())+'</b></div></div></header><div id="page"></div></main></div>'+
+    '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">竞旅 CompMate</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><span class="demoDataPill">Demo · 示例数据</span><div class="timePill"><span>'+(remaining()<0?"已超出可投入":"剩余可投入")+'</span><b>'+remainingLabel(remaining())+'</b></div></div></header><div id="page"></div></main></div>'+
     (state.route!=="publish"?'<button class="fabPublish" onclick="beginPublish(true)"><span>＋</span><b>发布招募</b></button>':'')+
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
@@ -499,14 +499,14 @@ function homeNextActionCard(){
     return '<article class="todoBoard pendingResume" onclick="continuePendingApply()"><div class="statusBoardHead"><span>CONTINUE</span><h3>继续此前申请</h3></div><b>'+e(rr?rr.title:"原招募")+'</b><p>认证曾中断，招募仍有效时可以继续。</p><em>继续申请 →</em></article>';
   }
   var confirms=state.relationships.filter(function(x){return x.status==="confirming"&&relationNeedsMyAction(x)});
-  if(confirms.length)return '<article class="todoBoard" onclick="state.tab=\'confirming\';go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>完成组队确认</h3></div><b>有 '+confirms.length+' 条确认等待你处理</b><p>先核对最新角色、时间与条件，再完成最终确认。</p><em>进入组队 / 进度 →</em></article>';
+  if(confirms.length)return '<article class="todoBoard" onclick="state.tab=\'confirming\';go(\'progress\')"><div class="statusBoardHead"><h3>完成组队确认</h3></div><b>有 '+confirms.length+' 条确认等待你处理</b><p>先核对最新角色、时间与条件，再完成最终确认。</p><em>进入组队 / 进度 →</em></article>';
   var incoming=state.relationships.filter(function(x){return x.status==="pending"&&x.direction==="incoming"});
-  if(incoming.length)return '<article class="todoBoard" onclick="state.tab=\'pending\';go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>处理新的申请 / 邀请</h3></div><b>'+incoming.length+' 条请求等待你处理</b><p>先查看对方或招募详情，再决定是否进入沟通。</p><em>进入组队 / 进度 →</em></article>';
+  if(incoming.length)return '<article class="todoBoard" onclick="state.tab=\'pending\';go(\'progress\')"><div class="statusBoardHead"><h3>处理新的申请 / 邀请</h3></div><b>'+incoming.length+' 条请求等待你处理</b><p>先查看对方或招募详情，再决定是否进入沟通。</p><em>进入组队 / 进度 →</em></article>';
   var comm=state.relationships.filter(function(x){return x.status==="communication"});
-  if(comm.length)return '<article class="todoBoard" onclick="state.tab=\'communication\';go(\'progress\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>继续待沟通关系</h3></div><b>'+comm.length+' 条关系正在沟通</b><p>确认任务、时间和目标后，再决定是否发起组队确认。</p><em>查看待沟通 →</em></article>';
+  if(comm.length)return '<article class="todoBoard" onclick="state.tab=\'communication\';go(\'progress\')"><div class="statusBoardHead"><h3>继续待沟通关系</h3></div><b>'+comm.length+' 条关系正在沟通</b><p>确认任务、时间和目标后，再决定是否发起组队确认。</p><em>查看待沟通 →</em></article>';
   var waiting=state.relationships.filter(function(x){return (x.status==="pending"&&x.direction==="outgoing")||(x.status==="confirming"&&!relationNeedsMyAction(x))});
-  if(waiting.length)return '<article class="todoBoard" onclick="go(\'progress\')"><div class="statusBoardHead"><span>WAITING</span><h3>等待对方响应</h3></div><b>'+waiting.length+' 条关系正在等待</b><p>当前没有需要你立即确认的动作。</p><em>查看进度 →</em></article>';
-  return '<article class="todoBoard" onclick="go(\'explore\')"><div class="statusBoardHead"><span>NEXT ACTION</span><h3>继续寻找</h3></div><b>当前没有待处理关系</b><p>可以主动浏览招募或围绕现有缺口寻找队友。</p><em>进入寻找 →</em></article>';
+  if(waiting.length)return '<article class="todoBoard" onclick="go(\'progress\')"><div class="statusBoardHead"><h3>等待对方响应</h3></div><b>'+waiting.length+' 条关系正在等待</b><p>当前没有需要你立即确认的动作。</p><em>查看进度 →</em></article>';
+  return '<article class="todoBoard" onclick="go(\'explore\')"><div class="statusBoardHead"><h3>继续寻找</h3></div><b>当前没有待处理关系</b><p>可以主动浏览招募或围绕现有缺口寻找队友。</p><em>进入寻找 →</em></article>';
 }
 function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
@@ -521,14 +521,14 @@ function renderHome(p){
     '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 隐私联系方式</div></section>'+
       '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的具体任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
     '<section class="homeWorkbench">'+
-      '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
+      '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
       '<div class="smartRecommendList">'+(recommended.length?recommended.map(smartRecommendRow).join(""):'<div class="notice">暂无高质量推荐，可前往组队大厅主动筛选；系统不会用弱匹配填满推荐位。</div>')+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
-      '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><span>MY DEADLINES</span><h2>与你相关的竞赛节点</h2><p>只展示正在找队、沟通 / 确认中或你已发布招募的近期节点。</p></div></div>'+
+      '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><h2>与你相关的竞赛节点</h2><p>只展示正在找队、沟通 / 确认中或你已发布招募的近期节点。</p></div></div>'+
       '<div class="reminderTimeline">'+homeDeadlineRows()+'</div></aside>'+
     '</section>'+
     '<section class="homeStatusGrid">'+
-      '<article class="statusBoard"><div class="statusBoardHead"><span>MY STATUS</span><h3>我的组队状态</h3></div><div class="statusNumbers"><button onclick="go(\'progress\')"><b>'+pending+'</b><span>待处理</span></button><button onclick="go(\'progress\')"><b>'+communicating+'</b><span>待沟通</span></button><button onclick="go(\'progress\')"><b>'+confirming+'</b><span>确认中</span></button></div></article>'+
-      '<article class="timeBoard"><div class="statusBoardHead"><span>TIME CAPACITY</span><h3>本周时间容量</h3></div><div class="timeBoardMain"><div><b>'+remainingLabel(remaining())+'</b><span>'+(remaining()<0?"已超额":"剩余可投入")+'</span></div><div class="miniTimeBar"><i style="width:'+pct+'%"></i></div><small>'+e(timeCapacityMeta())+'</small></div></article>'+
+      '<article class="statusBoard"><div class="statusBoardHead"><h3>我的组队状态</h3></div><div class="statusNumbers"><button onclick="go(\'progress\')"><b>'+pending+'</b><span>待处理</span></button><button onclick="go(\'progress\')"><b>'+communicating+'</b><span>待沟通</span></button><button onclick="go(\'progress\')"><b>'+confirming+'</b><span>确认中</span></button></div></article>'+
+      '<article class="timeBoard"><div class="statusBoardHead"><h3>本周时间容量</h3></div><div class="timeBoardMain"><div><b>'+remainingLabel(remaining())+'</b><span>'+(remaining()<0?"已超额":"剩余可投入")+'</span></div><div class="miniTimeBar"><i style="width:'+pct+'%"></i></div><small>'+e(timeCapacityMeta())+'</small></div></article>'+
       pendingAction+
     '</section>';
 }
@@ -795,7 +795,7 @@ function renderDetail(p){
   }
   var canApply=r.status==="active"&&ro.formal<ro.capacity&&remainingFor(r)>=0&&!existing&&hard.ok&&!deadlinePassed(r);
   var actionLabel=existing?relationButtonLabel(existing):(deadlinePassed(r)?"已截止":r.status==="paused"?"暂停接收申请":ro.formal>=ro.capacity?"已招满":remainingFor(r)<0?"当前时间不可申请":!hard.ok?hard.reason:"申请加入");
-  var actionClick=existing?"go('progress')":"applyRecruit("+r.id+")";
+  var actionClick=existing?(existing.status==="joined"?"openJoinedTeamFromResult("+r.id+")":"go('progress')"):"applyRecruit("+r.id+")";
   p.innerHTML='<button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">← 返回寻找 · 找队伍</button><div class="layout"><div class="panel">'+
     '<div class="between"><div><div class="meta">'+e(r.comp)+' · '+e(r.school)+' '+e(r.campus)+'</div><div class="bigTitle">'+e(r.title)+'</div></div><span class="status '+st[1]+'">'+st[0]+'</span></div>'+
     '<div class="badges"><span class="badge green">队长学校身份已认证</span><span class="badge">'+e(r.leader)+' · 队长</span><span class="badge">'+e(r.period)+'</span></div>'+
@@ -1068,7 +1068,7 @@ function requestCard(x){
     if(x.initiator==="captain"){
       if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">暂不加入</button><button class="btn primary" onclick="openCandidateAcceptCaptainConfirm('+x.id+')">确认加入</button>';
       else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回确认</button><span class="status">等待候选人确认</span>';
-      note='<div class="notice warn" style="margin-top:8px">'+(asCandidate?"队长已确认邀请：已暂占 1 个角色名额，但未锁定你的可投入时间，最终加入时会重新校验。":"你已发出正式加入邀请：当前为候选人确认中的名额 1 个名额，等待对方确认。")+' '+e(formatExpiry(x))+'</div>';
+      note='<div class="notice warn" style="margin-top:8px">'+(asCandidate?"队长已确认邀请：已暂占 1 个角色名额，但未锁定你的可投入时间，最终加入时会重新校验。":"你已发出正式加入邀请：当前为候选人正在确认 1 个角色名额，等待对方确认。")+' '+e(formatExpiry(x))+'</div>';
     }else{
       if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回意向</button><span class="status">等待队长确认</span>';
       else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">暂不组队</button><button class="btn primary" onclick="openLeaderFinalizeCandidateConfirm('+x.id+')">确认组队</button>';
@@ -1078,7 +1078,7 @@ function requestCard(x){
   if(saturated&&(x.status==="pending"||x.status==="communication"||(x.status==="confirming"&&x.initiator==="candidate")))note+='<div class="notice warn" style="margin-top:8px">该角色名额正在与其他候选人确认中；当前关系保留，可等待预留释放。</div>';
   if(x.status==="joined")act=asCandidate?'<button class="btn primary" onclick="openJoinedRelationTeam('+x.id+')">查看队伍</button>':'<button class="btn primary" onclick="state.progressView=\'team\';state.teamView=\'managed\';render()">查看队伍</button>';
   if(x.status==="ended")act='<button class="btn text" onclick="reportRelation('+x.id+')">举报 / 反馈</button><button class="btn secondary" onclick="blockRelationParty('+x.id+')">拉黑对方</button>';
-  return '<div class="request"><div class="requestMain"><div class="between"><div class="requestTitle">'+e(x.title)+'</div><span class="status '+st[1]+'">'+st[0]+'</span></div><div class="requestSub">'+e(x.party)+' · '+e(x.role)+' · '+e(x.time)+'</div>'+task+message+note+(x.status==="ended"?'<div class="requestSub">'+e(x.reason||"本次关系已结束")+'</div>':'')+'</div><div class="requestActions">'+contextAction+act+'</div></div>';
+  return '<div class="request"><div class="requestMain"><div class="between"><div class="requestTitle">'+e(x.title)+'</div><span class="status '+st[1]+'">'+st[0]+'</span></div><div class="requestSub">'+e(x.party)+' · '+e(x.role)+' · '+e(x.time)+'</div>'+task+message+note+(x.status==="ended"?'<div class="requestSub">'+e(x.reason||"本次关系已结束")+(x.endedAt?' · '+e(x.endedAt):'')+'</div>':'')+'</div><div class="requestActions">'+contextAction+act+'</div></div>';
 }
 function rel(id){return state.relationships.filter(function(x){return x.id===id})[0]||null}
 function openJoinedRelationTeam(id){
@@ -1159,7 +1159,7 @@ function releaseReservation(x){
 function candidateStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!currentUserIsCandidate(x)){toast("当前视角是队长，请使用发起确认");return}
-  if(x.status!=="communication"){toast("当前关系不能进入组队确认");return}
+  if(x.status!=="communication"){toast("这条申请目前不能进入组队确认，请先确认双方仍处于待沟通状态");return}
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能进入组队确认："+eligibility.reason);return}
   if(remainingFor(r)<0){toast("你当前承诺时间已超出声明总时间，请先调整");return}
   if(remainingFor(r)<r.role.hours){toast("该项目周期可投入时间低于最新岗位要求，请先更新真实可投入时间");return}
@@ -1180,7 +1180,7 @@ function confirmCandidateStart(id){
 function captainStartConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   if(!canManageRecruit(r)){toast("只有当前队长可以发送正式加入邀请");return}
-  if(x.status!=="communication"){toast("当前关系不能进入组队确认");return}
+  if(x.status!=="communication"){toast("这条申请目前不能进入组队确认，请先确认双方仍处于待沟通状态");return}
   var eligibility=formalEligibility(x,r);if(!eligibility.ok){toast("当前不能进入组队确认："+eligibility.reason);return}
   if(r.status==="ended"||r.role.formal>=r.role.capacity){toast("角色已正式招满或招募已结束");return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){toast("名额正在被其他候选人确认");return}
@@ -1231,7 +1231,7 @@ function openCandidateAcceptCaptainConfirm(id){
 function candidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次组队确认已超时或失效，已回到待沟通");render();return}
-  if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("该确认中的名额已失效");return}
+  if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("本次组队确认已失效，请返回待沟通后重新发起");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){releaseReservation(x);x.status="ended";x.reason="角色已正式招满";x.expiresAt=null;toast("确认失败：角色已正式招满");render();return}
   var available=relationCandidateAvailable(x);
@@ -1490,17 +1490,18 @@ function confirmDissolveStep2(){
 function confirmDissolveManagedTeam(){
   if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能解散队伍");render();return}
   var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),ids=group.map(function(g){return g.id});
+  var dissolvedAt=new Date().toLocaleString("zh-CN",{hour12:false});
   state.relationships.forEach(function(x){
     if(ids.indexOf(x.recruitId)>=0&&x.status!=="ended"){
       releaseReservation(x);
-      x.status="ended";x.reason="队伍已解散";x.expiresAt=null;x.reserved=false;x.reservedHours=0;
+      x.status="ended";x.reason="队伍已解散";x.endedAt=dissolvedAt;x.expiresAt=null;x.reserved=false;x.reservedHours=0;
     }
   });
   group.forEach(function(g){
     g.status="ended";g.ownerActive=false;g.role.reserved=0;g.role.formal=0;
   });
   state.teamDissolved=true;
-  state.dissolvedAt=new Date().toLocaleString("zh-CN",{hour12:false});
+  state.dissolvedAt=dissolvedAt;
   state.managedMemberActive=false;
   state.committed=Math.max(0,state.committed-state.managedStageHours);
   state.managedStageHours=0;
@@ -1794,7 +1795,7 @@ function renderPublish(p){
     '<div class="field"><label>竞赛时间 <span class="req">*</span></label><div class="competitionDatePair"><input class="input" id="pubCompetitionStart" type="date" value="'+competitionInput(r,"start")+'"><span>至</span><input class="input" id="pubCompetitionEnd" type="date" value="'+competitionInput(r,"end")+'"></div><div class="help" id="competitionTimeHint">竞赛时间与项目周期分开维护；Demo 预置日期仅用于字段演示。</div></div>'+
     '<div class="field"><label>招募标题（可选）</label><input class="input" id="pubTitle" maxlength="30" value="'+e(r.title)+'"><div class="help">不超过 30 字；留空时由系统根据竞赛和主要缺口生成。</div></div>'+
     '<div class="field"><label>学校 / 校区</label><input class="input" value="'+e(r.school)+' / '+e(r.campus)+'" disabled></div>'+
-    '<div class="field"><label>学校 / 校区是否为必须满足的条件</label><select class="select" id="pubHard"><option value="0" '+(!r.hard?"selected":"")+'>否，可跨校区沟通</option><option value="1" '+(r.hard?"selected":"")+'>是，不满足不可申请 / 邀请</option></select></div>'+
+    '<div class="field"><label>学校 / 校区是否必须满足</label><select class="select" id="pubHard"><option value="0" '+(!r.hard?"selected":"")+'>否，可跨校区沟通</option><option value="1" '+(r.hard?"selected":"")+'>是，不满足不可申请 / 邀请</option></select></div>'+
     '<div class="field full"><label>队伍现状 <span class="req">*</span></label><input class="input" id="pubTeam" value="'+e(r.team)+'" placeholder="如：现有 3 人，产品 / 前端 / 商业各 1 人"></div>'+
     (r.isDraft?'<div class="field"><label>我的队内角色 <span class="req">*</span></label><input class="input" id="pubOwnerRole" value="'+e(r.ownerRole||"")+'" placeholder="如：产品 / 项目推进"></div><div class="field"><label>我在本队约定投入 <span class="req">*</span></label><input class="input" id="pubOwnerHours" type="number" min="1" step="1" value="'+(r.ownerHours||"")+'"><div class="help">你作为初始正式成员，该投入会计入本项目周期的时间占用。</div></div>':"")+
     '<div class="field full"><label>当前进度 <span class="req">*</span></label><input class="input" id="pubProgress" value="'+e(r.progress)+'" placeholder="如：已完成选题与访谈框架"></div>'+
