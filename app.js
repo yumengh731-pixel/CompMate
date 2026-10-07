@@ -1454,19 +1454,55 @@ function renderJoinedTeam(){
     '<div class="section groupJoinSection"><div class="between"><div><h3 class="sectionTitle">联系队长入群</h3><p class="subtitle">正式成员专属 · 队长核对后提供项目群邀请</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已标记联系队长":"待联系队长")+'</span></div><div class="groupJoinCard"><div><span class="meta">队长维护的入群说明</span><p>'+e(r.groupNote||"请使用此前双方已授权的联系方式联系队长，说明姓名与队内角色，由队长核对后邀请进群。")+'</p><div class="meta">仅正式成员可见；平台不直接加入微信 / QQ 群。</div></div><button class="btn primary" onclick="contactCaptainForGroup()">查看联系步骤 →</button></div></div>'+
     '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="openReport(\'team\','+r.id+',\''+e(teamName)+'\')">举报问题</button></div></div>';
 }
-function contactCaptainForGroup(){
-  var r=findRecruit(state.joinedRecruitId)||recruits[0];
+function currentJoinedGroupEntry(){
+  if(!state.loggedIn||!state.verified)return null;
+  var r=findRecruit(state.joinedRecruitId);
+  if(!r||r.status==="ended")return null;
   var x=state.relationships.filter(function(a){return a.status==="joined"&&a.recruitId===r.id&&currentUserIsCandidate(a)})[0];
-  var contact=x&&x.partyContact?x.partyContact:"";
-  modal('<h2>联系队长入群</h2><p class="subtitle">仅正式成员可见。请通过此前双方沟通阶段已经授权的联系方式联系队长，由队长提供项目群信息。</p><div class="roleBox"><div class="kv"><div class="k">队长</div><div>'+e(r.leader)+'</div><div class="k">已授权联系方式</div><div>'+(contact?e(contact):'沿用此前已授权联系方式')+'</div></div></div><div class="notice" style="margin-top:12px">CompMate 不公开展示群二维码；队长转交后，这里将显示当前队长。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button>'+(contact?'<button class="btn primary" onclick="copyCaptainContact()">复制队长联系方式</button>':'')+'</div>');
+  if(!x)return null;
+  var contact=x.partyContactSnapshot||(x.contact?x.partyContact:"")||"";
+  var note=r.groupNote||"请使用双方此前授权的联系方式联系队长，说明姓名和队内角色，由队长核对身份后邀请进群。";
+  var message="队长你好，我是"+(state.profileName||"一名正式成员")+"（"+r.school+" · "+(state.profileCampus||r.campus)+"），已在 CompMate 正式加入「"+r.comp+"」队伍，负责「"+r.role.name+"」。想申请进入项目交流群，麻烦核对身份后邀请我入群，谢谢！";
+  return {r:r,x:x,contact:contact,note:note,message:message};
 }
-function copyCaptainContact(){
-  var r=findRecruit(state.joinedRecruitId)||recruits[0];
-  var x=state.relationships.filter(function(a){return a.status==="joined"&&a.recruitId===r.id&&currentUserIsCandidate(a)})[0];
-  var contact=x&&x.partyContact?x.partyContact:"";
-  if(!contact){toast("请使用此前已授权的联系方式联系队长");return}
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(contact).catch(function(){});
-  toast("已复制队长联系方式");
+function contactCaptainForGroup(){
+  var c=currentJoinedGroupEntry();
+  if(!c){toast("仅当前队伍的已认证正式成员可查看入群信息");render();return}
+  var marked=!!state.groupContactedByRecruit[c.r.id];
+  modal('<div class="groupEntryModal"><div class="groupEntryEyebrow">MEMBERS ONLY · 成员专属</div><h2>联系队长入群</h2><p class="subtitle">已正式组队后，通过双方此前授权的联系方式联系当前队长。CompMate 不代为添加外部群成员。</p>'+
+    '<div class="groupEntrySteps">'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">01</span><div><b>核对组队身份</b><p>'+e(c.r.comp)+' · '+e(c.r.role.name)+' · 队长 '+e(c.r.leader)+'</p><span class="status green">已完成正式组队</span></div></div>'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">02</span><div><b>联系队长</b><p>此前双方同意沟通后授权的账号（Demo 为虚构示例）。</p>'+
+        (c.contact?'<div class="groupEntryContact"><code>'+e(c.contact)+'</code><button class="btn secondary" onclick="copyGroupEntryText(\'contact\')">复制账号</button></div>':'<div class="notice warn">当前没有可显示的已授权联系方式。请回到已有沟通记录查找，平台不会公开未授权联系方式。</div>')+
+      '</div></div>'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">03</span><div><b>发送入群说明</b><p class="groupEntryInstructions">'+e(c.note)+'</p><div class="groupEntryMessage">'+e(c.message)+'</div>'+
+        (c.contact?'<button class="btn secondary" onclick="copyGroupEntryText(\'message\')">复制入群申请话术</button>':'')+
+      '</div></div>'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">04</span><div><b>等待队长邀请</b><p>联系后由队长核对并邀请进入项目群。你可以记录自己的操作，但不能据此认定已实际入群。</p>'+
+        (marked?'<div class="notice good">已在本次 Demo 中标记「我已联系队长」。此标记仅供本人追踪，不代表队长已回复或已入群。</div>':'<button class="btn primary" '+(!c.contact?'disabled ':'')+'onclick="markGroupCaptainContacted()">我已联系队长（自行标记）</button>')+
+      '</div></div>'+
+    '</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回我的队伍</button></div></div>');
+}
+function manualCopyGroupEntryText(value,label){
+  modal('<h2>手动复制'+e(label)+'</h2><p class="subtitle">浏览器未授予剪贴板权限。可长按或选中文本复制。</p><textarea class="textarea" readonly rows="4" id="manualGroupCopy">'+e(value)+'</textarea><div class="modalFoot"><button class="btn secondary" onclick="contactCaptainForGroup()">返回入群步骤</button></div>');
+  var input=byId("manualGroupCopy");if(input&&input.select)input.select();
+}
+function copyGroupEntryText(kind){
+  var c=currentJoinedGroupEntry();
+  if(!c){closeModal();toast("正式成员关系已失效，无法复制入群信息");render();return}
+  var value=kind==="contact"?c.contact:kind==="message"?c.message:"";
+  var label=kind==="contact"?"队长联系账号":"入群申请话术";
+  if(!value||!c.contact){toast("尚无可使用的已授权联系方式");return}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(value).then(function(){toast(label+"已复制")}).catch(function(){manualCopyGroupEntryText(value,label)});
+  }else manualCopyGroupEntryText(value,label);
+}
+function markGroupCaptainContacted(){
+  var c=currentJoinedGroupEntry();
+  if(!c||!c.contact){toast("请先取得已授权的队长联系方式");return}
+  state.groupContactedByRecruit[c.r.id]=true;
+  render();
+  contactCaptainForGroup();
 }
 function teamMember(name,role,sub,self,removable){
   return '<div class="request"><div><div class="requestTitle">'+e(name)+' · '+e(role)+'</div><div class="requestSub">'+e(sub)+'</div></div><div class="requestActions">'+(self?'<span class="status green">本人</span>':'<span class="status">正式成员</span>')+(removable?'<button class="btn text" onclick="removeMemberDemo()">移除</button>':'')+'</div></div>';
