@@ -286,6 +286,34 @@ function formatExpiry(x){
   return h>24?"剩余 "+Math.ceil(h/24)+" 天":"剩余约 "+h+" 小时";
 }
 function normalizeCompetitionName(v){return String(v||"").trim().replace(/\s+/g," ").replace(/[＋+]/g,"+")}
+var competitionDemoPresets={
+  "挑战杯 · 大挑":["2026-11-20","2026-12-10"],
+  "互联网+":["2026-11-10","2026-11-20"],
+  "正大杯":["2026-12-01","2026-12-10"],
+  "数学建模竞赛":["2026-11-20","2026-11-22"],
+  "行业经济分析大赛":["2026-11-25","2026-11-30"]
+};
+function competitionInput(r,which){
+  if(r&&r.competitionStart&&r.competitionEnd)return which==="start"?r.competitionStart:r.competitionEnd;
+  var preset=competitionDemoPresets[normalizeCompetitionName(r&&r.comp)];
+  return preset?(which==="start"?preset[0]:preset[1]):"";
+}
+function competitionTimeLabel(r){
+  var a=competitionInput(r,"start"),b=competitionInput(r,"end");
+  return a&&b?periodLabel(a,b):"未填写";
+}
+function syncCompetitionContext(){
+  var input=byId("pubComp"),start=byId("pubCompetitionStart"),end=byId("pubCompetitionEnd"),hint=byId("competitionTimeHint");
+  if(!input||!start||!end)return;
+  var comp=normalizeCompetitionName(input.value),preset=competitionDemoPresets[comp];
+  if(preset){
+    start.value=preset[0];end.value=preset[1];
+    if(hint)hint.textContent="标准竞赛：Demo 预置日期仅用于字段演示，正式产品由学校竞赛白名单维护。";
+  }else{
+    start.value="";end.value="";
+    if(hint)hint.textContent="自定义竞赛：请自行填写竞赛时间；它与项目周期分开维护。";
+  }
+}
 function unsafePublicText(v){return /(微信号\s*[:：]?\s*[A-Za-z0-9_-]{4,}|(?:vx|wechat)\s*[:：]?\s*[A-Za-z0-9_-]{4,}|qq\s*[:：]?\s*\d{5,}|手机号\s*[:：]?\s*1[3-9]\d{9}|1[3-9]\d{9}|加我(?:微信|QQ)|私聊付款|先转账|代刷)/i.test(String(v||""))}
 function registerContactUnlock(){
   var now=Date.now(),windowMs=config.contactUnlockWindowMs;
@@ -1411,7 +1439,7 @@ function ensureRestoredRole(kind){
       :{name:"产品 / 项目推进",hours:Math.max(1,state.managedStageHours||8),task:"负责需求梳理、方案设计、关键节点推进与成果整合",skills:["产品策划","用户调研"]};
   var id=Date.now()+Math.floor(Math.random()*1000),gid=recruitGroupId(base);
   var r={
-    id:id,groupId:gid,restoredKind:kind,category:base.category,comp:base.comp,title:base.title,school:base.school,campus:base.campus,leader:base.leader,status:"paused",
+    id:id,groupId:gid,restoredKind:kind,category:base.category,comp:base.comp,competitionStart:competitionInput(base,"start"),competitionEnd:competitionInput(base,"end"),title:base.title,school:base.school,campus:base.campus,leader:base.leader,status:"paused",
     target:base.target,period:base.period,periodStart:base.periodStart,periodEnd:base.periodEnd,deadline:base.deadline,deadlineAt:base.deadlineAt,team:base.team,progress:base.progress,collab:base.collab,hard:base.hard,reasons:[],
     role:{name:def.name,capacity:1,formal:0,reserved:0,hours:def.hours,task:def.task,skills:def.skills}
   };
@@ -1675,7 +1703,7 @@ function createRecruitDraft(){
   var existing=managedRecruitments.filter(function(r){return r.isDraft&&canManageRecruit(r)})[0];
   if(existing){state.activeRoleRecruitId=existing.id;return existing}
   var id=Date.now();
-  managedRecruitments.push({id:id,groupId:id,isDraft:true,category:"innovation",comp:"挑战杯 · 大挑",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],ownerRole:"",ownerHours:0,ownerActive:true,role:{name:"",capacity:1,formal:0,reserved:0,hours:6,task:"",skills:[]}});
+  managedRecruitments.push({id:id,groupId:id,isDraft:true,category:"innovation",comp:"挑战杯 · 大挑",competitionStart:"2026-11-20",competitionEnd:"2026-12-10",title:"",school:"广东工业大学",campus:state.userCampus,leader:"你",status:"paused",target:"优先冲奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 1 人",progress:"刚开始组队",collab:"关键节点提前同步",hard:false,reasons:[],ownerRole:"",ownerHours:0,ownerActive:true,role:{name:"",capacity:1,formal:0,reserved:0,hours:6,task:"",skills:[]}});
   state.activeRoleRecruitId=id;return findRecruit(id);
 }
 function addAdditionalRole(){
@@ -1687,7 +1715,7 @@ function addAdditionalRole(){
   var gid=recruitGroupId(base),id=Date.now(),inheritPaused=managedGroupPaused(base);
   if(!base.groupId)base.groupId=gid;
   managedRecruitments.push({
-    id:id,groupId:gid,isDraftRole:true,inheritPaused:inheritPaused,category:base.category,comp:base.comp,title:base.title,school:base.school,campus:base.campus,leader:base.leader,status:"paused",
+    id:id,groupId:gid,isDraftRole:true,inheritPaused:inheritPaused,category:base.category,comp:base.comp,competitionStart:competitionInput(base,"start"),competitionEnd:competitionInput(base,"end"),title:base.title,school:base.school,campus:base.campus,leader:base.leader,status:"paused",
     target:base.target,period:base.period,periodStart:base.periodStart,periodEnd:base.periodEnd,deadline:base.deadline,deadlineAt:base.deadlineAt,team:base.team,progress:base.progress,collab:base.collab,hard:base.hard,reasons:[],
     role:{name:"",capacity:1,formal:0,reserved:0,hours:6,task:"",skills:[]}
   });
