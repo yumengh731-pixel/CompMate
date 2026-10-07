@@ -1451,7 +1451,7 @@ function renderJoinedTeam(){
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">当前岗位剩余缺口</h3>'+(free?'<span class="status warn">'+e(r.role.name)+' · '+free+' 人</span>':'<span class="status green">当前岗位已补齐</span>')+'</div><p class="subtitle">其他角色是否重新开放招募由队长决定，历史申请不会自动恢复。</p></div>'+
-    '<div class="section groupJoinSection"><div class="between"><div><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：联系队长 '+e(r.leader)+' 获取项目群信息。</p></div><button class="btn primary" onclick="contactCaptainForGroup()">联系队长入群</button></div><div class="meta">队长联系方式沿用双方待沟通阶段已经授权的信息，不在公开招募页展示。</div></div>'+
+    '<div class="section groupJoinSection"><div class="between"><div><h3 class="sectionTitle">联系队长入群</h3><p class="subtitle">正式成员专属 · 队长核对后提供项目群邀请</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已标记联系队长":"待联系队长")+'</span></div><div class="groupJoinCard"><div><span class="meta">队长维护的入群说明</span><p>'+e(r.groupNote||"请使用此前双方已授权的联系方式联系队长，说明姓名与队内角色，由队长核对后邀请进群。")+'</p><div class="meta">仅正式成员可见；平台不直接加入微信 / QQ 群。</div></div><button class="btn primary" onclick="contactCaptainForGroup()">查看联系步骤 →</button></div></div>'+
     '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="openReport(\'team\','+r.id+',\''+e(teamName)+'\')">举报问题</button></div></div>';
 }
 function contactCaptainForGroup(){
