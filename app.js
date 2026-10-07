@@ -48,6 +48,7 @@ var state={
   teamDissolved:false,
   dataMemberRemoved:false,
   groupNote:"请联系当前队长加入微信项目群。",
+  groupContactedByRecruit:{},
   publishNewRequested:false,
   frontendAgreedHours:8,
   frontendCurrentHours:6,
@@ -61,7 +62,7 @@ var state={
   teamFilters:{campus:false,time:false,active:true,award:false,category:"",competition:"",roleTask:"",schoolCampus:"",query:""},
   peopleFilters:{time:false,output:false,campus:false,target:false,capability:"",query:""},
   relationships:[
-    {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
+    {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"guwen_demo_wechat"},
     {id:202,type:"invitation",direction:"incoming",recruitId:2,title:"正大杯 · 市场调研岗",party:"许辰",role:"市场调研",status:"pending",time:"2 小时前",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"xuchen_demo",expiresAt:Date.now()+6*24*60*60*1000},
     {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:14,title:"挑战杯 · 视觉设计岗",party:"宋禾",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"song_demo",expiresAt:Date.now()+config.pendingRequestMs},
     {id:203,type:"application",direction:"outgoing",recruitId:3,title:"互联网+ · 前端开发",party:"陈屿",role:"前端开发",status:"ended",time:"昨天",reason:"对方已暂停并结束本次请求",contact:false,initiator:null,reserved:false,reservedHours:0}
@@ -69,7 +70,7 @@ var state={
 };
 
 var recruits=[
-  {id:1,category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"10/18 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
+  {id:1,category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",groupNote:"加入项目微信群请先添加队长已授权的联系账号，备注「挑战杯＋姓名＋数据分析」；队长核对已组队身份后邀请入群。",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"10/18 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
   {id:2,category:"market",comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学",campus:"大学城校区",leader:"许辰",status:"active",target:"完整参赛并争取省赛",period:"10/10 - 12/10",deadline:"10/20 20:00",team:"现有 4 人",progress:"正在设计正式问卷",collab:"线上协作为主，每周一次集中同步。",hard:false,reasons:["有访谈经验","目标一致"],role:{name:"市场调研",capacity:1,formal:0,reserved:0,hours:6,task:"访谈提纲、用户访谈、问卷设计与洞察整理",skills:["用户访谈","问卷设计","报告写作"]}},
   {id:3,category:"innovation",comp:"互联网+",title:"寻找前端开发同学",school:"广东工业大学",campus:"龙洞校区",leader:"陈屿",status:"paused",target:"冲校赛金奖",period:"10/01 - 11/25",deadline:"10/22 18:00",team:"现有 3 人",progress:"产品方向已确定",collab:"每两天线上同步开发进度。",hard:true,reasons:["技能高度匹配"],role:{name:"前端开发",capacity:2,formal:1,reserved:0,hours:10,task:"实现产品 Demo、核心交互和路演展示页面",skills:["JavaScript","React","HTML/CSS"]}},
   {id:4,category:"math",comp:"数学建模竞赛",title:"建模队补一名编程队友",school:"广东工业大学",campus:"龙洞校区",leader:"林深",status:"full",target:"稳定完赛",period:"11/01 - 12/01",deadline:"10/12 22:00",team:"现有 3 人",progress:"已完成组队",collab:"赛前每周训练，比赛期间集中协作。",hard:false,reasons:["跨专业互补"],role:{name:"编程 / 建模",capacity:1,formal:1,reserved:0,hours:14,task:"Python 求解、模型验证、结果整理",skills:["Python","数学建模"]}},
@@ -329,7 +330,26 @@ function shell(){
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
 function demoBar(){
-  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态；组队后管理完整展开一支预置的多角色队伍，不重复铺多队伍管理页面。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
+  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态；组队后管理完整展开一支预置的多角色队伍，不重复铺多队伍管理页面。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="demoPreviewGroupEntry()">模拟已组队 → 联系队长入群</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
+}
+function demoPreviewGroupEntry(){
+  if(!state.loggedIn||!state.verified){toast("请先登录并完成学校身份认证");return}
+  var x=state.relationships.filter(function(a){return a.id===201})[0];
+  var r=x?relationRecruit(x):null;
+  if(!x||!r){toast("入群演示关系不存在");return}
+  if(x.status==="joined"){
+    state.joined=true;state.joinedRecruitId=r.id;state.joinedStageHours=x.joinedHours||r.role.hours;
+    state.teamView="joined";state.progressView="team";go("progress");return;
+  }
+  if(x.status!=="communication"||r.status!=="active"||roleFree(r)<1){
+    toast("演示关系已变化；可按正常申请 → 双方确认流程进入队伍");return;
+  }
+  if(!userAvailabilityOverlaps(r)||remainingFor(r)<r.role.hours){
+    toast("当前周期可投入时间不足，不能演示正式入队");return;
+  }
+  captureContactGrant(x);
+  finishJoin(x,r,r.role.hours);
+  toast("演示：已完成双方确认。可在下方「入群」板块联系队长");
 }
 function simulatePageState(kind){
   state.demoPageState=kind;render();
