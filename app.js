@@ -335,6 +335,16 @@ function demoBar(){
 }
 function demoPreviewGroupEntry(){
   if(!state.loggedIn||!state.verified){toast("请先登录并完成学校身份认证");return}
+  var alreadyJoined=state.relationships.filter(function(a){return a.status==="joined"&&currentUserIsCandidate(a)})[0];
+  if(alreadyJoined){
+    var existingRecruit=relationRecruit(alreadyJoined);
+    if(existingRecruit&&existingRecruit.status!=="ended"){
+      state.joined=true;state.joinedRecruitId=existingRecruit.id;
+      state.joinedStageHours=alreadyJoined.joinedHours||existingRecruit.role.hours;
+      state.teamView="joined";state.progressView="team";go("progress");
+      return;
+    }
+  }
   var x=state.relationships.filter(function(a){return a.id===201})[0];
   var r=x?relationRecruit(x):null;
   if(!x||!r){toast("入群演示关系不存在");return}
@@ -1252,16 +1262,36 @@ function finishJoin(x,r,hours){
 
 /* FULL TEAM PAGE */
 function progressTeam(){
-  var joinedRelations=state.relationships.filter(function(x){return x.status==="joined"&&currentUserIsCandidate(x)});
+  var joinedRelations=state.relationships.filter(function(x){
+    var r=relationRecruit(x);
+    return x.status==="joined"&&currentUserIsCandidate(x)&&r&&r.status!=="ended";
+  });
   var hasJoined=joinedRelations.length>0;
-  if(hasJoined&&!joinedRelations.some(function(x){return x.recruitId===state.joinedRecruitId})){
-    var first=joinedRelations[0],rr=relationRecruit(first);
-    state.joined=true;state.joinedRecruitId=first.recruitId;state.joinedStageHours=first.joinedHours||(rr&&rr.role?rr.role.hours:0);
-  }else if(!hasJoined){
+  var active=joinedRelations.filter(function(x){return x.recruitId===state.joinedRecruitId})[0];
+  if(hasJoined){
+    active=active||joinedRelations[0];
+    var rr=relationRecruit(active);
+    state.joined=true;state.joinedRecruitId=active.recruitId;
+    state.joinedStageHours=active.joinedHours||(rr&&rr.role?rr.role.hours:0);
+  }else{
     state.joined=false;state.joinedRecruitId=null;state.joinedStageHours=0;
   }
-  var selector=hasJoined?'<div class="teamViewSwitch"><button class="'+(state.teamView==="managed"?"active":"")+'" onclick="state.teamView=\'managed\';render()">我创建的队伍</button><button class="'+(state.teamView==="joined"?"active":"")+'" onclick="state.teamView=\'joined\';render()">我加入的队伍</button></div>':'';
-  return selector+(hasJoined&&state.teamView==="joined"?renderJoinedTeam():renderManagedTeam());
+  var selector=hasJoined?'<div class="teamViewSwitch"><button class="'+(state.teamView==="managed"?"active":"")+'" onclick="state.teamView=\'managed\';render()">我创建的队伍（1）</button><button class="'+(state.teamView==="joined"?"active":"")+'" onclick="state.teamView=\'joined\';render()">我加入的队伍（'+joinedRelations.length+'）</button></div>':'';
+  var joinedPicker=hasJoined&&state.teamView==="joined"&&joinedRelations.length>1?
+    '<div class="joinedTeamPicker"><span class="meta">选择我加入的队伍</span><div class="filterChips">'+joinedRelations.map(function(x){
+      var r=relationRecruit(x),name=r.teamName||(r.leader+"的队伍");
+      return '<button class="chip '+(r.id===state.joinedRecruitId?"active":"")+'" onclick="selectJoinedTeam('+r.id+')">'+e(name)+'</button>';
+    }).join("")+'</div></div>':'';
+  return selector+joinedPicker+(hasJoined&&state.teamView==="joined"?renderJoinedTeam():renderManagedTeam());
+}
+function selectJoinedTeam(recruitId){
+  var relation=state.relationships.filter(function(x){return x.recruitId===Number(recruitId)&&x.status==="joined"&&currentUserIsCandidate(x)})[0];
+  var r=relationRecruit(relation);
+  if(!relation||!r||r.status==="ended"){toast("你已不是该队伍的正式成员");render();return}
+  state.joinedRecruitId=r.id;
+  state.joinedStageHours=relation.joinedHours||r.role.hours;
+  state.teamView="joined";
+  render();
 }
 function managedJoinedCandidates(){
   var base=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],ids=managedGroup(base).map(function(g){return g.id});
@@ -1442,15 +1472,15 @@ function resolveMemberHours(){
 }
 function acceptFrontendAgreement(){state.frontendAgreedHours=state.frontendCurrentHours;closeModal();toast("已接受新的阶段约定投入");render()}
 function renderJoinedTeam(){
-  var r=findRecruit(state.joinedRecruitId)||recruits[0],m=String(r.team||"").match(/(\d+)/),baseCount=m?Number(m[1]):1;
-  var memberCount=baseCount+1,free=roleFree(r),teamName=r.teamName||(r.leader+"的队伍");
-  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我加入的队伍</div><div class="bigTitle">'+e(teamName)+'</div><div class="subtitle">成员视角：查看角色任务、阶段投入、队伍缺口与退出操作。</div></div><span class="status green">已组队</span></div>'+
+  var r=findRecruit(state.joinedRecruitId)||recruits[0],m=String(r.team||"").match(/现有\s*(\d+)\s*人/),memberCount=Math.max(2,m?Number(m[1]):r.role.formal+1);
+  var otherCount=Math.max(0,memberCount-2),free=roleFree(r),teamName=r.teamName||(r.leader+"的队伍");
+  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我加入的队伍</div><div class="bigTitle">'+e(teamName)+'</div><div class="subtitle">成员视角：查看角色任务、阶段投入、队伍缺口与退出操作。示例数据，仅供产品交互演示。</div></div><span class="status green">已组队</span></div>'+
     '<section class="groupJoinHighlight"><div class="groupJoinHighlightTop"><div><span class="groupJoinEyebrow">NEXT STEP · 入队后下一步</span><h3>联系队长加入项目群</h3><p>你已完成平台内正式组队。通过已授权的联系账号告知队长，由队长核对后邀请入群。</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已自行标记联系":"待联系队长")+'</span></div><div class="groupJoinHighlightBottom"><div><small>队长</small><b>'+e(r.leader)+'</b><small>你的角色</small><b>'+e(r.role.name)+'</b></div><button class="btn primary" onclick="contactCaptainForGroup()">联系队长入群 →</button></div>'+(state.groupEntryDemoMode?'<p class="groupDemoTag">当前为面试演示数据，不代表真实入队或加入微信群。</p>':'')+'</section>'+
     '<div class="stats"><div class="stat"><b>'+memberCount+'</b><span>正式成员</span></div><div class="stat"><b>'+free+'</b><span>当前岗位剩余名额</span></div><div class="stat"><b>'+state.joinedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     (state.joinedStageHours<r.role.hours?'<div class="notice warn" style="margin-top:12px">当前投入低于原约定 '+r.role.hours+'h / 周，请与队长继续协商新的投入安排。</div>':'')+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
       teamMember(r.leader,"队长","当前队伍负责人",false,false)+
-      (baseCount>1?teamMember("其他正式成员",baseCount-1+" 人","队伍原有成员，Demo 仅展示汇总",false,false):"")+
+      (otherCount>0?teamMember("其他正式成员",otherCount+" 人","队伍其他成员，Demo 仅展示汇总",false,false):"")+
       teamMember("你",r.role.name,"当前阶段投入 "+state.joinedStageHours+"h / 周",true,false)+
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
