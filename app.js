@@ -1916,6 +1916,7 @@ function initDeepLink(){
 
 /* EXPORT */
 window.state=state;
+window.selectJoinedTeam=selectJoinedTeam;
 window.render=render;
 window.simulatePageState=simulatePageState;
 window.clearPageState=clearPageState;
