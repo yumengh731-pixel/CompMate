@@ -1506,3 +1506,149 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 @media(max-width:520px){
   .demoDataPill{display:none}
 }
+
+/* ===== V26 presentation-readable typography ===== */
+html,body{font-size:14px;line-height:1.5}
+
+/* Global reusable text */
+.btn{font-size:13px}
+.meta{font-size:12.5px}
+.subtitle{font-size:13.5px}
+.badge,.status{font-size:12px}
+.infoLabel{font-size:12px}
+.infoValue{font-size:13.5px}
+.stat span{font-size:12px}
+.requestTitle{font-size:13.5px}
+.requestSub{font-size:12.5px}
+.field label{font-size:12px}
+.help{font-size:12px;line-height:1.55}
+.verifiedTag{font-size:12px}
+.tab{font-size:12.5px}
+.check{font-size:12.5px}
+.table{font-size:12.5px}
+.demoStep{font-size:12px}
+.identity{font-size:12.5px}
+.brandSub{font-size:12.5px}
+.eyebrow{font-size:11.5px}
+.timePill{font-size:12.5px}
+
+/* Home / dashboard */
+.homeCoreEntry span{font-size:14px}
+.homeCoreEntry small{font-size:12px}
+.smartPanelHead h2{font-size:21px}
+.smartPanelHead p{font-size:12.5px}
+.smartRecMeta{font-size:12px}
+.smartRecMain>b{font-size:14.5px}
+.smartRecMain p{font-size:13px}
+.smartRecTags span{font-size:12px}
+.smartRecReason span{font-size:11.5px}
+.smartRecReason b{font-size:12.5px}
+.smartRecReason small{font-size:11.5px}
+.matchDims i{font-size:11.5px}
+.recommendFoot span,.recommendFoot small{font-size:11.5px}
+.reminderDate{font-size:11.5px}
+.reminderContent b{font-size:13px}
+.reminderContent strong{font-size:12px}
+.reminderContent small{font-size:11.5px}
+.statusBoardHead h3{font-size:15px}
+.statusNumbers span{font-size:12px}
+.timeBoardMain span{font-size:12px}
+.timeBoardMain small{font-size:11.5px}
+.todoBoard>b{font-size:13px}
+.todoBoard p,.todoBoard em{font-size:12px}
+
+/* Discovery filters / results */
+.listPageIntro p{font-size:12.5px}
+.pageKicker{font-size:11.5px}
+.filterSearch input{font-size:13.5px}
+.filterChips button,
+.teamFilterOptions button,
+.categoryRibbon button{font-size:12px}
+.teamFilterLabel,
+.auxiliaryLabel,
+.categoryRibbon>span{font-size:11.5px}
+.resultsHead b{font-size:15px}
+.resultsHead span{font-size:12px}
+.resultTopline{font-size:12px}
+.teamResult h3{font-size:16px}
+.teamResultMain>p{font-size:13px}
+.resultTags span{font-size:12px}
+.teamResultFacts span,
+.personFit span{font-size:11.5px}
+.teamResultFacts b,
+.personFit b{font-size:13px}
+.matchBox b{font-size:12px}
+.matchBox small{font-size:12px;line-height:1.5}
+.roleContextMain span,
+.roleRequirement span{font-size:11.5px}
+.roleContextMain b,
+.roleRequirement b{font-size:13px}
+.roleContextMain small{font-size:12px}
+.personIdentity h3{font-size:15px}
+.personIdentity span,
+.personIdentity small{font-size:12px}
+.personCapability>span{font-size:11.5px}
+.personCapability>b{font-size:13px}
+.personCapability p{font-size:12px;line-height:1.55}
+
+/* Team / progress / member flows */
+.progressHero p{font-size:12.5px}
+.progressStats span{font-size:11.5px}
+.progressSwitch button,
+.teamViewSwitch button{font-size:12px}
+.rolePick b{font-size:13px}
+.rolePick span{font-size:12px}
+.rolePick small{font-size:11.5px}
+.groupJoinEyebrow{font-size:11px}
+.groupJoinHighlightTop p{font-size:13px}
+.groupJoinHighlightBottom small{font-size:12px}
+.groupJoinHighlightBottom b{font-size:13.5px}
+.groupJoinCard p{font-size:12.5px}
+.groupEntryStep b{font-size:13px}
+.groupEntryStep p{font-size:12.5px}
+.groupEntryMessage{font-size:12.5px}
+.groupDemoTag{font-size:11.5px!important}
+.demoGuide summary{font-size:12px}
+.demoGuide>div{font-size:12px}
+.demoGuide button{font-size:11.5px}
+.demoDataPill{font-size:11.5px}
+
+/* Secondary cards still readable when screen-shared */
+.cleanSectionHead p,
+.homeSectionHeader p,
+.cleanRecruitMain p,
+.homeRecruit p,
+.homeRecruitReason,
+.homeCandidate p,
+.continueCard span,
+.quickEntry small,
+.timelineRow span,
+.simpleTime small,
+.asideAction small,
+.exploreCard span,
+.exploreCard small,
+.categoryCard span,
+.categoryCard small,
+.guideStep small,
+.activityRow small,
+.activityRow time,
+.captainContext span{font-size:12px}
+.cleanTags span,
+.homeRecruitMeta span,
+.miniSkillRow span,
+.homeCandidateHead span,
+.homeCandidateFoot>span,
+.categoryCard em,
+.guideStep>span{font-size:11.5px}
+.captainContext b{font-size:12.5px}
+
+@media(max-width:520px){
+  html,body{font-size:14px}
+  .pageTitle{font-size:25px}
+  .btn{font-size:13px}
+  .subtitle{font-size:13px}
+  .meta{font-size:12px}
+  .teamResultMain>p,
+  .personCapability p,
+  .groupJoinHighlightTop p{font-size:12.5px}
+}
