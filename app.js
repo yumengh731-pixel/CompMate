@@ -795,7 +795,7 @@ function renderDetail(p){
   }
   var canApply=r.status==="active"&&ro.formal<ro.capacity&&remainingFor(r)>=0&&!existing&&hard.ok&&!deadlinePassed(r);
   var actionLabel=existing?relationButtonLabel(existing):(deadlinePassed(r)?"已截止":r.status==="paused"?"暂停接收申请":ro.formal>=ro.capacity?"已招满":remainingFor(r)<0?"当前时间不可申请":!hard.ok?hard.reason:"申请加入");
-  var actionClick=existing?"go('progress')":"applyRecruit("+r.id+")";
+  var actionClick=existing?(existing.status==="joined"?"openJoinedTeamFromResult("+r.id+")":"go('progress')"):"applyRecruit("+r.id+")";
   p.innerHTML='<button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">← 返回寻找 · 找队伍</button><div class="layout"><div class="panel">'+
     '<div class="between"><div><div class="meta">'+e(r.comp)+' · '+e(r.school)+' '+e(r.campus)+'</div><div class="bigTitle">'+e(r.title)+'</div></div><span class="status '+st[1]+'">'+st[0]+'</span></div>'+
     '<div class="badges"><span class="badge green">队长学校身份已认证</span><span class="badge">'+e(r.leader)+' · 队长</span><span class="badge">'+e(r.period)+'</span></div>'+
