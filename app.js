@@ -1350,7 +1350,7 @@ function managedOtherCount(){
 }
 function renderManagedTeam(){
   var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),addedItems=managedJoinedCandidates();
-  if(state.teamDissolved)return '<div class="panel empty"><h3>队伍已解散</h3><p>未完成招募和请求已关闭，相关确认中的名额已释放。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
+  if(state.teamDissolved)return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 历史队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">该队伍已经解散，以下记录仅供历史查看，不能继续招募或恢复旧关系。</div></div><span class="status red">已解散</span></div><div class="section"><h3 class="sectionTitle">解散记录</h3><div class="kv" style="margin-top:12px"><div class="k">解散时间</div><div>'+e(state.dissolvedAt||"刚刚")+'</div><div class="k">操作身份</div><div>原队长</div><div class="k">处理结果</div><div>全部正式成员关系与未完成组队关系已结束</div></div></div><div class="notice">相关正式时间占用与正在确认的角色名额已释放；历史记录保留为只读，不自动恢复旧申请。</div><div class="actions"><button class="btn secondary" onclick="state.progressView=\'relations\';render()">查看关系历史</button></div></div>';
   if(!state.managedMemberActive)return '<div class="panel empty"><h3>你已退出该队伍</h3><p>队长权限已转交，退出后不再显示成员管理操作。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
   var gaps=[];
   group.forEach(function(g){
@@ -1500,6 +1500,7 @@ function confirmDissolveManagedTeam(){
     g.status="ended";g.ownerActive=false;g.role.reserved=0;g.role.formal=0;
   });
   state.teamDissolved=true;
+  state.dissolvedAt=new Date().toLocaleString("zh-CN",{hour12:false});
   state.managedMemberActive=false;
   state.committed=Math.max(0,state.committed-state.managedStageHours);
   state.managedStageHours=0;
