@@ -46,6 +46,7 @@ var state={
   managedCaptainName:"你",
   managedMemberActive:true,
   teamDissolved:false,
+  dissolvedAt:null,
   dataMemberRemoved:false,
   groupNote:"请联系当前队长加入微信项目群。",
   groupContactedByRecruit:{},
@@ -331,7 +332,7 @@ function shell(){
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
 function demoBar(){
-  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态；组队后管理完整展开一支预置的多角色队伍，不重复铺多队伍管理页面。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="demoPreviewGroupEntry()">模拟已组队 → 联系队长入群</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
+  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>正式产品不会替另一方点击。这里仅用于单机 Demo 模拟另一方响应与通用页面状态；同时预置“我创建的队伍”和“我加入的队伍”，用于验证队长与队员两种视角。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="demoPreviewGroupEntry()">模拟已组队 → 联系队长入群</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
 }
 function demoPreviewGroupEntry(){
   if(!state.loggedIn||!state.verified){toast("请先登录并完成学校身份认证");return}
@@ -483,14 +484,14 @@ function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
-  var recommended=recruits.filter(function(r){return r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&userAvailabilityOverlaps(r)&&remainingFor(r)>=r.role.hours&&userRecommendationQualified(r)}).slice(0,3);
+  var recommended=recruits.filter(function(r){return !userAlreadyJoinedRecruit(r.id)&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&userAvailabilityOverlaps(r)&&remainingFor(r)>=r.role.hours&&userRecommendationQualified(r)}).slice(0,3);
   var used=Math.max(0,currentWeekFormalUsed()+currentWeekReservedUsed());
   var pct=state.total?Math.min(100,Math.round(used/state.total*100)):0;
   var pendingAction=homeNextActionCard();
 
   p.innerHTML=
     '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 隐私联系方式</div></section>'+
-      '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的真实任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
+      '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的具体任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
     '<section class="homeWorkbench">'+
       '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><span>RECOMMEND</span><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
       '<div class="smartRecommendList">'+(recommended.length?recommended.map(smartRecommendRow).join(""):'<div class="notice">暂无高质量推荐，可前往组队大厅主动筛选；系统不会用弱匹配填满推荐位。</div>')+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
@@ -556,12 +557,12 @@ function renderTeamSearch(){
   return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.teamFilters.query||"")+'" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div>'+
     '<div class="teamFilterGroups">'+
       '<div class="teamFilterGroup"><span class="teamFilterLabel">竞赛</span><div class="teamFilterOptions">'+teamDimensionOptions("competition",teamFilterValues("competition"))+'</div></div>'+
-      '<div class="teamFilterGroup"><span class="teamFilterLabel">角色 / 任务</span><div class="teamFilterOptions">'+teamDimensionOptions("roleTask",teamFilterValues("roleTask"))+'</div></div>'+
-      '<div class="teamFilterGroup"><span class="teamFilterLabel">学校 / 校区</span><div class="teamFilterOptions">'+teamDimensionOptions("schoolCampus",teamFilterValues("schoolCampus"))+'</div></div>'+
+      '<div class="teamFilterGroup"><span class="teamFilterLabel">角色</span><div class="teamFilterOptions">'+teamDimensionOptions("roleTask",teamFilterValues("roleTask"))+'</div></div>'+
+      '<div class="teamFilterGroup schoolCampusGroup"><span class="teamFilterLabel">学校 / 校区</span><div class="teamFilterOptions">'+teamDimensionOptions("schoolCampus",teamFilterValues("schoolCampus"))+'</div></div>'+
     '</div><div class="filterChips auxiliaryFilters"><span class="auxiliaryLabel">辅助条件</span>'+
     filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
-    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div><span>按竞赛、角色 / 任务、学校 / 校区筛选</span></div>'+
-    '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色 / 任务、学校 / 校区及其他非核心筛选；招募有效性与不可放宽条件仍保留。"))+'</div>';
+    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div><span>按竞赛、角色、学校 / 校区筛选</span></div>'+
+    '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色、学校 / 校区及其他非核心筛选；必须满足的条件仍保留。"))+'</div>';
 }
 function renderPeopleSearch(r){
   if(!r||!canManageRecruit(r)||!recruitIsPublished(r)||r.status==="full"||r.status==="ended"||deadlinePassed(r))return '<div class="panel empty"><h3>当前没有可继续邀请的招募缺口</h3><p>找队友必须绑定一条已经发布的招募。未发布草稿只能继续编辑，不能向候选人发送邀请。</p><button class="btn primary" onclick="beginPublish(true)">继续 / 发布招募</button></div>';
@@ -672,7 +673,7 @@ function applyExploreFilters(){
     if(byId("resultCount"))byId("resultCount").textContent=people.length+" 人";
   }else{
     var teams=filteredTeams(q);
-    box.innerHTML=teams.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色 / 任务、学校 / 校区及其他非核心筛选；招募有效性与不可放宽条件仍保留。");
+    box.innerHTML=teams.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色、学校 / 校区及其他非核心筛选；必须满足的条件仍保留。");
     if(byId("resultCount"))byId("resultCount").textContent=teams.length+" 条结果";
   }
 }
@@ -713,9 +714,21 @@ function chooseRole(id){
   toast("已切换招募岗位");
   render();
 }
+function userAlreadyJoinedRecruit(id){
+  var x=activeCandidateRelationForRecruit(id);
+  return !!(x&&x.status==="joined");
+}
+function openJoinedTeamFromResult(id){
+  var x=activeCandidateRelationForRecruit(id);
+  if(!x||x.status!=="joined"){openRecruit(id);return}
+  state.joinedRecruitId=Number(id);state.joined=true;
+  var r=relationRecruit(x);state.joinedStageHours=x.joinedHours||(r&&r.role?r.role.hours:0);
+  state.progressView="team";state.teamView="joined";go("progress");
+}
 function teamResultRow(r){
-  var st=recruitDisplayStatus(r),free=roleFree(r),risk=r.role.hours>remainingFor(r),reasons=userMatchReasons(r);
-  return '<article class="teamResult" onclick="openRecruit('+r.id+')"><div class="teamResultMain"><div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div><h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p><div class="resultTags"><span class="strong">'+e(r.role.name)+'</span>'+r.role.skills.slice(0,3).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div></div><div class="teamResultFacts"><div><span>时间</span><b>'+r.role.hours+'h / 周</b></div><div><span>目标</span><b>'+e(r.target)+'</b></div><div><span>名额</span><b>'+free+' / '+r.role.capacity+'</b></div></div><div class="teamResultDecision"><span class="status '+st[1]+'">'+st[0]+'</span><div class="matchBox"><b>匹配提示</b><small>'+e(reasons.join(" · ")||"建议查看详情进一步判断")+'</small>'+(risk?'<small class="riskText">当前时间可能不足</small>':'')+'</div><button class="btn primary">查看详情</button></div></article>';
+  var st=recruitDisplayStatus(r),free=roleFree(r),risk=r.role.hours>remainingFor(r),reasons=userMatchReasons(r),joined=userAlreadyJoinedRecruit(r.id);
+  var displayStatus=joined?["已加入","green"]:st;
+  return '<article class="teamResult '+(joined?"joinedResult":"")+'" onclick="openRecruit('+r.id+')"><div class="teamResultMain"><div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div><h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p><div class="resultTags"><span class="strong">'+e(r.role.name)+'</span>'+r.role.skills.slice(0,3).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div></div><div class="teamResultFacts"><div><span>时间</span><b>'+r.role.hours+'h / 周</b></div><div><span>目标</span><b>'+e(r.target)+'</b></div><div><span>名额</span><b>'+free+' / '+r.role.capacity+'</b></div></div><div class="teamResultDecision"><span class="status '+displayStatus[1]+'">'+displayStatus[0]+'</span><div class="matchBox"><b>'+(joined?"当前状态":"匹配提示")+'</b><small>'+(joined?"你已是该队正式成员，可直接进入我的队伍查看任务和入群信息。":e(reasons.join(" · ")||"建议查看详情进一步判断"))+'</small>'+(!joined&&risk?'<small class="riskText">当前时间可能不足</small>':'')+'</div><button class="btn '+(joined?"secondary":"primary")+'" onclick="event.stopPropagation();'+(joined?"openJoinedTeamFromResult("+r.id+")":"openRecruit("+r.id+")")+'">'+(joined?"查看我的队伍":"查看详情")+'</button></div></article>';
 }
 function personResultRow(c){
   var r=activeManagedRecruit(),fit=candidateFit(c,r),hard=candidateMeetsHardRules(c,r),gap=candidateSkillGap(c,r),existing=activeInviteForCandidate(r.id,c.id);
