@@ -1489,3 +1489,20 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
 .demoGuide button{font-size:10.5px}
 .homeCoreEntry small{font-size:11px}
 .requestTask{font-size:11px}
+
+.demoDataPill{
+  display:inline-flex;
+  align-items:center;
+  min-height:28px;
+  padding:0 9px;
+  border-radius:999px;
+  border:1px solid #e1e5ea;
+  background:#f7f8fa;
+  color:#7a818b;
+  font-size:10.5px;
+  font-weight:700;
+  white-space:nowrap;
+}
+@media(max-width:520px){
+  .demoDataPill{display:none}
+}
