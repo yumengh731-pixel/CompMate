@@ -1269,10 +1269,10 @@ function renderManagedTeam(){
   });
   var members=1+managedOtherCount(),captainActions="";
   if(state.managedCaptain){
-    captainActions='<button class="btn secondary" onclick="transferCaptain()">转交队长</button><button class="btn primary" onclick="editManagedRecruit()">管理招募</button>'+(managedOtherCount()===0?'<button class="btn danger" onclick="dissolveManagedTeam()">解散队伍</button>':'');
+    captainActions='<button class="btn secondary" onclick="transferCaptain()">转交队长</button><button class="btn primary" onclick="editManagedRecruit()">管理招募</button><button class="btn danger" onclick="dissolveManagedTeam()">解散队伍</button>';
   }else captainActions='<button class="btn danger" onclick="leaveManagedTeam()">退出队伍</button>';
   var frontendSub=state.memberRemoved?"":"当前阶段投入 "+state.frontendCurrentHours+"h / 周 · 约定 "+state.frontendAgreedHours+"h / 周";
-  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">当前队长：'+e(state.managedCaptainName)+'。'+(state.managedCaptain?"你拥有招募、成员和队长转交权限。":"你当前按普通正式成员权限使用。")+'</div></div><span class="status green">进行中</span></div>'+
+  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">当前队长：'+e(state.managedCaptainName)+'。'+(state.managedCaptain?"你拥有招募、成员、队长转交与解散队伍权限。":"你当前按普通正式成员权限使用。")+'</div></div><span class="status green">进行中</span></div>'+
     '<div class="actions">'+captainActions+'</div>'+
     '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.managedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
@@ -1386,16 +1386,34 @@ function confirmLeaveManagedTeam(){
 }
 function dissolveManagedTeam(){
   if(!state.managedCaptain){toast("只有当前队长可以解散队伍");return}
-  if(managedOtherCount()>0){toast("仍有其他正式成员，请先转交队长；不能直接解散");return}
+  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),ids=group.map(function(g){return g.id});
+  var unfinished=state.relationships.filter(function(x){return ids.indexOf(x.recruitId)>=0&&x.status!=="ended"}).length;
+  var members=1+managedOtherCount();
+  modal('<h2>确认解散队伍？</h2><p class="subtitle">解散不要求先转交队长，但会同时影响当前全部正式成员。</p><div class="notice warn">当前队伍约 '+members+' 名正式成员；解散后将终止全部正式成员关系，关闭未完成招募 / 请求 / 待沟通 / 双方确认中关系，并释放相关名额与时间占用。历史记录仅保留查看。</div><div class="meta" style="margin-top:10px">当前关联关系：'+unfinished+' 条。系统将向正式成员显示队伍已解散通知。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmDissolveStep2()">继续解散</button></div>');
+}
+function confirmDissolveStep2(){
+  if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能解散队伍");render();return}
+  modal('<h2>再次确认解散</h2><div class="notice warn">这是最终确认。解散后不能恢复原队伍；如需再次组队，需要重新创建队伍或招募。</div><p class="subtitle" style="margin-top:12px">请确认你已经了解：现有正式成员会退出该队伍，未完成关系会结束，相关时间占用会释放。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn danger" onclick="confirmDissolveManagedTeam()">确认解散队伍</button></div>');
+}
+function confirmDissolveManagedTeam(){
+  if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能解散队伍");render();return}
   var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),ids=group.map(function(g){return g.id});
   state.relationships.forEach(function(x){
-    if(ids.indexOf(x.recruitId)>=0&&x.status!=="joined"&&x.status!=="ended"){
-      releaseReservation(x);x.status="ended";x.reason="队伍已解散";x.expiresAt=null;
+    if(ids.indexOf(x.recruitId)>=0&&x.status!=="ended"){
+      releaseReservation(x);
+      x.status="ended";x.reason="队伍已解散";x.expiresAt=null;x.reserved=false;x.reservedHours=0;
     }
   });
-  group.forEach(function(g){g.status="ended";g.ownerActive=false});
-  state.teamDissolved=true;state.managedMemberActive=false;state.committed=Math.max(0,state.committed-state.managedStageHours);state.managedStageHours=0;
-  closeModal();toast("队伍已解散，全部角色招募、未完成请求与确认中暂占已关闭");render();
+  group.forEach(function(g){
+    g.status="ended";g.ownerActive=false;g.role.reserved=0;g.role.formal=0;
+  });
+  state.teamDissolved=true;
+  state.managedMemberActive=false;
+  state.committed=Math.max(0,state.committed-state.managedStageHours);
+  state.managedStageHours=0;
+  closeModal();
+  toast("队伍已解散；全部正式成员与未完成关系已结束，相关占用已释放");
+  render();
 }
 function resolveMemberHours(){
   if(!state.managedCaptain){toast("只有当前队长可以处理成员投入变化");return}
