@@ -1202,6 +1202,8 @@ function finishJoin(x,r,hours){
     state.committed+=hours;
     state.joinedStageHours=hours;
     state.joined=true;state.joinedRecruitId=r.id;state.teamView="joined";
+    delete state.groupContactedByRecruit[r.id];
+    x.joinedLeaderName=r.leader;
   }else{
     state.teamView="managed";
   }
@@ -1460,7 +1462,8 @@ function currentJoinedGroupEntry(){
   if(!r||r.status==="ended")return null;
   var x=state.relationships.filter(function(a){return a.status==="joined"&&a.recruitId===r.id&&currentUserIsCandidate(a)})[0];
   if(!x)return null;
-  var contact=x.partyContactSnapshot||(x.contact?x.partyContact:"")||"";
+  var captainUnchanged=!x.joinedLeaderName||x.joinedLeaderName===r.leader;
+  var contact=captainUnchanged?(x.partyContactSnapshot||(x.contact?x.partyContact:"")||""):"";
   var note=r.groupNote||"请使用双方此前授权的联系方式联系队长，说明姓名和队内角色，由队长核对身份后邀请进群。";
   var message="队长你好，我是"+(state.profileName||"一名正式成员")+"（"+r.school+" · "+(state.profileCampus||r.campus)+"），已在 CompMate 正式加入「"+r.comp+"」队伍，负责「"+r.role.name+"」。想申请进入项目交流群，麻烦核对身份后邀请我入群，谢谢！";
   return {r:r,x:x,contact:contact,note:note,message:message};
@@ -1473,7 +1476,7 @@ function contactCaptainForGroup(){
     '<div class="groupEntrySteps">'+
       '<div class="groupEntryStep"><span class="groupEntryStepIndex">01</span><div><b>核对组队身份</b><p>'+e(c.r.comp)+' · '+e(c.r.role.name)+' · 队长 '+e(c.r.leader)+'</p><span class="status green">已完成正式组队</span></div></div>'+
       '<div class="groupEntryStep"><span class="groupEntryStepIndex">02</span><div><b>联系队长</b><p>此前双方同意沟通后授权的账号（Demo 为虚构示例）。</p>'+
-        (c.contact?'<div class="groupEntryContact"><code>'+e(c.contact)+'</code><button class="btn secondary" onclick="copyGroupEntryText(\'contact\')">复制账号</button></div>':'<div class="notice warn">当前没有可显示的已授权联系方式。请回到已有沟通记录查找，平台不会公开未授权联系方式。</div>')+
+        (c.contact?'<div class="groupEntryContact"><code>'+e(c.contact)+'</code><button class="btn secondary" onclick="copyGroupEntryText(\'contact\')">复制账号</button></div>':'<div class="notice warn">当前队长的已授权联系方式暂不可用（例如队长已转交或此前未授权）。请通过已有沟通渠道向当前队长确认，平台不会公开未授权联系方式。</div>')+
       '</div></div>'+
       '<div class="groupEntryStep"><span class="groupEntryStepIndex">03</span><div><b>发送入群说明</b><p class="groupEntryInstructions">'+e(c.note)+'</p><div class="groupEntryMessage">'+e(c.message)+'</div>'+
         (c.contact?'<button class="btn secondary" onclick="copyGroupEntryText(\'message\')">复制入群申请话术</button>':'')+
@@ -1537,6 +1540,7 @@ function confirmLeave(){
   if(r){r.role.formal=Math.max(0,r.role.formal-1);adjustTeamCount(r,-1);if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="paused"}
   state.committed=Math.max(0,state.committed-h);
   if(x){x.status="ended";x.reason="你已退出队伍";x.expiresAt=null}
+  if(r)delete state.groupContactedByRecruit[r.id];
   var next=state.relationships.filter(function(a){return a.status==="joined"&&currentUserIsCandidate(a)})[0];
   if(next){
     var nr=relationRecruit(next);state.joined=true;state.joinedRecruitId=next.recruitId;state.joinedStageHours=next.joinedHours||(nr&&nr.role?nr.role.hours:0);state.teamView="joined";
