@@ -1444,6 +1444,7 @@ function renderJoinedTeam(){
   var r=findRecruit(state.joinedRecruitId)||recruits[0],m=String(r.team||"").match(/(\d+)/),baseCount=m?Number(m[1]):1;
   var memberCount=baseCount+1,free=roleFree(r),teamName=r.teamName||(r.leader+"的队伍");
   return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我加入的队伍</div><div class="bigTitle">'+e(teamName)+'</div><div class="subtitle">成员视角：查看角色任务、阶段投入、队伍缺口与退出操作。</div></div><span class="status green">已组队</span></div>'+
+    '<section class="groupJoinHighlight"><div class="groupJoinHighlightTop"><div><span class="groupJoinEyebrow">NEXT STEP · 入队后下一步</span><h3>联系队长加入项目群</h3><p>你已完成平台内正式组队。通过已授权的联系账号告知队长，由队长核对后邀请入群。</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已自行标记联系":"待联系队长")+'</span></div><div class="groupJoinHighlightBottom"><div><small>队长</small><b>'+e(r.leader)+'</b><small>你的角色</small><b>'+e(r.role.name)+'</b></div><button class="btn primary" onclick="contactCaptainForGroup()">联系队长入群 →</button></div>'+(state.groupEntryDemoMode?'<p class="groupDemoTag">当前为面试演示数据，不代表真实入队或加入微信群。</p>':'')+'</section>'+
     '<div class="stats"><div class="stat"><b>'+memberCount+'</b><span>正式成员</span></div><div class="stat"><b>'+free+'</b><span>当前岗位剩余名额</span></div><div class="stat"><b>'+state.joinedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     (state.joinedStageHours<r.role.hours?'<div class="notice warn" style="margin-top:12px">当前投入低于原约定 '+r.role.hours+'h / 周，请与队长继续协商新的投入安排。</div>':'')+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
@@ -1453,7 +1454,7 @@ function renderJoinedTeam(){
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">当前岗位剩余缺口</h3>'+(free?'<span class="status warn">'+e(r.role.name)+' · '+free+' 人</span>':'<span class="status green">当前岗位已补齐</span>')+'</div><p class="subtitle">其他角色是否重新开放招募由队长决定，历史申请不会自动恢复。</p></div>'+
-    '<div class="section groupJoinSection"><div class="between"><div><h3 class="sectionTitle">联系队长入群</h3><p class="subtitle">正式成员专属 · 队长核对后提供项目群邀请</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已标记联系队长":"待联系队长")+'</span></div><div class="groupJoinCard"><div><span class="meta">队长维护的入群说明</span><p>'+e(r.groupNote||"请使用此前双方已授权的联系方式联系队长，说明姓名与队内角色，由队长核对后邀请进群。")+'</p><div class="meta">仅正式成员可见；平台不直接加入微信 / QQ 群。</div></div><button class="btn primary" onclick="contactCaptainForGroup()">查看联系步骤 →</button></div></div>'+
+    '<div class="section groupJoinSection"><h3 class="sectionTitle">队长的入群说明</h3><div class="groupJoinCard"><div><span class="meta">仅正式成员可见</span><p>'+e(r.groupNote||"请使用此前双方已授权的联系方式联系队长，说明姓名与队内角色，由队长核对后邀请进群。")+'</p><div class="meta">平台不直接添加外部群成员；如尚未入群，可使用页面顶部的联系入口。</div></div><button class="btn secondary" onclick="contactCaptainForGroup()">查看入群步骤</button></div></div>'+
     '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="openReport(\'team\','+r.id+',\''+e(teamName)+'\')">举报问题</button></div></div>';
 }
 function currentJoinedGroupEntry(){
@@ -1871,6 +1872,14 @@ function initDeepLink(){
   if(params.get("share")==="1"){
     var id=Number(params.get("recruit"));
     state.loggedIn=false;state.verified=false;state.selectedRecruit=id;state.route="detail";
+  }else if(params.get("demo")==="group"){
+    // A demo-only shortcut: reuse an existing sample communication relation and
+    // the exact final-join rules. No live message or WeChat membership is created.
+    state.groupEntryDemoMode=true;
+    state.progressView="team";
+    demoPreviewGroupEntry();
+    state.route="progress";
+    state.teamView="joined";
   }
 }
 
