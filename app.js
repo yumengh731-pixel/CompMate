@@ -48,6 +48,7 @@ var state={
   teamDissolved:false,
   dataMemberRemoved:false,
   groupNote:"请联系当前队长加入微信项目群。",
+  groupContactedByRecruit:{},
   publishNewRequested:false,
   frontendAgreedHours:8,
   frontendCurrentHours:6,
@@ -61,7 +62,7 @@ var state={
   teamFilters:{campus:false,time:false,active:true,award:false,category:"",competition:"",roleTask:"",schoolCampus:"",query:""},
   peopleFilters:{time:false,output:false,campus:false,target:false,capability:"",query:""},
   relationships:[
-    {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"spark_team"},
+    {id:201,type:"application",direction:"outgoing",recruitId:1,title:"挑战杯 · 数据分析岗",party:"星火队",role:"数据分析",status:"communication",time:"今天 00:42",contact:true,initiator:null,reserved:false,reservedHours:0,partyContact:"guwen_demo_wechat"},
     {id:202,type:"invitation",direction:"incoming",recruitId:2,title:"正大杯 · 市场调研岗",party:"许辰",role:"市场调研",status:"pending",time:"2 小时前",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"xuchen_demo",expiresAt:Date.now()+6*24*60*60*1000},
     {id:204,type:"application",direction:"incoming",recruitId:901,candidateId:14,title:"挑战杯 · 视觉设计岗",party:"宋禾",role:"视觉设计",status:"pending",time:"今天 01:20",contact:false,initiator:null,reserved:false,reservedHours:0,partyContact:"song_demo",expiresAt:Date.now()+config.pendingRequestMs},
     {id:203,type:"application",direction:"outgoing",recruitId:3,title:"互联网+ · 前端开发",party:"陈屿",role:"前端开发",status:"ended",time:"昨天",reason:"对方已暂停并结束本次请求",contact:false,initiator:null,reserved:false,reservedHours:0}
@@ -69,7 +70,7 @@ var state={
 };
 
 var recruits=[
-  {id:1,category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"10/18 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
+  {id:1,category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",groupNote:"加入项目微信群请先添加队长已授权的联系账号，备注「挑战杯＋姓名＋数据分析」；队长核对已组队身份后邀请入群。",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"10/18 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
   {id:2,category:"market",comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学",campus:"大学城校区",leader:"许辰",status:"active",target:"完整参赛并争取省赛",period:"10/10 - 12/10",deadline:"10/20 20:00",team:"现有 4 人",progress:"正在设计正式问卷",collab:"线上协作为主，每周一次集中同步。",hard:false,reasons:["有访谈经验","目标一致"],role:{name:"市场调研",capacity:1,formal:0,reserved:0,hours:6,task:"访谈提纲、用户访谈、问卷设计与洞察整理",skills:["用户访谈","问卷设计","报告写作"]}},
   {id:3,category:"innovation",comp:"互联网+",title:"寻找前端开发同学",school:"广东工业大学",campus:"龙洞校区",leader:"陈屿",status:"paused",target:"冲校赛金奖",period:"10/01 - 11/25",deadline:"10/22 18:00",team:"现有 3 人",progress:"产品方向已确定",collab:"每两天线上同步开发进度。",hard:true,reasons:["技能高度匹配"],role:{name:"前端开发",capacity:2,formal:1,reserved:0,hours:10,task:"实现产品 Demo、核心交互和路演展示页面",skills:["JavaScript","React","HTML/CSS"]}},
   {id:4,category:"math",comp:"数学建模竞赛",title:"建模队补一名编程队友",school:"广东工业大学",campus:"龙洞校区",leader:"林深",status:"full",target:"稳定完赛",period:"11/01 - 12/01",deadline:"10/12 22:00",team:"现有 3 人",progress:"已完成组队",collab:"赛前每周训练，比赛期间集中协作。",hard:false,reasons:["跨专业互补"],role:{name:"编程 / 建模",capacity:1,formal:1,reserved:0,hours:14,task:"Python 求解、模型验证、结果整理",skills:["Python","数学建模"]}},
@@ -329,7 +330,26 @@ function shell(){
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
 function demoBar(){
-  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态；组队后管理完整展开一支预置的多角色队伍，不重复铺多队伍管理页面。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
+  return '<details class="demoGuide"><summary>面试演示辅助</summary><div class="demoGuideInner"><span>真实产品不会替另一方点击。这里仅用于单机 Demo 模拟站外另一方响应与通用页面状态；组队后管理完整展开一支预置的多角色队伍，不重复铺多队伍管理页面。</span><div class="demoGuideActions"><button onclick="go(\'explore\')">从“寻找”开始</button><button onclick="simulateNextRemoteAction()">模拟下一次对方响应</button><button onclick="demoPreviewGroupEntry()">模拟已组队 → 联系队长入群</button><button onclick="simulatePageState(\'loading\')">加载态</button><button onclick="simulatePageState(\'error\')">失败态</button></div></div></details>';
+}
+function demoPreviewGroupEntry(){
+  if(!state.loggedIn||!state.verified){toast("请先登录并完成学校身份认证");return}
+  var x=state.relationships.filter(function(a){return a.id===201})[0];
+  var r=x?relationRecruit(x):null;
+  if(!x||!r){toast("入群演示关系不存在");return}
+  if(x.status==="joined"){
+    state.joined=true;state.joinedRecruitId=r.id;state.joinedStageHours=x.joinedHours||r.role.hours;
+    state.teamView="joined";state.progressView="team";go("progress");return;
+  }
+  if(x.status!=="communication"||r.status!=="active"||roleFree(r)<1){
+    toast("演示关系已变化；可按正常申请 → 双方确认流程进入队伍");return;
+  }
+  if(!userAvailabilityOverlaps(r)||remainingFor(r)<r.role.hours){
+    toast("当前周期可投入时间不足，不能演示正式入队");return;
+  }
+  captureContactGrant(x);
+  finishJoin(x,r,r.role.hours);
+  toast("演示：已完成双方确认。可在下方「入群」板块联系队长");
 }
 function simulatePageState(kind){
   state.demoPageState=kind;render();
@@ -1182,6 +1202,8 @@ function finishJoin(x,r,hours){
     state.committed+=hours;
     state.joinedStageHours=hours;
     state.joined=true;state.joinedRecruitId=r.id;state.teamView="joined";
+    delete state.groupContactedByRecruit[r.id];
+    x.joinedLeaderName=r.leader;
   }else{
     state.teamView="managed";
   }
@@ -1431,22 +1453,59 @@ function renderJoinedTeam(){
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">当前岗位剩余缺口</h3>'+(free?'<span class="status warn">'+e(r.role.name)+' · '+free+' 人</span>':'<span class="status green">当前岗位已补齐</span>')+'</div><p class="subtitle">其他角色是否重新开放招募由队长决定，历史申请不会自动恢复。</p></div>'+
-    '<div class="section groupJoinSection"><div class="between"><div><h3 class="sectionTitle">入群说明</h3><p class="subtitle">仅正式成员可见：联系队长 '+e(r.leader)+' 获取项目群信息。</p></div><button class="btn primary" onclick="contactCaptainForGroup()">联系队长入群</button></div><div class="meta">队长联系方式沿用双方待沟通阶段已经授权的信息，不在公开招募页展示。</div></div>'+
+    '<div class="section groupJoinSection"><div class="between"><div><h3 class="sectionTitle">联系队长入群</h3><p class="subtitle">正式成员专属 · 队长核对后提供项目群邀请</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已标记联系队长":"待联系队长")+'</span></div><div class="groupJoinCard"><div><span class="meta">队长维护的入群说明</span><p>'+e(r.groupNote||"请使用此前双方已授权的联系方式联系队长，说明姓名与队内角色，由队长核对后邀请进群。")+'</p><div class="meta">仅正式成员可见；平台不直接加入微信 / QQ 群。</div></div><button class="btn primary" onclick="contactCaptainForGroup()">查看联系步骤 →</button></div></div>'+
     '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="openReport(\'team\','+r.id+',\''+e(teamName)+'\')">举报问题</button></div></div>';
 }
-function contactCaptainForGroup(){
-  var r=findRecruit(state.joinedRecruitId)||recruits[0];
+function currentJoinedGroupEntry(){
+  if(!state.loggedIn||!state.verified)return null;
+  var r=findRecruit(state.joinedRecruitId);
+  if(!r||r.status==="ended")return null;
   var x=state.relationships.filter(function(a){return a.status==="joined"&&a.recruitId===r.id&&currentUserIsCandidate(a)})[0];
-  var contact=x&&x.partyContact?x.partyContact:"";
-  modal('<h2>联系队长入群</h2><p class="subtitle">仅正式成员可见。请通过此前双方沟通阶段已经授权的联系方式联系队长，由队长提供项目群信息。</p><div class="roleBox"><div class="kv"><div class="k">队长</div><div>'+e(r.leader)+'</div><div class="k">已授权联系方式</div><div>'+(contact?e(contact):'沿用此前已授权联系方式')+'</div></div></div><div class="notice" style="margin-top:12px">CompMate 不公开展示群二维码；队长转交后，这里将显示当前队长。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button>'+(contact?'<button class="btn primary" onclick="copyCaptainContact()">复制队长联系方式</button>':'')+'</div>');
+  if(!x)return null;
+  var captainUnchanged=!x.joinedLeaderName||x.joinedLeaderName===r.leader;
+  var contact=captainUnchanged?(x.partyContactSnapshot||(x.contact?x.partyContact:"")||""):"";
+  var note=r.groupNote||"请使用双方此前授权的联系方式联系队长，说明姓名和队内角色，由队长核对身份后邀请进群。";
+  var message="队长你好，我是"+(state.profileName||"一名正式成员")+"（"+r.school+" · "+(state.profileCampus||r.campus)+"），已在 CompMate 正式加入「"+r.comp+"」队伍，负责「"+r.role.name+"」。想申请进入项目交流群，麻烦核对身份后邀请我入群，谢谢！";
+  return {r:r,x:x,contact:contact,note:note,message:message};
 }
-function copyCaptainContact(){
-  var r=findRecruit(state.joinedRecruitId)||recruits[0];
-  var x=state.relationships.filter(function(a){return a.status==="joined"&&a.recruitId===r.id&&currentUserIsCandidate(a)})[0];
-  var contact=x&&x.partyContact?x.partyContact:"";
-  if(!contact){toast("请使用此前已授权的联系方式联系队长");return}
-  if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(contact).catch(function(){});
-  toast("已复制队长联系方式");
+function contactCaptainForGroup(){
+  var c=currentJoinedGroupEntry();
+  if(!c){toast("仅当前队伍的已认证正式成员可查看入群信息");render();return}
+  var marked=!!state.groupContactedByRecruit[c.r.id];
+  modal('<div class="groupEntryModal"><div class="groupEntryEyebrow">MEMBERS ONLY · 成员专属</div><h2>联系队长入群</h2><p class="subtitle">已正式组队后，通过双方此前授权的联系方式联系当前队长。CompMate 不代为添加外部群成员。</p>'+
+    '<div class="groupEntrySteps">'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">01</span><div><b>核对组队身份</b><p>'+e(c.r.comp)+' · '+e(c.r.role.name)+' · 队长 '+e(c.r.leader)+'</p><span class="status green">已完成正式组队</span></div></div>'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">02</span><div><b>联系队长</b><p>此前双方同意沟通后授权的账号（Demo 为虚构示例）。</p>'+
+        (c.contact?'<div class="groupEntryContact"><code>'+e(c.contact)+'</code><button class="btn secondary" onclick="copyGroupEntryText(\'contact\')">复制账号</button></div>':'<div class="notice warn">当前队长的已授权联系方式暂不可用（例如队长已转交或此前未授权）。请通过已有沟通渠道向当前队长确认，平台不会公开未授权联系方式。</div>')+
+      '</div></div>'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">03</span><div><b>发送入群说明</b><p class="groupEntryInstructions">'+e(c.note)+'</p><div class="groupEntryMessage">'+e(c.message)+'</div>'+
+        (c.contact?'<button class="btn secondary" onclick="copyGroupEntryText(\'message\')">复制入群申请话术</button>':'')+
+      '</div></div>'+
+      '<div class="groupEntryStep"><span class="groupEntryStepIndex">04</span><div><b>等待队长邀请</b><p>联系后由队长核对并邀请进入项目群。你可以记录自己的操作，但不能据此认定已实际入群。</p>'+
+        (marked?'<div class="notice good">已在本次 Demo 中标记「我已联系队长」。此标记仅供本人追踪，不代表队长已回复或已入群。</div>':'<button class="btn primary" '+(!c.contact?'disabled ':'')+'onclick="markGroupCaptainContacted()">我已联系队长（自行标记）</button>')+
+      '</div></div>'+
+    '</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回我的队伍</button></div></div>');
+}
+function manualCopyGroupEntryText(value,label){
+  modal('<h2>手动复制'+e(label)+'</h2><p class="subtitle">浏览器未授予剪贴板权限。可长按或选中文本复制。</p><textarea class="textarea" readonly rows="4" id="manualGroupCopy">'+e(value)+'</textarea><div class="modalFoot"><button class="btn secondary" onclick="contactCaptainForGroup()">返回入群步骤</button></div>');
+  var input=byId("manualGroupCopy");if(input&&input.select)input.select();
+}
+function copyGroupEntryText(kind){
+  var c=currentJoinedGroupEntry();
+  if(!c){closeModal();toast("正式成员关系已失效，无法复制入群信息");render();return}
+  var value=kind==="contact"?c.contact:kind==="message"?c.message:"";
+  var label=kind==="contact"?"队长联系账号":"入群申请话术";
+  if(!value||!c.contact){toast("尚无可使用的已授权联系方式");return}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(value).then(function(){toast(label+"已复制")}).catch(function(){manualCopyGroupEntryText(value,label)});
+  }else manualCopyGroupEntryText(value,label);
+}
+function markGroupCaptainContacted(){
+  var c=currentJoinedGroupEntry();
+  if(!c||!c.contact){toast("请先取得已授权的队长联系方式");return}
+  state.groupContactedByRecruit[c.r.id]=true;
+  render();
+  contactCaptainForGroup();
 }
 function teamMember(name,role,sub,self,removable){
   return '<div class="request"><div><div class="requestTitle">'+e(name)+' · '+e(role)+'</div><div class="requestSub">'+e(sub)+'</div></div><div class="requestActions">'+(self?'<span class="status green">本人</span>':'<span class="status">正式成员</span>')+(removable?'<button class="btn text" onclick="removeMemberDemo()">移除</button>':'')+'</div></div>';
@@ -1481,6 +1540,7 @@ function confirmLeave(){
   if(r){r.role.formal=Math.max(0,r.role.formal-1);adjustTeamCount(r,-1);if(r.status==="full"&&r.role.formal<r.role.capacity)r.status="paused"}
   state.committed=Math.max(0,state.committed-h);
   if(x){x.status="ended";x.reason="你已退出队伍";x.expiresAt=null}
+  if(r)delete state.groupContactedByRecruit[r.id];
   var next=state.relationships.filter(function(a){return a.status==="joined"&&currentUserIsCandidate(a)})[0];
   if(next){
     var nr=relationRecruit(next);state.joined=true;state.joinedRecruitId=next.recruitId;state.joinedStageHours=next.joinedHours||(nr&&nr.role?nr.role.hours:0);state.teamView="joined";
