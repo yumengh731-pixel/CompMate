@@ -117,7 +117,7 @@ function currentWeekReservedUsed(){
   var used=0,now=new Date();
   state.relationships.forEach(function(x){
     var r=relationRecruit(x);
-    if(x.reserved&&x.reservedOnCurrentUser&&r&&periodContainsDate(r,now))used+=x.reservedHours||0;
+    /* Captain confirmation does not reserve the candidate's time. */
   });
   return used;
 }
@@ -151,7 +151,7 @@ function remainingFor(r){
     var rr=relationRecruit(x);
     if(!rr||!periodsOverlap(rr,r))return;
     if(x.status==="joined"&&currentUserIsCandidate(x))used+=x.joinedHours||rr.role.hours||0;
-    else if(x.reserved&&x.reservedOnCurrentUser)used+=x.reservedHours||0;
+    /* No candidate time is reserved before final join. */
   });
   return state.total-used;
 }
@@ -181,7 +181,7 @@ function candidateRemainingFor(c,r,excludeRelationId){
     var rr=relationRecruit(x);
     if(!rr||!periodsOverlap(rr,r))return;
     if(x.status==="joined")used+=x.joinedHours||rr.role.hours||0;
-    else if(x.status==="confirming"&&x.reserved)used+=x.reservedHours||rr.role.hours||0;
+    /* Formal invitations hold a role seat, never candidate time. */
   });
   return c.hours-used;
 }
@@ -996,7 +996,7 @@ function requestCard(x){
     if(x.initiator==="captain"){
       if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">暂不加入</button><button class="btn primary" onclick="openCandidateAcceptCaptainConfirm('+x.id+')">确认加入</button>';
       else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回确认</button><span class="status">等待候选人确认</span>';
-      note='<div class="notice warn" style="margin-top:8px">'+(asCandidate?"队长已确认邀请：当前为你确认中暂占 1 个名额和约定投入，等你确认即可正式组队。":"你已发出正式加入邀请：当前为候选人确认中暂占 1 个名额，等待对方确认。")+' '+e(formatExpiry(x))+'</div>';
+      note='<div class="notice warn" style="margin-top:8px">'+(asCandidate?"队长已确认邀请：已暂占 1 个角色名额，但未锁定你的可投入时间，最终加入时会重新校验。":"你已发出正式加入邀请：当前为候选人确认中暂占 1 个名额，等待对方确认。")+' '+e(formatExpiry(x))+'</div>';
     }else{
       if(asCandidate)act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">撤回意向</button><span class="status">等待队长确认</span>';
       else act='<button class="btn secondary" onclick="rejectConfirm('+x.id+')">暂不组队</button><button class="btn primary" onclick="openLeaderFinalizeCandidateConfirm('+x.id+')">确认组队</button>';
@@ -1082,7 +1082,6 @@ function releaseReservation(x){
   if(!x||!x.reserved)return;
   var r=relationRecruit(x);
   if(r)r.role.reserved=Math.max(0,r.role.reserved-1);
-  if(x.reservedOnCurrentUser)state.reserved=Math.max(0,state.reserved-(x.reservedHours||0));
   x.reserved=false;x.reservedHours=0;x.reservedOnCurrentUser=false;
 }
 function candidateStartConfirm(id){
@@ -1127,10 +1126,9 @@ function confirmCaptainStart(id){
   if(r.role.formal>=r.role.capacity){closeModal();toast("角色已正式招满");render();return}
   if(r.role.formal+r.role.reserved>=r.role.capacity){closeModal();toast("名额正在被其他候选人确认");render();return}
   var candidateAvailable=relationCandidateAvailable(x);if(candidateAvailable<r.role.hours){closeModal();toast("候选人最新可投入时间不足");render();return}
-  r.role.reserved+=1;x.reserved=true;x.reservedHours=r.role.hours;x.reservedOnCurrentUser=currentUserIsCandidate(x);
-  if(x.reservedOnCurrentUser)state.reserved+=r.role.hours;
+  r.role.reserved+=1;x.reserved=true;x.reservedHours=0;x.reservedOnCurrentUser=false;
   x.status="confirming";x.initiator="captain";x.time="刚刚 · 队长发起 · 名额确认中";x.expiresAt=Date.now()+config.formalConfirmMs;x.conditionUpdated=false;
-  closeModal();toast("正式加入邀请已发送；名额已进入确认中暂占");render();
+  closeModal();toast("正式加入邀请已发送；只暂占本队角色名额，不占候选人时间");render();
 }
 function rejectConfirm(id){
   var x=rel(id);if(!x)return;
@@ -1156,7 +1154,7 @@ function leaderFinalizeCandidateConfirm(id){
 function openCandidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
   refreshRelationExpiry(x);if(x.status!=="confirming"){toast("本次组队确认已失效，已回到待沟通");render();return}
-  modal('<h2>确认加入</h2><p class="subtitle">这是最后一步。确认后你将正式加入队伍；确认中暂占会直接转为正式占用，不会重复扣减时间。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">剩余处理时间</div><div>'+e(formatExpiry(x))+'</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();candidateAcceptCaptainConfirm('+id+')">确认加入</button></div>');
+  modal('<h2>确认加入</h2><p class="subtitle">这是最后一步。队长此前只暂占本队角色名额，没有占用你的个人时间；现在按最新剩余时间校验，确认成功才正式占用。</p><div class="kv"><div class="k">角色</div><div>'+e(r.role.name)+'</div><div class="k">具体任务</div><div>'+e(r.role.task)+'</div><div class="k">项目周期</div><div>'+e(r.period)+'</div><div class="k">每周约定投入</div><div>'+r.role.hours+'h / 周</div><div class="k">剩余处理时间</div><div>'+e(formatExpiry(x))+'</div></div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();candidateAcceptCaptainConfirm('+id+')">确认加入</button></div>');
 }
 function candidateAcceptCaptainConfirm(id){
   var x=rel(id),r=relationRecruit(x);if(!x||!r)return;
@@ -1164,8 +1162,8 @@ function candidateAcceptCaptainConfirm(id){
   if(x.status!=="confirming"||x.initiator!=="captain"||!x.reserved){toast("该确认中暂占已失效");return}
   var eligible=formalEligibility(x,r);if(!eligible.ok){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败："+eligible.reason);render();return}
   if(r.role.formal>=r.role.capacity){releaseReservation(x);x.status="ended";x.reason="角色已正式招满";x.expiresAt=null;toast("确认失败：角色已正式招满");render();return}
-  var available=currentUserIsCandidate(x)?remainingFor(r)+(x.reservedOnCurrentUser?(x.reservedHours||0):0):relationCandidateAvailable(x);
-  if(available<r.role.hours){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败：最新可投入时间不足，已释放预留并回到待沟通");render();return}
+  var available=relationCandidateAvailable(x);
+  if(available<r.role.hours){releaseReservation(x);x.status="communication";x.initiator=null;x.expiresAt=null;toast("确认失败：最新可投入时间不足，已释放本次角色名额并回到待沟通");render();return}
   releaseReservation(x);
   finishJoin(x,r,r.role.hours);
 }
@@ -1269,10 +1267,10 @@ function renderManagedTeam(){
   });
   var members=1+managedOtherCount(),captainActions="";
   if(state.managedCaptain){
-    captainActions='<button class="btn secondary" onclick="transferCaptain()">转交队长</button><button class="btn primary" onclick="editManagedRecruit()">管理招募</button>'+(managedOtherCount()===0?'<button class="btn danger" onclick="dissolveManagedTeam()">解散队伍</button>':'');
+    captainActions='<button class="btn secondary" onclick="transferCaptain()">转交队长</button><button class="btn primary" onclick="editManagedRecruit()">管理招募</button><button class="btn danger" onclick="dissolveManagedTeam()">解散队伍</button>';
   }else captainActions='<button class="btn danger" onclick="leaveManagedTeam()">退出队伍</button>';
   var frontendSub=state.memberRemoved?"":"当前阶段投入 "+state.frontendCurrentHours+"h / 周 · 约定 "+state.frontendAgreedHours+"h / 周";
-  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">当前队长：'+e(state.managedCaptainName)+'。'+(state.managedCaptain?"你拥有招募、成员和队长转交权限。":"你当前按普通正式成员权限使用。")+'</div></div><span class="status green">进行中</span></div>'+
+  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">当前队长：'+e(state.managedCaptainName)+'。'+(state.managedCaptain?"你拥有招募、成员、队长转交与解散队伍权限。":"你当前按普通正式成员权限使用。")+'</div></div><span class="status green">进行中</span></div>'+
     '<div class="actions">'+captainActions+'</div>'+
     '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.managedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
@@ -1386,16 +1384,34 @@ function confirmLeaveManagedTeam(){
 }
 function dissolveManagedTeam(){
   if(!state.managedCaptain){toast("只有当前队长可以解散队伍");return}
-  if(managedOtherCount()>0){toast("仍有其他正式成员，请先转交队长；不能直接解散");return}
+  var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),ids=group.map(function(g){return g.id});
+  var unfinished=state.relationships.filter(function(x){return ids.indexOf(x.recruitId)>=0&&x.status!=="ended"}).length;
+  var members=1+managedOtherCount();
+  modal('<h2>确认解散队伍？</h2><p class="subtitle">解散不要求先转交队长，但会同时影响当前全部正式成员。</p><div class="notice warn">当前队伍约 '+members+' 名正式成员；解散后将终止全部正式成员关系，关闭未完成招募 / 请求 / 待沟通 / 双方确认中关系，并释放相关名额与时间占用。历史记录仅保留查看。</div><div class="meta" style="margin-top:10px">当前关联关系：'+unfinished+' 条。系统将向正式成员显示队伍已解散通知。</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">取消</button><button class="btn danger" onclick="confirmDissolveStep2()">继续解散</button></div>');
+}
+function confirmDissolveStep2(){
+  if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能解散队伍");render();return}
+  modal('<h2>再次确认解散</h2><div class="notice warn">这是最终确认。解散后不能恢复原队伍；如需再次组队，需要重新创建队伍或招募。</div><p class="subtitle" style="margin-top:12px">请确认你已经了解：现有正式成员会退出该队伍，未完成关系会结束，相关时间占用会释放。</p><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn danger" onclick="confirmDissolveManagedTeam()">确认解散队伍</button></div>');
+}
+function confirmDissolveManagedTeam(){
+  if(!state.managedCaptain){closeModal();toast("队长权限已变化，不能解散队伍");render();return}
   var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),ids=group.map(function(g){return g.id});
   state.relationships.forEach(function(x){
-    if(ids.indexOf(x.recruitId)>=0&&x.status!=="joined"&&x.status!=="ended"){
-      releaseReservation(x);x.status="ended";x.reason="队伍已解散";x.expiresAt=null;
+    if(ids.indexOf(x.recruitId)>=0&&x.status!=="ended"){
+      releaseReservation(x);
+      x.status="ended";x.reason="队伍已解散";x.expiresAt=null;x.reserved=false;x.reservedHours=0;
     }
   });
-  group.forEach(function(g){g.status="ended";g.ownerActive=false});
-  state.teamDissolved=true;state.managedMemberActive=false;state.committed=Math.max(0,state.committed-state.managedStageHours);state.managedStageHours=0;
-  closeModal();toast("队伍已解散，全部角色招募、未完成请求与确认中暂占已关闭");render();
+  group.forEach(function(g){
+    g.status="ended";g.ownerActive=false;g.role.reserved=0;g.role.formal=0;
+  });
+  state.teamDissolved=true;
+  state.managedMemberActive=false;
+  state.committed=Math.max(0,state.committed-state.managedStageHours);
+  state.managedStageHours=0;
+  closeModal();
+  toast("队伍已解散；全部正式成员与未完成关系已结束，相关占用已释放");
+  render();
 }
 function resolveMemberHours(){
   if(!state.managedCaptain){toast("只有当前队长可以处理成员投入变化");return}
