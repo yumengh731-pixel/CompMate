@@ -496,7 +496,7 @@ function relationNeedsMyAction(x){
 function homeNextActionCard(){
   if(state.pendingApplyRecruitId){
     var rr=findRecruit(state.pendingApplyRecruitId);
-    return '<article class="todoBoard pendingResume" onclick="continuePendingApply()"><div class="statusBoardHead"><span>CONTINUE</span><h3>继续此前申请</h3></div><b>'+e(rr?rr.title:"原招募")+'</b><p>认证曾中断，招募仍有效时可以继续。</p><em>继续申请 →</em></article>';
+    return '<article class="todoBoard pendingResume" onclick="continuePendingApply()"><div class="statusBoardHead"><h3>继续此前申请</h3></div><b>'+e(rr?rr.title:"原招募")+'</b><p>认证曾中断，招募仍有效时可以继续。</p><em>继续申请 →</em></article>';
   }
   var confirms=state.relationships.filter(function(x){return x.status==="confirming"&&relationNeedsMyAction(x)});
   if(confirms.length)return '<article class="todoBoard" onclick="state.tab=\'confirming\';go(\'progress\')"><div class="statusBoardHead"><h3>完成组队确认</h3></div><b>有 '+confirms.length+' 条确认等待你处理</b><p>先核对最新角色、时间与条件，再完成最终确认。</p><em>进入组队 / 进度 →</em></article>';
@@ -1519,7 +1519,7 @@ function renderJoinedTeam(){
   var r=findRecruit(state.joinedRecruitId)||recruits[0],m=String(r.team||"").match(/现有\s*(\d+)\s*人/),memberCount=Math.max(2,m?Number(m[1]):r.role.formal+1);
   var otherCount=Math.max(0,memberCount-2),free=roleFree(r),teamName=r.teamName||(r.leader+"的队伍");
   return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我加入的队伍</div><div class="bigTitle">'+e(teamName)+'</div><div class="subtitle">成员视角：查看角色任务、阶段投入、队伍缺口与退出操作。示例数据，仅供产品交互演示。</div></div><span class="status green">已组队</span></div>'+
-    '<section class="groupJoinHighlight"><div class="groupJoinHighlightTop"><div><span class="groupJoinEyebrow">NEXT STEP · 入队后下一步</span><h3>联系队长加入项目群</h3><p>你已完成平台内正式组队。通过已授权的联系账号告知队长，由队长核对后邀请入群。</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已自行标记联系":"待联系队长")+'</span></div><div class="groupJoinHighlightBottom"><div><small>队长</small><b>'+e(r.leader)+'</b><small>你的角色</small><b>'+e(r.role.name)+'</b></div><button class="btn primary" onclick="contactCaptainForGroup()">联系队长入群 →</button></div>'+(state.groupEntryDemoMode?'<p class="groupDemoTag">当前为面试演示数据，不代表真实入队或加入微信群。</p>':'')+'</section>'+
+    '<section class="groupJoinHighlight"><div class="groupJoinHighlightTop"><div><h3>联系队长加入项目群</h3><p>你已完成平台内正式组队。通过已授权的联系账号告知队长，由队长核对后邀请入群。</p></div><span class="status '+(state.groupContactedByRecruit[r.id]?"green":"warn")+'">'+(state.groupContactedByRecruit[r.id]?"已自行标记联系":"待联系队长")+'</span></div><div class="groupJoinHighlightBottom"><div><small>队长</small><b>'+e(r.leader)+'</b><small>你的角色</small><b>'+e(r.role.name)+'</b></div><button class="btn primary" onclick="contactCaptainForGroup()">联系队长入群 →</button></div>'+(state.groupEntryDemoMode?'<p class="groupDemoTag">当前为面试演示数据，不代表真实入队或加入微信群。</p>':'')+'</section>'+
     '<div class="stats"><div class="stat"><b>'+memberCount+'</b><span>正式成员</span></div><div class="stat"><b>'+free+'</b><span>当前岗位剩余名额</span></div><div class="stat"><b>'+state.joinedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     (state.joinedStageHours<r.role.hours?'<div class="notice warn" style="margin-top:12px">当前投入低于原约定 '+r.role.hours+'h / 周，请与队长继续协商新的投入安排。</div>':'')+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
@@ -1547,7 +1547,7 @@ function contactCaptainForGroup(){
   var c=currentJoinedGroupEntry();
   if(!c){toast("仅当前队伍的已认证正式成员可查看入群信息");render();return}
   var marked=!!state.groupContactedByRecruit[c.r.id];
-  modal('<div class="groupEntryModal"><div class="groupEntryEyebrow">MEMBERS ONLY · 成员专属</div><h2>联系队长入群</h2><p class="subtitle">已正式组队后，通过双方此前授权的联系方式联系当前队长。CompMate 不代为添加外部群成员。</p>'+
+  modal('<div class="groupEntryModal"><h2>联系队长入群</h2><p class="subtitle">已正式组队后，通过双方此前授权的联系方式联系当前队长。CompMate 不代为添加外部群成员。</p>'+
     '<div class="groupEntrySteps">'+
       '<div class="groupEntryStep"><span class="groupEntryStepIndex">01</span><div><b>核对组队身份</b><p>'+e(c.r.comp)+' · '+e(c.r.role.name)+' · 队长 '+e(c.r.leader)+'</p><span class="status green">已完成正式组队</span></div></div>'+
       '<div class="groupEntryStep"><span class="groupEntryStepIndex">02</span><div><b>联系队长</b><p>此前双方同意沟通后授权的账号（Demo 为虚构示例）。</p>'+
