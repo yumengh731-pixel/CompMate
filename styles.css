@@ -1409,3 +1409,13 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   .groupJoinHighlightBottom{align-items:stretch;flex-direction:column}
   .groupJoinHighlightBottom .btn{width:100%;min-height:42px}
 }
+
+/* V23: role switch and multiple joined-team selector */
+.joinedTeamPicker{
+  padding:13px 15px;
+  margin:0 0 15px;
+  border:1px solid #e3e8ed;
+  border-radius:12px;
+  background:#fafbfc;
+}
+.joinedTeamPicker .filterChips{margin-top:9px}
