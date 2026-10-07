@@ -1726,6 +1726,8 @@ function publishFormChanged(r){
   var skills=String(byId("pubSkills").value||"").split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean).join("|");
   var title=String(byId("pubTitle").value||"").trim();
   return normalizeCompetitionName(byId("pubComp").value)!==r.comp||
+    byId("pubCompetitionStart").value!==competitionInput(r,"start")||
+    byId("pubCompetitionEnd").value!==competitionInput(r,"end")||
     title!==String(r.title||"")||
     String(byId("pubTeam").value||"").trim()!==String(r.team||"")||
     String(byId("pubProgress").value||"").trim()!==String(r.progress||"")||
@@ -1787,7 +1789,8 @@ function renderPublish(p){
   var roleTabs=group.map(function(g){return '<button type="button" class="roleGapTab '+(g.id===r.id?"active":"")+'" onclick="switchPublishRole('+g.id+')"><b>'+e(g.role.name||"待填写角色")+'</b><span>'+g.role.formal+'/'+g.role.capacity+' 已加入</span></button>'}).join("")+'<button type="button" class="roleGapTab add" onclick="addAdditionalRole()">＋ 新增角色缺口</button>';
   p.innerHTML='<div class="layout"><div class="panel"><div class="between"><div><h2 class="sectionTitle">结构化招募</h2><p class="subtitle">围绕“目标竞赛 + 缺口角色 + 具体任务 + 招募人数 + 时间要求”发布，候选人可以直接判断加入后要做什么。</p></div><span class="status '+(r.status==="active"?"green":r.status==="full"?"blue":"warn")+'">'+statusLabel+'</span></div>'+
     '<div class="formGrid"><div class="field full"><label>角色缺口（可重复）</label><div class="roleGapTabs">'+roleTabs+'</div><div class="help">同一队伍可以设置多个角色缺口；每个角色分别维护人数、任务、技能和最低投入。</div></div>'+
-    '<div class="field"><label>目标竞赛 <span class="req">*</span></label><input class="input" id="pubComp" list="competitionOptions" value="'+e(r.comp)+'"><datalist id="competitionOptions"><option value="挑战杯 · 大挑"><option value="互联网+"><option value="正大杯"><option value="数学建模竞赛"><option value="行业经济分析大赛"></datalist><div class="help">优先选择标准赛事；未收录赛事可直接填写临时名称，发布时会做基础名称规范化。</div></div>'+
+    '<div class="field"><label>目标竞赛 <span class="req">*</span></label><input class="input" id="pubComp" list="competitionOptions" value="'+e(r.comp)+'" onchange="syncCompetitionContext()"><datalist id="competitionOptions"><option value="挑战杯 · 大挑"><option value="互联网+"><option value="正大杯"><option value="数学建模竞赛"><option value="行业经济分析大赛"></datalist><div class="help">优先选择学校竞赛白名单；未收录赛事可直接填写自定义名称。</div></div>'+
+    '<div class="field"><label>竞赛时间 <span class="req">*</span></label><div class="competitionDatePair"><input class="input" id="pubCompetitionStart" type="date" value="'+competitionInput(r,"start")+'"><span>至</span><input class="input" id="pubCompetitionEnd" type="date" value="'+competitionInput(r,"end")+'"></div><div class="help" id="competitionTimeHint">竞赛时间与项目周期分开维护；Demo 预置日期仅用于字段演示。</div></div>'+
     '<div class="field"><label>招募标题（可选）</label><input class="input" id="pubTitle" maxlength="30" value="'+e(r.title)+'"><div class="help">不超过 30 字；留空时由系统根据竞赛和主要缺口生成。</div></div>'+
     '<div class="field"><label>学校 / 校区</label><input class="input" value="'+e(r.school)+' / '+e(r.campus)+'" disabled></div>'+
     '<div class="field"><label>学校 / 校区是否为不可放宽条件</label><select class="select" id="pubHard"><option value="0" '+(!r.hard?"selected":"")+'>否，可跨校区沟通</option><option value="1" '+(r.hard?"selected":"")+'>是，不满足不可申请 / 邀请</option></select></div>'+
@@ -1799,7 +1802,7 @@ function renderPublish(p){
     '<div class="field full"><label>具体任务 <span class="req">*</span></label><textarea class="textarea" id="pubTask" maxlength="500" placeholder="请填写加入后需要承担的具体任务">'+e(r.role.task)+'</textarea><div class="help">不超过 500 字；不要在公开描述中填写手机号、微信或 QQ。</div></div>'+
     '<div class="field"><label>关键技能（用于匹配） <span class="req">*</span></label><input class="input" id="pubSkills" value="'+e(r.role.skills.join("、"))+'" placeholder="如：Excel、数据分析、可视化"><div class="help">用于搜索、推荐和风险提示；未标注某项技能不会被系统直接禁止申请或邀请，实际能力由双方沟通确认。</div></div>'+
     '<div class="field"><label>最低每周投入 <span class="req">*</span></label><input class="input" id="pubHours" type="number" min="1" step="1" value="'+r.role.hours+'"></div>'+
-    '<div class="field"><label>项目开始日期 <span class="req">*</span></label><input class="input" id="pubStart" type="date" value="'+periodInput(r,"start")+'"></div>'+
+    '<div class="field"><label>项目开始日期 <span class="req">*</span></label><input class="input" id="pubStart" type="date" value="'+periodInput(r,"start")+'"><div class="help">项目周期用于组队投入与时间重叠校验，不等同于竞赛时间。</div></div>'+
     '<div class="field"><label>项目结束日期 <span class="req">*</span></label><input class="input" id="pubEnd" type="date" value="'+periodInput(r,"end")+'"></div>'+
     '<div class="field"><label>招募截止时间 <span class="req">*</span></label><input class="input" id="pubDeadline" type="datetime-local" value="'+deadlineInput(r)+'"></div>'+
     '<div class="field"><label>参赛目标 <span class="req">*</span></label><input class="input" id="pubTarget" value="'+e(r.target)+'"></div>'+
