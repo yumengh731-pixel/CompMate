@@ -1380,3 +1380,32 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   .groupEntryContact{flex-direction:column;align-items:stretch}
   .groupEntryContact .btn{width:100%}
 }
+
+/* ===== v22 prominent joined-member group entry ===== */
+.groupJoinHighlight {
+  margin: 18px 0 20px;
+  border-radius: 17px;
+  border: 1px solid #bddbc9;
+  background: linear-gradient(135deg,#f4fbf6,#ffffff);
+  padding: 19px;
+  box-shadow: 0 6px 20px rgba(24,92,52,.06);
+}
+.groupJoinHighlightTop {display:flex;align-items:start;justify-content:space-between;gap:12px}
+.groupJoinHighlightTop h3 {font-size:19px;margin:4px 0 6px;color:#203f2e}
+.groupJoinHighlightTop p {font-size:11px;line-height:1.7;color:#557260;margin:0;max-width:570px}
+.groupJoinEyebrow {font-size:9px;letter-spacing:.11em;font-weight:800;color:#488566}
+.groupJoinHighlightBottom {
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  border-top:1px solid #e1ece5;margin-top:13px;padding-top:13px;
+}
+.groupJoinHighlightBottom > div {display:flex;gap:9px;align-items:baseline;flex-wrap:wrap}
+.groupJoinHighlightBottom small {font-size:10px;color:#718376}
+.groupJoinHighlightBottom b {font-size:12px;margin-right:9px;color:#254d37}
+.groupJoinHighlightBottom button {white-space:nowrap}
+.groupDemoTag {font-size:10px!important;margin:12px 0 0!important;color:#8a7858!important}
+@media(max-width:600px) {
+  .groupJoinHighlight{padding:15px}
+  .groupJoinHighlightTop{flex-direction:column;gap:9px}
+  .groupJoinHighlightBottom{align-items:stretch;flex-direction:column}
+  .groupJoinHighlightBottom .btn{width:100%;min-height:42px}
+}
