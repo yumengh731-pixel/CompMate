@@ -1419,3 +1419,90 @@ button,input,textarea,select{font:inherit}button{cursor:pointer}.hidden{display:
   background:#fafbfc;
 }
 .joinedTeamPicker .filterChips{margin-top:9px}
+
+/* ===== V24 final readability + PRD alignment ===== */
+.competitionDatePair{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);
+  gap:8px;
+  align-items:center;
+}
+.competitionDatePair>span{
+  font-size:11px;
+  color:var(--muted);
+  text-align:center;
+}
+.joinedResult{
+  border-color:#cfe4d8;
+  background:#fbfefc;
+}
+
+/* Decision-making information must remain readable in desktop presentation / screen share. */
+.smartPanelHead span,
+.statusBoardHead span,
+.pageKicker,
+.homeSectionEyebrow,
+.groupJoinEyebrow{font-size:10px}
+.smartPanelHead p,
+.smartRecMain p,
+.teamResultMain>p,
+.personCapability p,
+.homeCandidate p,
+.cleanRecruitMain p,
+.progressHero p{font-size:12px;line-height:1.6}
+.smartRecMeta,
+.resultTopline,
+.homeCandidateHead span,
+.homeCandidateFoot>span,
+.reminderDate,
+.reminderContent strong,
+.categoryRibbon>span,
+.categoryRibbon button{font-size:11px}
+.smartRecTags span,
+.matchDims i,
+.resultTags span,
+.filterChips button,
+.teamFilterOptions button,
+.teamFilterLabel,
+.roleContextMain span,
+.roleRequirement span,
+.personIdentity span,
+.personIdentity small,
+.personCapability>span,
+.progressStats span,
+.capacityLegend span{font-size:10.5px}
+.teamResultFacts span,
+.personFit span{font-size:10px}
+.teamResultFacts b,
+.personFit b,
+.personCapability>b,
+.roleContextMain b,
+.roleRequirement b{font-size:12px}
+.matchBox b{font-size:11px}
+.matchBox small,
+.roleContextMain small,
+.smartRecReason small,
+.reminderContent small,
+.timeBoardMain small,
+.todoBoard p,
+.todoBoard em{font-size:10px;line-height:1.5}
+.smartRecReason span{font-size:10px}
+.smartRecReason b{font-size:12px}
+.statusNumbers span{font-size:10px}
+.timeBoardMain span{font-size:10px}
+.filterSearch input{font-size:13px}
+.teamFilterOptions button{min-height:36px}
+.progressSwitch button,
+.teamViewSwitch button{font-size:11px}
+.groupEntryStep p{font-size:12px}
+.groupEntryMessage{font-size:12px}
+.groupJoinHighlightTop p{font-size:12px}
+.groupJoinHighlightBottom small{font-size:11px}
+.groupJoinHighlightBottom b{font-size:13px}
+
+@media(max-width:520px){
+  .schoolCampusGroup .teamFilterOptions{grid-template-columns:1fr}
+  .competitionDatePair{grid-template-columns:1fr}
+  .competitionDatePair>span{text-align:left}
+  .teamFilterOptions button{min-height:40px}
+}
