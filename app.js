@@ -482,7 +482,7 @@ function homeDeadlineRows(){
     if(!recruitIsPublished(r)||deadlinePassed(r)||r.status==="ended"||r.status==="full"||byRecruit[r.id])return;
     rows.push({r:r,date:parseDeadline(r),label:r.status==="paused"?"当前暂停":"招募截止",sub:r.role.name+" · "+(r.status==="paused"?"已有关系仍可继续":"仍有 "+roleFree(r)+" 个名额"),tone:r.status==="paused"?"future":""});
   });
-  rows=rows.filter(function(x){return x.r&&x.date}).sort(function(a,b){return a.date-b.date}).slice(0,4);
+  rows=rows.filter(function(x){return x.r&&x.date}).sort(function(a,b){return a.date-b.date}).slice(0,3);
   return rows.length?rows.map(function(x){return reminderRow(deadlineShort(x.r),x.r.comp,x.label,x.sub,x.tone)}).join(""):'<div class="notice">当前没有与你相关的近期招募节点。</div>';
 }
 function relationNeedsMyAction(x){
@@ -512,17 +512,16 @@ function renderHome(p){
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
-  var recommended=recruits.filter(function(r){return !userAlreadyJoinedRecruit(r.id)&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&userAvailabilityOverlaps(r)&&remainingFor(r)>=r.role.hours&&userRecommendationQualified(r)}).slice(0,3);
+  var recommended=recruits.filter(function(r){return !userAlreadyJoinedRecruit(r.id)&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&userAvailabilityOverlaps(r)&&remainingFor(r)>=r.role.hours&&userRecommendationQualified(r)}).slice(0,2);
   var used=Math.max(0,currentWeekFormalUsed()+currentWeekReservedUsed());
   var pct=state.total?Math.min(100,Math.round(used/state.total*100)):0;
   var pendingAction=homeNextActionCard();
 
   p.innerHTML=
-    '<section class="brandBanner compactBrand"><div class="brandBannerMark">C</div><div class="brandBannerCopy"><b>竞旅 CompMate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 隐私联系方式</div></section>'+
-      '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的具体任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
+    '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的具体任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
     '<section class="homeWorkbench">'+
       '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
-      '<div class="smartRecommendList">'+(recommended.length?recommended.map(smartRecommendRow).join(""):'<div class="notice">暂无高质量推荐，可前往组队大厅主动筛选；系统不会用弱匹配填满推荐位。</div>')+'</div><div class="recommendFoot"><span>推荐仅辅助发现</span><small>不做综合匹配分，只展示可解释的匹配点与风险。</small></div></div>'+
+      '<div class="smartRecommendList">'+(recommended.length?recommended.map(smartRecommendRow).join(""):'<div class="notice">暂无高质量推荐，可前往组队大厅主动筛选。</div>')+'</div></div>'+
       '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><h2>与你相关的竞赛节点</h2><p>只展示正在找队、沟通 / 确认中或你已发布招募的近期节点。</p></div></div>'+
       '<div class="reminderTimeline">'+homeDeadlineRows()+'</div></aside>'+
     '</section>'+
@@ -533,10 +532,9 @@ function renderHome(p){
     '</section>';
 }
 function smartRecommendRow(r){
-  var timeOk=remainingFor(r)>=r.role.hours;
   var reasons=userMatchReasons(r);
-  return '<article class="smartRecommendRow" onclick="openRecruit('+r.id+')"><div class="smartRecMain"><div class="smartRecMeta">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(r.role.task)+'</p><div class="smartRecTags"><span>'+e(r.role.name)+'</span><span>'+r.role.hours+'h / 周</span><span>'+e(r.target)+'</span></div></div>'+
-    '<div class="smartRecReason"><span>为什么可能适合你</span><div class="matchDims">'+reasons.slice(0,2).map(function(x){return '<i>'+e(x)+'</i>'}).join("")+'</div><small>剩余 '+roleFree(r)+' 个名额</small></div><span class="smartRecArrow">→</span></article>';
+  return '<article class="smartRecommendRow" onclick="openRecruit('+r.id+')"><div class="smartRecMain"><div class="smartRecMeta">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(r.role.task)+'</p><div class="smartRecTags"><span>'+e(r.role.name)+'</span><span>'+r.role.hours+'h / 周</span></div></div>'+
+    '<div class="smartRecReason"><b>匹配：'+e(reasons.slice(0,2).join(" · ")||"建议查看详情")+'</b><small>'+e(r.target)+' · 剩余 '+roleFree(r)+' 个名额</small></div><span class="smartRecArrow">→</span></article>';
 }
 function reminderRow(date,comp,label,sub,tone){
   return '<div class="reminderRow '+(tone||"")+'"><div class="reminderDate">'+date+'</div><div class="reminderLine"><span></span></div><div class="reminderContent"><b>'+e(comp)+'</b><strong>'+e(label)+'</strong><small>'+e(sub)+'</small></div></div>';
@@ -551,7 +549,7 @@ function renderExplore(p){
     if(owned){state.activeRoleRecruitId=owned.id;r=owned}
   }
   p.innerHTML=
-    '<section class="exploreHeader"><div><span class="pageKicker">EXPLORE</span><h2>组队大厅</h2><p>主动搜索与筛选是主路径；在“找队伍 / 找队友”之间切换，推荐只帮助你更快缩小范围。</p></div></section>'+
+    '<section class="exploreHeader"><div><h2>组队大厅</h2></div></section>'+
     '<div class="exploreSwitch"><button class="'+(isTeams?"active":"")+'" onclick="state.mode=\'teams\';render()"><b>找队伍</b><span>我要加入一支队伍</span></button><button class="'+(!isTeams?"active":"")+'" onclick="state.mode=\'people\';render()"><b>找队友</b><span>我的队伍还缺人</span></button></div>'+
     (isTeams?renderTeamSearch():renderPeopleSearch(r));
 }
@@ -589,7 +587,7 @@ function renderTeamSearch(){
       '<div class="teamFilterGroup schoolCampusGroup"><span class="teamFilterLabel">学校 / 校区</span><div class="teamFilterOptions">'+teamDimensionOptions("schoolCampus",teamFilterValues("schoolCampus"))+'</div></div>'+
     '</div><div class="filterChips auxiliaryFilters"><span class="auxiliaryLabel">辅助条件</span>'+
     filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
-    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div><span>按竞赛、角色、学校 / 校区筛选</span></div>'+
+    '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div></div>'+
     '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色、学校 / 校区及其他非核心筛选；必须满足的条件仍保留。"))+'</div>';
 }
 function renderPeopleSearch(r){
@@ -599,7 +597,7 @@ function renderPeopleSearch(r){
     '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.peopleFilters.query||"")+'" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div><div class="filterChips">'+
     filterButton("people","time","时间满足",state.peopleFilters.time)+filterButton("people","output","有相关产出",state.peopleFilters.output)+filterButton("people","campus","同校区",state.peopleFilters.campus)+filterButton("people","target","目标一致",state.peopleFilters.target)+'</div></section>'+
     '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("people","data","数据分析")+categoryButton("people","front","前端开发")+categoryButton("people","research","用户调研")+categoryButton("people","design","视觉设计")+'</div>'+
-    '<div class="resultsHead"><div><b>候选人</b><span id="resultCount">'+list.length+' 人</span></div><span>学校认证 ≠ 能力认证</span></div>'+
+    '<div class="resultsHead"><div><b>候选人</b><span id="resultCount">'+list.length+' 人</span></div></div>'+
     '<div id="hallList" class="peopleResultList">'+(list.map(personResultRow).join("")||relaxEmpty("people","没有合适候选人","可以一键放宽时间、校区、目标和方向筛选；必须满足的条件仍会在邀请前校验。"))+'</div>';
 }
 function filterButton(kind,key,label,on){
@@ -756,12 +754,15 @@ function openJoinedTeamFromResult(id){
 function teamResultRow(r){
   var st=recruitDisplayStatus(r),free=roleFree(r),risk=r.role.hours>remainingFor(r),reasons=userMatchReasons(r),joined=userAlreadyJoinedRecruit(r.id);
   var displayStatus=joined?["已加入","green"]:st;
-  return '<article class="teamResult '+(joined?"joinedResult":"")+'" onclick="openRecruit('+r.id+')"><div class="teamResultMain"><div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div><h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p><div class="resultTags"><span class="strong">'+e(r.role.name)+'</span>'+r.role.skills.slice(0,3).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div></div><div class="teamResultFacts"><div><span>时间</span><b>'+r.role.hours+'h / 周</b></div><div><span>目标</span><b>'+e(r.target)+'</b></div><div><span>名额</span><b>'+free+' / '+r.role.capacity+'</b></div></div><div class="teamResultDecision"><span class="status '+displayStatus[1]+'">'+displayStatus[0]+'</span><div class="matchBox"><b>'+(joined?"当前状态":"匹配提示")+'</b><small>'+(joined?"你已是该队正式成员，可直接进入我的队伍查看任务和入群信息。":e(reasons.join(" · ")||"建议查看详情进一步判断"))+'</small>'+(!joined&&risk?'<small class="riskText">当前时间可能不足</small>':'')+'</div><button class="btn '+(joined?"secondary":"primary")+'" onclick="event.stopPropagation();'+(joined?"openJoinedTeamFromResult("+r.id+")":"openRecruit("+r.id+")")+'">'+(joined?"查看我的队伍":"查看详情")+'</button></div></article>';
+  var summary=e(r.role.name)+" · "+r.role.hours+"h / 周 · "+e(r.target)+" · 剩余 "+free+" 名";
+  var match=joined?"你已是该队正式成员":(reasons.slice(0,2).join(" · ")||"建议查看详情进一步判断");
+  return '<article class="teamResult '+(joined?"joinedResult":"")+'" onclick="openRecruit('+r.id+')"><div class="teamResultMain"><div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div><h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p><div class="resultSummary">'+summary+'</div><div class="matchLine">匹配：'+e(match)+(risk&&!joined?' · <span class="riskText">当前时间可能不足</span>':'')+'</div></div><div class="teamResultDecision"><span class="status '+displayStatus[1]+'">'+displayStatus[0]+'</span><button class="btn '+(joined?"secondary":"primary")+'" onclick="event.stopPropagation();'+(joined?"openJoinedTeamFromResult("+r.id+")":"openRecruit("+r.id+")")+'">'+(joined?"查看我的队伍":"查看详情")+'</button></div></article>';
 }
 function personResultRow(c){
   var r=activeManagedRecruit(),fit=candidateFit(c,r),hard=candidateMeetsHardRules(c,r),gap=candidateSkillGap(c,r),existing=activeInviteForCandidate(r.id,c.id);
   var action=existing?"state.progressView='relations';go('progress')":"inviteCandidate("+c.id+")";
-  return '<article class="personResult" onclick="openCandidate('+c.id+')"><div class="personIdentity"><div class="personAvatar">'+e(c.name.charAt(0))+'</div><div><h3>'+e(c.name)+'</h3><span>'+e(c.grade)+' · '+e(c.major)+'</span><small>'+e(c.campus)+' · 学校已认证</small></div></div><div class="personCapability"><span>可承担</span><b>'+e(c.roles.join(" / "))+'</b><div class="resultTags">'+c.skills.slice(0,4).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div><p>'+e(c.exp)+'</p></div><div class="personFit"><div><span>该周期可投入</span><b>'+remainingLabel(fit.available)+' / 周</b></div><div><span>目标</span><b>'+e(c.target)+'</b></div><div class="matchBox"><b>针对 '+e(r.role.name)+'</b><small>'+fit.dims.join(" · ")+'</small>'+(!fit.timeOk?'<small class="riskText">低于岗位要求 '+r.role.hours+'h / 周</small>':'')+(gap.length?'<small class="riskText">'+e(skillGapShort(gap))+'</small>':'')+(!hard.ok?'<small class="riskText">'+e(hard.reason)+'</small>':'')+'</div><button class="btn primary" '+((hard.ok||existing)?'':'disabled')+' onclick="event.stopPropagation();'+action+'">'+(existing?"查看进度":hard.ok?"邀请沟通":"不可邀请")+'</button></div></article>';
+  var match=fit.dims.slice(0,2).join(" · ");
+  return '<article class="personResult" onclick="openCandidate('+c.id+')"><div class="personIdentity"><div class="personAvatar">'+e(c.name.charAt(0))+'</div><div><h3>'+e(c.name)+'</h3><span>'+e(c.grade)+' · '+e(c.major)+'</span><small>'+e(c.campus)+' · 学校已认证</small></div></div><div class="personCapability"><b>'+e(c.roles.join(" / "))+'</b><div class="resultTags">'+c.skills.slice(0,3).map(function(x){return '<span>'+e(x)+'</span>'}).join("")+'</div><div class="candidateSummary">'+remainingLabel(fit.available)+' / 周 · '+e(c.target)+'</div><div class="matchLine">匹配：'+e(match||"建议查看详情")+'</div></div><div class="personFit"><button class="btn primary" '+((hard.ok||existing)?'':'disabled')+' onclick="event.stopPropagation();'+action+'">'+(existing?"查看进度":hard.ok?"邀请沟通":"不可邀请")+'</button>'+(!fit.timeOk||gap.length||!hard.ok?'<small class="riskText">'+e(!hard.ok?hard.reason:!fit.timeOk?"时间低于岗位要求":skillGapShort(gap))+'</small>':'')+'</div></article>';
 }
 
 /* RECRUITMENT DETAIL / APPLY */
@@ -983,10 +984,10 @@ function renderProgress(p){
   var communication=state.relationships.filter(function(x){return x.status==="communication"}).length;
   var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
   var joined=Math.max(state.relationships.filter(function(x){return x.status==="joined"}).length,state.joined?1:0);
-  p.innerHTML=demoBar()+
-    '<section class="progressHero"><div><span class="pageKicker">TEAMING PROGRESS</span><h2>组队中心</h2><p>“申请 / 邀请中心”和“我的队伍”统一归档，但仍保持两类页面职责清晰。</p></div><div class="progressStats"><div><b>'+pending+'</b><span>待处理</span></div><div><b>'+communication+'</b><span>待沟通</span></div><div><b>'+confirming+'</b><span>确认中</span></div><div><b>'+joined+'</b><span>已组队</span></div></div></section>'+
+  p.innerHTML=
+    '<section class="progressHero"><div><h2>组队中心</h2></div><div class="progressStats"><div><b>'+pending+'</b><span>待处理</span></div><div><b>'+communication+'</b><span>待沟通</span></div><div><b>'+confirming+'</b><span>确认中</span></div><div><b>'+joined+'</b><span>已组队</span></div></div></section>'+
     '<div class="progressSwitch"><button class="'+(state.progressView==="relations"?"active":"")+'" onclick="state.progressView=\'relations\';render()">关系进度</button><button class="'+(state.progressView==="team"?"active":"")+'" onclick="state.progressView=\'team\';render()">我的队伍</button></div>'+
-    (state.progressView==="relations"?progressRelations():progressTeam());
+    (state.progressView==="relations"?progressRelations():progressTeam())+demoBar();
 }
 function refreshRelationExpiry(x){
   if(!x||!x.expiresAt||Date.now()<x.expiresAt)return;
@@ -1528,7 +1529,6 @@ function renderJoinedTeam(){
     '</div></div>'+
     '<div class="section"><h3 class="sectionTitle">我的角色与任务</h3><div class="roleBox"><b>'+e(r.role.name)+'</b><p class="subtitle">'+e(r.role.task)+'</p><div class="badges">'+badges(r.role.skills)+'<span class="badge blue">原约定 '+r.role.hours+'h / 周</span></div></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">当前岗位剩余缺口</h3>'+(free?'<span class="status warn">'+e(r.role.name)+' · '+free+' 人</span>':'<span class="status green">当前岗位已补齐</span>')+'</div><p class="subtitle">其他角色是否重新开放招募由队长决定，历史申请不会自动恢复。</p></div>'+
-    '<div class="section groupJoinSection"><h3 class="sectionTitle">队长的入群说明</h3><div class="groupJoinCard"><div><span class="meta">仅正式成员可见</span><p>'+e(r.groupNote||"请使用此前双方已授权的联系方式联系队长，说明姓名与队内角色，由队长核对后邀请进群。")+'</p><div class="meta">平台不直接添加外部群成员；如尚未入群，可使用页面顶部的联系入口。</div></div><button class="btn secondary" onclick="contactCaptainForGroup()">查看入群步骤</button></div></div>'+
     '<div class="actions"><button class="btn danger" onclick="leaveTeam()">退出队伍</button><button class="btn secondary" onclick="openReport(\'team\','+r.id+',\''+e(teamName)+'\')">举报问题</button></div></div>';
 }
 function currentJoinedGroupEntry(){
