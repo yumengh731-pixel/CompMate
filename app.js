@@ -9,8 +9,8 @@ var state={
   route:"home",
   teamFiltersExpanded:false,
   peopleFiltersExpanded:false,
-  calendarYear:new Date().getFullYear(),
-  calendarMonth:new Date().getMonth(),
+  calendarYear:2026,
+  calendarMonth:10,
   mode:"teams",
   selectedRecruit:1,
   selectedCandidate:11,
@@ -350,13 +350,13 @@ function mNav(r,label){
 }
 function shell(){
   if(!state.loggedIn){
-    byId("app").innerHTML='<div class="publicShell"><header class="publicHeader"><div class="brand"><div class="brandMark">C</div><div><div class="brandName">GDUTmate</div><div class="brandSub">大学生竞赛组队平台</div></div></div><span>公开招募预览</span></header><main class="publicMain"><div id="page"></div></main></div>';
+    byId("app").innerHTML='<div class="publicShell"><header class="publicHeader"><div class="brand"><div class="brandMark">G</div><div><div class="brandName">GDUTmate</div><div class="brandSub">大学生竞赛组队平台</div></div></div><span>公开招募预览</span></header><main class="publicMain"><div id="page"></div></main></div>';
     return;
   }
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   byId("app").innerHTML=
     '<div class="shell"><aside class="sidebar">'+
-      '<div class="brand"><div class="brandMark">C</div><div><div class="brandName">GDUTmate</div><div class="brandSub">大学生竞赛组队平台</div></div></div>'+
+      '<div class="brand"><div class="brandMark">G</div><div><div class="brandName">GDUTmate</div><div class="brandSub">大学生竞赛组队平台</div></div></div>'+
       '<nav class="nav">'+navButton("home","首页")+navButton("explore","寻找")+navButton("progress","组队 / 进度",pending)+navButton("profile","我的")+'</nav>'+
       '<div class="sideBottom"><div class="identity"><span class="dot"></span>微信登录 · 演示账号<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div></div>'+
     '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">GDUTmate</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><span class="demoDataPill">Demo · 示例数据</span></div></header><div id="page"></div></main></div>'+
