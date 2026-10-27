@@ -523,26 +523,27 @@ function homeTeamCount(){
   return Object.keys(groups).length;
 }
 function renderHome(p){
-  var posts=recruits.filter(function(r){return !state.blockedRecruitIds[r.id]&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)}).slice(0,4);
+  var posts=recruits.filter(function(r){return !state.blockedRecruitIds[r.id]&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)}).slice(0,3);
   var peers=candidates.filter(function(c){return !state.blocked[c.id]}).slice(0,3);
-  var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
-  var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
-  var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
-  p.innerHTML=
-    '<section class="brandBanner compactBrand gd-homeBrand"><div class="brandBannerMark">G</div><div class="brandBannerCopy"><b>GDUTmate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 联系方式授权</div></section>'+
-    '<section class="homeCoreEntry gd-homeSearchEntry">'+
-      '<button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的具体任务</small><em>→</em></button>'+
-      '<button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button>'+
-    '</section>'+
-    '<section class="gd-homeFeedGrid"><div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队伍招募帖子</h2><p>队伍名称、竞赛与招募岗位一目了然</p></div><button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">查看全部 →</button></div><div class="gd-homeFeedList">'+
-    (posts.length?posts.map(homeTeamPost).join(""):'<div class="notice">暂无正在招募的队伍</div>')+'</div></div>'+
-    '<div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队友展示</h2><p>具备组队意向的同学 · 示例资料</p></div><button class="btn text" onclick="state.mode=\'people\';go(\'explore\')">找队友 →</button></div><div class="gd-homeFeedList">'+
-    peers.map(homePeerPost).join("")+'</div></div></section>'+
-    '<section class="homeStatusGrid gd-homeUtilities" aria-label="常用功能">'+
-      '<button type="button" class="gd-homeUtility gd-calendarEntry" onclick="go(\'calendar\')"><span class="gd-utilityTitle">比赛日历</span><b>查看比赛日程</b><p>查看开始、截止日期，按比赛寻找队伍</p><em>打开日历 →</em></button>'+
-      '<button type="button" class="gd-homeUtility" onclick="openHomeProgress(\'team\')"><span class="gd-utilityTitle">我的队伍</span><b>'+homeTeamCount()+' 支队伍</b><p>查看已加入的队伍，管理招募与成员</p><em>进入我的队伍 →</em></button>'+
-      homeNextActionCard()+
-    '</section>';
+  var pending=state.relationships.filter(relationNeedsMyAction).length;
+  var teams=homeTeamCount();
+  p.innerHTML='<div class="gd-referenceHome">'+
+    '<section class="gd-referenceHero"><div><span class="gd-heroOverline">GDUT / TEAM UP</span><h2>让每一份能力，<br>找到合适的队伍。</h2><p>发现竞赛伙伴，开启共同的参赛计划。</p><div class="actions"><button class="btn primary" onclick="state.mode=\'teams\';go(\'explore\')">寻找队伍</button><button class="btn secondary" onclick="state.mode=\'people\';go(\'explore\')">寻找队友</button></div></div>'+
+    '<div class="gd-heroCounts"><button onclick="openHomeProgress(\'relations\',\'all\')"><b>'+pending+'</b><span>待处理事项</span></button><button onclick="openHomeProgress(\'team\')"><b>'+teams+'</b><span>我的队伍</span></button></div></section>'+
+    '<section class="gd-referenceLinks" aria-label="常用功能">'+
+    '<button type="button" onclick="go(\'calendar\')"><span class="gd-linkIcon" aria-hidden="true">▦</span><b>比赛日历</b><small>查看比赛日程</small><i aria-hidden="true">↗</i></button>'+
+    '<button type="button" onclick="openHomeProgress(\'team\')"><span class="gd-linkIcon" aria-hidden="true">◎</span><b>我的队伍</b><small>招募与成员管理</small><i aria-hidden="true">↗</i></button>'+
+    '<button type="button" onclick="openHomeProgress(\'relations\',\'all\')"><span class="gd-linkIcon" aria-hidden="true">↗</span><b>待办</b><small>'+pending+' 条待处理事项</small><i aria-hidden="true">↗</i></button></section>'+
+    '<div class="gd-referenceSectionHead"><h2>队伍推荐</h2><button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">查看全部 →</button></div><div class="gd-referencePostGrid">'+
+    (posts.length?posts.map(referenceTeamCard).join(""):empty("暂无正在招募的队伍","可前往寻找页面浏览其他队伍。"))+'</div>'+
+    '<div class="gd-referenceSectionHead"><h2>队友推荐</h2><button class="btn text" onclick="state.mode=\'people\';go(\'explore\')">查看全部 →</button></div><div class="gd-referencePostGrid">'+
+    (peers.length?peers.map(referencePersonCard).join(""):empty("暂无队友推荐","可前往寻找页面查看队友。"))+'</div></div>';
+}
+function referenceTeamCard(r){
+  return '<article class="gd-referencePost"><div class="gd-referencePostTop"><span>队伍招募</span><span aria-hidden="true">↗</span></div><h3>'+e(r.comp)+'</h3><p class="gd-referenceTeamName">队伍名称：'+e(r.teamName||r.comp+"参赛队")+'</p><p class="gd-referenceDate">招募截止：'+e(r.deadline)+'</p><div class="gd-referencePostRow"><span>招募岗位</span><b>'+e(r.role.name)+'</b></div><div class="gd-referencePostRow"><span>能力要求</span><div class="badges">'+badges(r.role.skills)+'</div></div><button class="gd-referenceCardLink" onclick="openRecruit('+r.id+')" aria-label="查看'+e(r.teamName||r.comp)+'招募详情"></button></article>';
+}
+function referencePersonCard(c){
+  return '<article class="gd-referencePost"><div class="gd-referencePersonHead"><span class="gd-referenceAvatar" aria-hidden="true">'+e(c.name.charAt(0))+'</span><h3>'+e(c.name)+'</h3><span class="gd-referencePostArrow" aria-hidden="true">↗</span></div><div class="gd-referencePostRow"><span>意向岗位</span><b>'+e(c.roles.join("、"))+'</b></div><div class="gd-referencePostRow"><span>能力标签</span><div class="badges">'+badges(c.skills)+'</div></div><button class="gd-referenceCardLink" onclick="openCandidate('+c.id+')" aria-label="查看'+e(c.name)+'队友详情"></button></article>';
 }
 function renderCalendar(p){
   var events=getCompetitionCalendarEvents();
@@ -638,8 +639,8 @@ function teamFilterValues(kind){
 }
 function teamDimensionButton(key,value,label){
   var active=(state.teamFilters[key]||"")===value;
-  var safeValue=String(value).replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-  return '<button class="'+(active?"active":"")+'" onclick="setTeamDimension(\''+key+'\',\''+safeValue+'\')">'+e(label)+'</button>';
+  var action="setTeamDimension("+JSON.stringify(key)+","+JSON.stringify(value)+")";
+  return '<button class="'+(active?"active":"")+'" onclick="'+e(action)+'">'+e(label)+'</button>';
 }
 function teamDimensionOptions(key,values){
   var html=teamDimensionButton(key,"","全部");
@@ -991,7 +992,8 @@ function continuePendingApply(){
 /* CANDIDATE / INVITE */
 function openCandidate(id){if(state.route!=="candidate")state.candidateReturn=state.route;state.selectedCandidate=id;state.route="candidate";render();window.scrollTo(0,0)}
 function renderCandidate(p){
-  var c=candidates.filter(function(x){return x.id===state.selectedCandidate})[0]||candidates[0];
+  var c=candidates.filter(function(x){return x.id===state.selectedCandidate})[0];
+  if(!c){p.innerHTML=empty("该队友帖子不存在","请返回寻找页面查看其他队友。");return;}
   var r=activeManagedRecruit(),fit=candidateFit(c,r),hard=candidateMeetsHardRules(c,r),skillGap=candidateSkillGap(c,r),existingInvite=activeInviteForCandidate(r.id,c.id);
   p.innerHTML='<button class="btn text" onclick="state.mode=\'people\';go(state.candidateReturn||\'explore\')">← 返回'+(state.candidateReturn==="home"?'首页':'寻找 · 找队友')+'</button><div class="layout"><div class="panel"><div class="profileHero"><div class="avatar">'+e(c.name.charAt(0))+'</div><div><div class="bigTitle" style="margin:0">'+e(c.name)+'</div><div class="meta">广东工业大学 · '+e(c.campus)+' · '+e(c.grade)+' · '+e(c.major)+'</div></div><span class="verifiedTag">广东工业大学</span></div>'+
     '<div class="section"><h3 class="sectionTitle">可承担任务与技能</h3><div class="badges">'+c.roles.map(function(x){return '<span class="badge blue">'+e(x)+'</span>'}).join("")+badges(c.skills)+'</div></div>'+
