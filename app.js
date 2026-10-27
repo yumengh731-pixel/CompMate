@@ -9,8 +9,9 @@ var state={
   route:"home",
   teamFiltersExpanded:false,
   peopleFiltersExpanded:false,
-  calendarYear:2026,
-  calendarMonth:10,
+  calendarYear:new Date().getFullYear(),
+  calendarMonth:new Date().getMonth(),
+  calendarInitialized:false,
   mode:"teams",
   selectedRecruit:1,
   selectedCandidate:11,
@@ -516,8 +517,15 @@ function renderHome(p){
   var posts=recruits.filter(function(r){return !state.blockedRecruitIds[r.id]&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)}).slice(0,4);
   var peers=candidates.filter(function(c){return !state.blocked[c.id]}).slice(0,3);
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
+  var calendarEvents=getCompetitionCalendarEvents();
+  if(!state.calendarInitialized){
+    var nowKey=gdCalendarISO(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
+    var nearest=calendarEvents.filter(function(x){return x.end>=nowKey})[0]||calendarEvents[0];
+    if(nearest){var bits=nearest.start.split("-");state.calendarYear=Number(bits[0]);state.calendarMonth=Number(bits[1])-1;}
+    state.calendarInitialized=true;
+  }
   p.innerHTML='<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>按比赛和招募岗位筛选</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>浏览同学的技能与组队意向</small><em>→</em></button></section>'+
-    homeCompetitionCalendar(getCompetitionCalendarEvents())+
+    homeCompetitionCalendar(calendarEvents)+
     '<section class="gd-homeFeedGrid"><div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队伍招募帖子</h2><p>队伍名称、竞赛与招募岗位一目了然</p></div><button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">查看全部 →</button></div><div class="gd-homeFeedList">'+
     (posts.length?posts.map(homeTeamPost).join(""):'<div class="notice">暂无正在招募的队伍</div>')+'</div></div>'+
     '<div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队友展示</h2><p>具备组队意向的同学 · 示例资料</p></div><button class="btn text" onclick="state.mode=\'people\';go(\'explore\')">找队友 →</button></div><div class="gd-homeFeedList">'+
@@ -678,17 +686,13 @@ function categoryButton(kind,key,label){
 function toggleFilter(kind,key,b){
   var target=kind==="team"?state.teamFilters:state.peopleFilters;
   target[key]=!target[key];
-  b.classList.toggle("on",target[key]);
-  applyExploreFilters();
+  render();
 }
 function setCategory(kind,key,b){
   var target=kind==="team"?state.teamFilters:state.peopleFilters;
   var prop=kind==="team"?"category":"capability";
   target[prop]=target[prop]===key?"":key;
-  var bar=b.parentNode;
-  Array.prototype.forEach.call(bar.querySelectorAll("button"),function(x){x.classList.remove("active")});
-  if(target[prop])b.classList.add("active");
-  applyExploreFilters();
+  render();
 }
 function teamCategory(r){
   if(r.category)return r.category;
