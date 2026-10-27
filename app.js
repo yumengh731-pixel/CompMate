@@ -621,27 +621,52 @@ function setTeamDimension(key,value){
   state.teamFilters[key]=value;
   render();
 }
+function teamAppliedFilters(){
+  var f=state.teamFilters,out=[];
+  if(f.competition)out.push("竞赛："+f.competition);
+  if(f.roleTask)out.push("岗位："+f.roleTask);
+  if(f.schoolCampus)out.push("校区："+f.schoolCampus.replace("|"," · "));
+  if(f.active)out.push("仅看招募中");
+  if(f.award)out.push("冲奖目标");
+  return out;
+}
+function toggleExploreFold(kind){
+  if(kind==="team")state.teamFiltersExpanded=!state.teamFiltersExpanded;
+  else state.peopleFiltersExpanded=!state.peopleFiltersExpanded;
+  render();
+}
+function clearCompetitionJump(){state.teamFilters.competition="";render();}
 function renderTeamSearch(){
   var list=filteredTeams(state.teamFilters.query||"");
-  return '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.teamFilters.query||"")+'" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div>'+
-    '<div class="teamFilterGroups">'+
+  var filters=teamAppliedFilters(),opened=state.teamFiltersExpanded;
+  return '<section class="filterPanel gd-collapsibleFilter"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.teamFilters.query||"")+'" placeholder="搜索竞赛、角色、任务或技能" oninput="applyExploreFilters()"></div>'+
+    '<div class="gd-filterFoldBar"><div class="gd-filterSummary"><span>已选条件</span>'+filters.map(function(x){return '<span class="gd-filterPill">'+e(x)+'</span>'}).join("")+
+    (state.teamFilters.competition?'<button class="gd-clearCompetition" onclick="clearCompetitionJump()">清除比赛 ×</button>':'')+'</div>'+
+    '<button class="gd-foldButton" onclick="toggleExploreFold(\'team\')" aria-expanded="'+opened+'">'+(opened?"收起筛选 −":"展开筛选 ＋")+'</button></div>'+
+    (opened?'<div class="teamFilterGroups">'+
       '<div class="teamFilterGroup"><span class="teamFilterLabel">竞赛</span><div class="teamFilterOptions">'+teamDimensionOptions("competition",teamFilterValues("competition"))+'</div></div>'+
       '<div class="teamFilterGroup"><span class="teamFilterLabel">角色</span><div class="teamFilterOptions">'+teamDimensionOptions("roleTask",teamFilterValues("roleTask"))+'</div></div>'+
       '<div class="teamFilterGroup schoolCampusGroup"><span class="teamFilterLabel">学校 / 校区</span><div class="teamFilterOptions">'+teamDimensionOptions("schoolCampus",teamFilterValues("schoolCampus"))+'</div></div>'+
     '</div><div class="filterChips auxiliaryFilters"><span class="auxiliaryLabel">辅助条件</span>'+
-    filterButton("team","time","时间可行",state.teamFilters.time)+filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div></section>'+
+    filterButton("team","active","仅看招募中",state.teamFilters.active)+filterButton("team","award","冲奖目标",state.teamFilters.award)+'</div>':'')+'</section>'+
     '<div class="resultsHead"><div><b>队伍招募</b><span id="resultCount">'+list.length+' 条结果</span></div></div>'+
-    '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","没有严格匹配结果","可以一键放宽竞赛、角色、学校 / 校区及其他非核心筛选；必须满足的条件仍保留。"))+'</div>';
+    '<div id="hallList" class="teamResultList">'+(list.map(teamResultRow).join("")||relaxEmpty("team","暂无符合条件的队伍","你可以调整比赛或其他筛选条件。"))+'</div>';
 }
 function renderPeopleSearch(r){
-  if(!r||!canManageRecruit(r)||!recruitIsPublished(r)||r.status==="full"||r.status==="ended"||deadlinePassed(r))return '<div class="panel empty"><h3>当前没有可继续邀请的招募缺口</h3><p>找队友必须绑定一条已经发布的招募。未发布草稿只能继续编辑，不能向候选人发送邀请。</p><button class="btn primary" onclick="beginPublish(true)">继续 / 发布招募</button></div>';
-  var list=filteredCandidates(state.peopleFilters.query||"");
-  return '<section class="roleContext"><div class="roleContextMain"><span>当前招募岗位</span><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><small>'+e(r.role.task)+' · 最低 '+r.role.hours+'h / 周</small></div><div class="roleRequirement"><span>关键技能 · 用于匹配</span><b>'+e(r.role.skills.join(" · "))+'</b></div><button class="btn secondary" onclick="openRolePicker()">切换岗位</button></section>'+
-    '<section class="filterPanel"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.peopleFilters.query||"")+'" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div><div class="filterChips">'+
-    filterButton("people","time","时间满足",state.peopleFilters.time)+filterButton("people","output","有相关产出",state.peopleFilters.output)+filterButton("people","campus","同校区",state.peopleFilters.campus)+filterButton("people","target","目标一致",state.peopleFilters.target)+'</div></section>'+
-    '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("people","data","数据分析")+categoryButton("people","front","前端开发")+categoryButton("people","research","用户调研")+categoryButton("people","design","视觉设计")+'</div>'+
+  if(!r||!canManageRecruit(r)||!recruitIsPublished(r)||r.status==="full"||r.status==="ended"||deadlinePassed(r))return '<div class="panel empty"><h3>当前没有可继续邀请的招募缺口</h3><p>找队友必须绑定一条已经发布的招募，未发布草稿可先继续编辑。</p><button class="btn primary" onclick="beginPublish(true)">继续 / 发布招募</button></div>';
+  var list=filteredCandidates(state.peopleFilters.query||""),opened=state.peopleFiltersExpanded,selected=[];
+  if(state.peopleFilters.capability)selected.push("方向："+state.peopleFilters.capability);
+  if(state.peopleFilters.output)selected.push("有相关产出");
+  if(state.peopleFilters.campus)selected.push("同校区");
+  if(state.peopleFilters.target)selected.push("目标一致");
+  return '<section class="roleContext"><div class="roleContextMain"><span>当前招募岗位</span><b>'+e(r.comp)+' · '+e(r.role.name)+'</b><small>'+e(r.role.task)+'</small></div><div class="roleRequirement"><span>关键技能</span><b>'+e(r.role.skills.join(" · "))+'</b></div><button class="btn secondary" onclick="openRolePicker()">切换岗位</button></section>'+
+    '<section class="filterPanel gd-collapsibleFilter"><div class="filterSearch"><span>⌕</span><input id="searchBox" value="'+e(state.peopleFilters.query||"")+'" placeholder="搜索技能、专业、经历或任务" oninput="applyExploreFilters()"></div>'+
+    '<div class="gd-filterFoldBar"><div class="gd-filterSummary"><span>已选条件</span>'+selected.map(function(x){return '<span class="gd-filterPill">'+e(x)+'</span>'}).join("")+'</div>'+
+    '<button class="gd-foldButton" onclick="toggleExploreFold(\'people\')" aria-expanded="'+opened+'">'+(opened?"收起筛选 −":"展开筛选 ＋")+'</button></div>'+
+    (opened?'<div class="filterChips">'+filterButton("people","output","有相关产出",state.peopleFilters.output)+filterButton("people","campus","同校区",state.peopleFilters.campus)+filterButton("people","target","目标一致",state.peopleFilters.target)+'</div>'+
+    '<div class="categoryRibbon"><span>按方向：</span>'+categoryButton("people","data","数据分析")+categoryButton("people","front","前端开发")+categoryButton("people","research","用户调研")+categoryButton("people","design","视觉设计")+'</div>':'')+'</section>'+
     '<div class="resultsHead"><div><b>候选人</b><span id="resultCount">'+list.length+' 人</span></div></div>'+
-    '<div id="hallList" class="peopleResultList">'+(list.map(personResultRow).join("")||relaxEmpty("people","没有合适候选人","可以一键放宽时间、校区、目标和方向筛选；必须满足的条件仍会在邀请前校验。"))+'</div>';
+    '<div id="hallList" class="peopleResultList">'+(list.map(personResultRow).join("")||relaxEmpty("people","没有合适候选人","可以适当放宽校区、目标和方向筛选。"))+'</div>';
 }
 function filterButton(kind,key,label,on){
   return '<button class="'+(on?"on":"")+'" onclick="toggleFilter(\''+kind+'\',\''+key+'\',this)">'+e(label)+'</button>';
@@ -690,7 +715,7 @@ function filteredTeams(q){
     if(state.teamFilters.schoolCampus&&(r.school+"|"+r.campus)!==state.teamFilters.schoolCampus)return false;
     if(state.teamFilters.campus&&r.campus!==state.userCampus)return false;
     if(state.teamFilters.time&&remainingFor(r)<r.role.hours)return false;
-    if(state.teamFilters.active&&(r.status!=="active"||deadlinePassed(r)))return false;
+    if(state.teamFilters.active&&(r.status!=="active"||deadlinePassed(r)||roleFree(r)<=0))return false;
     if(state.teamFilters.award&&!isAwardGoal(r.target))return false;
     if(state.teamFilters.category&&teamCategory(r)!==state.teamFilters.category)return false;
     return true;
@@ -795,11 +820,13 @@ function openJoinedTeamFromResult(id){
   state.progressView="team";state.teamView="joined";go("progress");
 }
 function teamResultRow(r){
-  var st=recruitDisplayStatus(r),free=roleFree(r),risk=r.role.hours>remainingFor(r),reasons=userMatchReasons(r),joined=userAlreadyJoinedRecruit(r.id);
-  var displayStatus=joined?["已加入","green"]:st;
-  var summary=e(r.role.name)+" · "+r.role.hours+"h / 周 · "+e(r.target)+" · 剩余 "+free+" 名";
-  var match=joined?"你已是该队正式成员":(reasons.slice(0,2).join(" · ")||"建议查看详情进一步判断");
-  return '<article class="teamResult '+(joined?"joinedResult":"")+'" onclick="openRecruit('+r.id+')"><div class="teamResultMain"><div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div><h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p><div class="resultSummary">'+summary+'</div><div class="matchLine">匹配：'+e(match)+(risk&&!joined?' · <span class="riskText">当前时间可能不足</span>':'')+'</div></div><div class="teamResultDecision"><span class="status '+displayStatus[1]+'">'+displayStatus[0]+'</span><button class="btn '+(joined?"secondary":"primary")+'" onclick="event.stopPropagation();'+(joined?"openJoinedTeamFromResult("+r.id+")":"openRecruit("+r.id+")")+'">'+(joined?"查看我的队伍":"查看详情")+'</button></div></article>';
+  var st=recruitDisplayStatus(r),free=roleFree(r),joined=userAlreadyJoinedRecruit(r.id),ds=joined?["已加入","green"]:st;
+  return '<article class="teamResult '+(joined?"joinedResult":"")+'" onclick="openRecruit('+r.id+')"><div class="teamResultMain">'+
+    '<div class="resultTopline"><span>'+e(r.comp)+'</span><span>'+e(r.school)+' · '+e(r.campus)+'</span></div>'+
+    '<div class="gd-resultTeamName">队伍名称：<b>'+e(r.teamName||r.comp+"参赛队")+'</b></div>'+
+    '<h3>'+e(r.title)+'</h3><p>'+e(r.role.task)+'</p>'+
+    '<div class="resultSummary">招募岗位：'+e(r.role.name)+' · '+e(r.target)+' · 剩余 '+free+' 个名额</div></div>'+
+    '<div class="teamResultDecision"><span class="status '+ds[1]+'">'+ds[0]+'</span><button class="btn '+(joined?"secondary":"primary")+'" onclick="event.stopPropagation();'+(joined?"openJoinedTeamFromResult("+r.id+")":"openRecruit("+r.id+")")+'">'+(joined?"查看我的队伍":"查看详情")+'</button></div></article>';
 }
 function personResultRow(c){
   var r=activeManagedRecruit(),fit=candidateFit(c,r),hard=candidateMeetsHardRules(c,r),gap=candidateSkillGap(c,r),existing=activeInviteForCandidate(r.id,c.id);
@@ -2011,6 +2038,8 @@ window.render=render;
 window.simulatePageState=simulatePageState;
 window.clearPageState=clearPageState;
 window.go=go;
+window.toggleExploreFold=toggleExploreFold;
+window.clearCompetitionJump=clearCompetitionJump;
 window.gdCalendarGo=gdCalendarGo;
 window.shiftCompetitionCalendar=shiftCompetitionCalendar;
 window.openRecruit=openRecruit;
