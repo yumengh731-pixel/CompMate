@@ -7,6 +7,10 @@ var config={
 
 var state={
   route:"home",
+  teamFiltersExpanded:false,
+  peopleFiltersExpanded:false,
+  calendarYear:new Date().getFullYear(),
+  calendarMonth:new Date().getMonth(),
   mode:"teams",
   selectedRecruit:1,
   selectedCandidate:11,
@@ -72,16 +76,16 @@ var state={
 };
 
 var recruits=[
-  {id:1,category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",groupNote:"加入项目微信群请先添加队长已授权的联系账号，备注「挑战杯＋姓名＋数据分析」；队长核对已组队身份后邀请入群。",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"10/18 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
-  {id:2,category:"market",comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学",campus:"大学城校区",leader:"许辰",status:"active",target:"完整参赛并争取省赛",period:"10/10 - 12/10",deadline:"10/20 20:00",team:"现有 4 人",progress:"正在设计正式问卷",collab:"线上协作为主，每周一次集中同步。",hard:false,reasons:["有访谈经验","目标一致"],role:{name:"市场调研",capacity:1,formal:0,reserved:0,hours:6,task:"访谈提纲、用户访谈、问卷设计与洞察整理",skills:["用户访谈","问卷设计","报告写作"]}},
-  {id:3,category:"innovation",comp:"互联网+",title:"寻找前端开发同学",school:"广东工业大学",campus:"龙洞校区",leader:"陈屿",status:"paused",target:"冲校赛金奖",period:"10/01 - 11/25",deadline:"10/22 18:00",team:"现有 3 人",progress:"产品方向已确定",collab:"每两天线上同步开发进度。",hard:true,reasons:["技能高度匹配"],role:{name:"前端开发",capacity:2,formal:1,reserved:0,hours:10,task:"实现产品 Demo、核心交互和路演展示页面",skills:["JavaScript","React","HTML/CSS"]}},
-  {id:4,category:"math",comp:"数学建模竞赛",title:"建模队补一名编程队友",school:"广东工业大学",campus:"龙洞校区",leader:"林深",status:"full",target:"稳定完赛",period:"11/01 - 12/01",deadline:"10/12 22:00",team:"现有 3 人",progress:"已完成组队",collab:"赛前每周训练，比赛期间集中协作。",hard:false,reasons:["跨专业互补"],role:{name:"编程 / 建模",capacity:1,formal:1,reserved:0,hours:14,task:"Python 求解、模型验证、结果整理",skills:["Python","数学建模"]}},
-  {id:5,category:"market",comp:"行业经济分析大赛",title:"招募商业分析与报告撰写队友",teamName:"行业洞察队",school:"广东工业大学",campus:"龙洞校区",leader:"叶知",groupNote:"请使用此前双方已授权的微信联系队长叶知，备注「行业经济分析大赛＋姓名＋商业分析」，核对正式成员身份后由队长邀请进入项目交流群。",status:"active",target:"冲校奖",period:"10/08 - 11/30",deadline:"10/24 21:00",team:"现有 3 人",progress:"已完成资料框架",collab:"线上协作为主，周末集中讨论。",hard:false,reasons:["商业分析经历相关","同校区"],role:{name:"商业分析",capacity:2,formal:1,reserved:0,hours:6,task:"行业资料检索、分析框架搭建、核心结论与报告撰写",skills:["Excel","商业分析","报告写作"]}}
+  {id:1,teamName:"星火队",category:"innovation",comp:"挑战杯 · 大挑",title:"寻找数据分析 / 商业分析队友",school:"广东工业大学",campus:"龙洞校区",leader:"顾闻",groupNote:"加入项目微信群请先添加队长已授权的联系账号，备注「挑战杯＋姓名＋数据分析」；队长核对已组队身份后邀请入群。",status:"active",target:"冲省奖",period:"10/06 - 12/20",deadline:"11/28 23:59",team:"现有 3 人",progress:"已完成初步选题与访谈框架",collab:"每周至少同步 1 次；关键节点无法按时完成时提前说明。",hard:false,reasons:["有相关调研经历","时间满足要求"],role:{name:"数据分析",capacity:2,formal:1,reserved:0,hours:8,task:"问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}},
+  {id:2,teamName:"远见调研队",category:"market",comp:"正大杯",title:"招募市场调研与访谈同学",school:"广东工业大学",campus:"大学城校区",leader:"许辰",status:"active",target:"完整参赛并争取省赛",period:"10/10 - 12/10",deadline:"12/05 20:00",team:"现有 4 人",progress:"正在设计正式问卷",collab:"线上协作为主，每周一次集中同步。",hard:false,reasons:["有访谈经验","目标一致"],role:{name:"市场调研",capacity:1,formal:0,reserved:0,hours:6,task:"访谈提纲、用户访谈、问卷设计与洞察整理",skills:["用户访谈","问卷设计","报告写作"]}},
+  {id:3,teamName:"逐光开发队",category:"innovation",comp:"互联网+",title:"寻找前端开发同学",school:"广东工业大学",campus:"龙洞校区",leader:"陈屿",status:"paused",target:"冲校赛金奖",period:"10/01 - 11/25",deadline:"10/22 18:00",team:"现有 3 人",progress:"产品方向已确定",collab:"每两天线上同步开发进度。",hard:true,reasons:["技能高度匹配"],role:{name:"前端开发",capacity:2,formal:1,reserved:0,hours:10,task:"实现产品 Demo、核心交互和路演展示页面",skills:["JavaScript","React","HTML/CSS"]}},
+  {id:4,teamName:"数模探索队",category:"math",comp:"数学建模竞赛",title:"建模队补一名编程队友",school:"广东工业大学",campus:"龙洞校区",leader:"林深",status:"full",target:"稳定完赛",period:"11/01 - 12/01",deadline:"10/12 22:00",team:"现有 3 人",progress:"已完成组队",collab:"赛前每周训练，比赛期间集中协作。",hard:false,reasons:["跨专业互补"],role:{name:"编程 / 建模",capacity:1,formal:1,reserved:0,hours:14,task:"Python 求解、模型验证、结果整理",skills:["Python","数学建模"]}},
+  {id:5,category:"market",comp:"行业经济分析大赛",title:"招募商业分析与报告撰写队友",teamName:"行业洞察队",school:"广东工业大学",campus:"龙洞校区",leader:"叶知",groupNote:"请使用此前双方已授权的微信联系队长叶知，备注「行业经济分析大赛＋姓名＋商业分析」，核对正式成员身份后由队长邀请进入项目交流群。",status:"active",target:"冲校奖",period:"10/08 - 11/30",deadline:"11/28 21:00",team:"现有 3 人",progress:"已完成资料框架",collab:"线上协作为主，周末集中讨论。",hard:false,reasons:["商业分析经历相关","同校区"],role:{name:"商业分析",capacity:2,formal:1,reserved:0,hours:6,task:"行业资料检索、分析框架搭建、核心结论与报告撰写",skills:["Excel","商业分析","报告写作"]}}
 ];
 
 var managedRecruitments=[
-  {id:901,category:"innovation",comp:"挑战杯 · 大挑",title:"CompMate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],ownerRole:"产品 / 项目推进",ownerHours:8,ownerActive:true,role:{name:"视觉设计",capacity:1,formal:0,reserved:0,hours:6,task:"负责路演 PPT 视觉、海报与产品展示物料",skills:["PPT","Figma","视觉设计"]}},
-  {id:902,groupId:901,category:"innovation",comp:"挑战杯 · 大挑",title:"CompMate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],role:{name:"数据分析",capacity:1,formal:0,reserved:0,hours:8,task:"负责问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}}
+  {id:901,category:"innovation",comp:"挑战杯 · 大挑",title:"GDUTmate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],ownerRole:"产品 / 项目推进",ownerHours:8,ownerActive:true,role:{name:"视觉设计",capacity:1,formal:0,reserved:0,hours:6,task:"负责路演 PPT 视觉、海报与产品展示物料",skills:["PPT","Figma","视觉设计"]}},
+  {id:902,groupId:901,category:"innovation",comp:"挑战杯 · 大挑",title:"GDUTmate 项目招募",school:"广东工业大学",campus:"龙洞校区",leader:"你",status:"active",target:"冲省奖",period:"10/05 - 12/20",deadline:"10/28 23:59",team:"现有 3 人",progress:"需求验证与 Demo 开发",collab:"每周同步两次，关键节点提前说明。",hard:false,reasons:[],role:{name:"数据分析",capacity:1,formal:0,reserved:0,hours:8,task:"负责问卷数据清洗、统计分析、可视化与需求结论提炼",skills:["Excel","数据分析","可视化"]}}
 ];
 
 var candidates=[
@@ -329,7 +333,7 @@ function empty(a,b){return '<div class="panel empty"><h3>'+e(a)+'</h3><p>'+e(b)+
 function badges(arr){return arr.map(function(x){return '<span class="badge">'+e(x)+'</span>'}).join("")}
 
 function navIcon(r){return {home:"⌂",explore:"⌕",progress:"◎",profile:"○"}[r]||"•"}
-function title(){return {home:"首页",explore:"组队大厅",detail:"招募详情",candidate:"候选人详情",progress:"组队中心",profile:"我的",profileEdit:"编辑个人档案",publish:"发布 / 编辑招募",auth:"学校身份认证"}[state.route]||"竞旅 CompMate"}
+function title(){return {home:"首页",explore:"组队大厅",detail:"招募详情",candidate:"候选人详情",progress:"组队中心",profile:"我的",profileEdit:"编辑个人档案",publish:"发布 / 编辑招募",auth:"学校身份认证"}[state.route]||"GDUTmate"}
 function activeRoute(){
   if(state.route==="detail"||state.route==="candidate"||state.route==="explore")return"explore";
   if(state.route==="progress")return"progress";
@@ -346,16 +350,16 @@ function mNav(r,label){
 }
 function shell(){
   if(!state.loggedIn){
-    byId("app").innerHTML='<div class="publicShell"><header class="publicHeader"><div class="brand"><div class="brandMark">C</div><div><div class="brandName">竞旅 CompMate</div><div class="brandSub">大学生竞赛组队平台</div></div></div><span>公开招募预览</span></header><main class="publicMain"><div id="page"></div></main></div>';
+    byId("app").innerHTML='<div class="publicShell"><header class="publicHeader"><div class="brand"><div class="brandMark">C</div><div><div class="brandName">GDUTmate</div><div class="brandSub">大学生竞赛组队平台</div></div></div><span>公开招募预览</span></header><main class="publicMain"><div id="page"></div></main></div>';
     return;
   }
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
   byId("app").innerHTML=
     '<div class="shell"><aside class="sidebar">'+
-      '<div class="brand"><div class="brandMark">C</div><div><div class="brandName">竞旅 CompMate</div><div class="brandSub">大学生竞赛组队平台</div></div></div>'+
+      '<div class="brand"><div class="brandMark">C</div><div><div class="brandName">GDUTmate</div><div class="brandSub">大学生竞赛组队平台</div></div></div>'+
       '<nav class="nav">'+navButton("home","首页")+navButton("explore","寻找")+navButton("progress","组队 / 进度",pending)+navButton("profile","我的")+'</nav>'+
-      '<div class="sideBottom"><div class="identity"><span class="dot"></span>'+(state.verified?"广东工业大学 · 已认证":"学校身份未认证")+'<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div><button class="sideGhost" onclick="demoShare()">预览外部分享</button></div>'+
-    '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">竞旅 CompMate</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><span class="demoDataPill">Demo · 示例数据</span><div class="timePill"><span>'+(remaining()<0?"已超出可投入":"剩余可投入")+'</span><b>'+remainingLabel(remaining())+'</b></div></div></header><div id="page"></div></main></div>'+
+      '<div class="sideBottom"><div class="identity"><span class="dot"></span>微信登录 · 演示账号<br><span style="color:#8f96a1">联系方式按沟通关系授权</span></div></div>'+
+    '</aside><main class="main"><header class="topbar"><div><div class="eyebrow">GDUTmate</div><h1 class="pageTitle">'+title()+'</h1></div><div class="topActions"><span class="demoDataPill">Demo · 示例数据</span></div></header><div id="page"></div></main></div>'+
     (state.route!=="publish"?'<button class="fabPublish" onclick="beginPublish(true)"><span>＋</span><b>发布招募</b></button>':'')+
     '<nav class="mobileNav">'+mNav("home","首页")+mNav("explore","寻找")+mNav("progress","进度")+mNav("profile","我的")+'</nav>';
 }
@@ -1351,7 +1355,7 @@ function managedOtherCount(){
 }
 function renderManagedTeam(){
   var r=findRecruit(state.managedTeamRecruitId)||managedRecruitments[0],group=managedGroup(r),addedItems=managedJoinedCandidates();
-  if(state.teamDissolved)return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 历史队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">该队伍已经解散，以下记录仅供历史查看，不能继续招募或恢复旧关系。</div></div><span class="status red">已解散</span></div><div class="section"><h3 class="sectionTitle">解散记录</h3><div class="kv" style="margin-top:12px"><div class="k">解散时间</div><div>'+e(state.dissolvedAt||"刚刚")+'</div><div class="k">操作身份</div><div>原队长</div><div class="k">处理结果</div><div>全部正式成员关系与未完成组队关系已结束</div></div></div><div class="notice">相关正式时间占用与正在确认的角色名额已释放；历史记录保留为只读，不自动恢复旧申请。</div><div class="actions"><button class="btn secondary" onclick="state.progressView=\'relations\';render()">查看关系历史</button></div></div>';
+  if(state.teamDissolved)return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 历史队伍</div><div class="bigTitle">'+(r.id===901?"GDUTmate 项目队":"行业分析队")+'</div><div class="subtitle">该队伍已经解散，以下记录仅供历史查看，不能继续招募或恢复旧关系。</div></div><span class="status red">已解散</span></div><div class="section"><h3 class="sectionTitle">解散记录</h3><div class="kv" style="margin-top:12px"><div class="k">解散时间</div><div>'+e(state.dissolvedAt||"刚刚")+'</div><div class="k">操作身份</div><div>原队长</div><div class="k">处理结果</div><div>全部正式成员关系与未完成组队关系已结束</div></div></div><div class="notice">相关正式时间占用与正在确认的角色名额已释放；历史记录保留为只读，不自动恢复旧申请。</div><div class="actions"><button class="btn secondary" onclick="state.progressView=\'relations\';render()">查看关系历史</button></div></div>';
   if(!state.managedMemberActive)return '<div class="panel empty"><h3>你已退出该队伍</h3><p>队长权限已转交，退出后不再显示成员管理操作。</p><button class="btn secondary" onclick="state.progressView=\'relations\';render()">返回组队进度</button></div>';
   var gaps=[];
   group.forEach(function(g){
@@ -1365,7 +1369,7 @@ function renderManagedTeam(){
     captainActions='<button class="btn secondary" onclick="transferCaptain()">转交队长</button><button class="btn primary" onclick="editManagedRecruit()">管理招募</button><button class="btn danger" onclick="dissolveManagedTeam()">解散队伍</button>';
   }else captainActions='<button class="btn danger" onclick="leaveManagedTeam()">退出队伍</button>';
   var frontendSub=state.memberRemoved?"":"当前阶段投入 "+state.frontendCurrentHours+"h / 周 · 约定 "+state.frontendAgreedHours+"h / 周";
-  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"CompMate 项目队":"行业分析队")+'</div><div class="subtitle">当前队长：'+e(state.managedCaptainName)+'。'+(state.managedCaptain?"你拥有招募、成员、队长转交与解散队伍权限。":"你当前按普通正式成员权限使用。")+'</div></div><span class="status green">进行中</span></div>'+
+  return '<div class="panel teamFullPage"><div class="between"><div><div class="meta">'+e(r.comp)+' · 我创建的队伍</div><div class="bigTitle">'+(r.id===901?"GDUTmate 项目队":"行业分析队")+'</div><div class="subtitle">当前队长：'+e(state.managedCaptainName)+'。'+(state.managedCaptain?"你拥有招募、成员、队长转交与解散队伍权限。":"你当前按普通正式成员权限使用。")+'</div></div><span class="status green">进行中</span></div>'+
     '<div class="actions">'+captainActions+'</div>'+
     '<div class="stats"><div class="stat"><b>'+members+'</b><span>正式成员</span></div><div class="stat"><b>'+gaps.length+'</b><span>当前角色缺口</span></div><div class="stat"><b>'+state.managedStageHours+'h</b><span>我的当前投入</span></div></div>'+
     '<div class="section"><div class="between"><h3 class="sectionTitle">成员与角色</h3><button class="btn secondary" onclick="editHours()">更新我的阶段投入</button></div><div class="list" style="margin-top:12px">'+
@@ -1540,14 +1544,14 @@ function currentJoinedGroupEntry(){
   var captainUnchanged=!x.joinedLeaderName||x.joinedLeaderName===r.leader;
   var contact=captainUnchanged?(x.partyContactSnapshot||(x.contact?x.partyContact:"")||""):"";
   var note=r.groupNote||"请使用双方此前授权的联系方式联系队长，说明姓名和队内角色，由队长核对身份后邀请进群。";
-  var message="队长你好，我是"+(state.profileName||"一名正式成员")+"（"+r.school+" · "+(state.profileCampus||r.campus)+"），已在 CompMate 正式加入「"+r.comp+"」队伍，负责「"+r.role.name+"」。想申请进入项目交流群，麻烦核对身份后邀请我入群，谢谢！";
+  var message="队长你好，我是"+(state.profileName||"一名正式成员")+"（"+r.school+" · "+(state.profileCampus||r.campus)+"），已在 GDUTmate 正式加入「"+r.comp+"」队伍，负责「"+r.role.name+"」。想申请进入项目交流群，麻烦核对身份后邀请我入群，谢谢！";
   return {r:r,x:x,contact:contact,note:note,message:message};
 }
 function contactCaptainForGroup(){
   var c=currentJoinedGroupEntry();
   if(!c){toast("仅当前队伍的已认证正式成员可查看入群信息");render();return}
   var marked=!!state.groupContactedByRecruit[c.r.id];
-  modal('<div class="groupEntryModal"><h2>联系队长入群</h2><p class="subtitle">已正式组队后，通过双方此前授权的联系方式联系当前队长。CompMate 不代为添加外部群成员。</p>'+
+  modal('<div class="groupEntryModal"><h2>联系队长入群</h2><p class="subtitle">已正式组队后，通过双方此前授权的联系方式联系当前队长。GDUTmate 不代为添加外部群成员。</p>'+
     '<div class="groupEntrySteps">'+
       '<div class="groupEntryStep"><span class="groupEntryStepIndex">01</span><div><b>核对组队身份</b><p>'+e(c.r.comp)+' · '+e(c.r.role.name)+' · 队长 '+e(c.r.leader)+'</p><span class="status green">已完成正式组队</span></div></div>'+
       '<div class="groupEntryStep"><span class="groupEntryStepIndex">02</span><div><b>联系队长</b><p>此前双方同意沟通后授权的账号（Demo 为虚构示例）。</p>'+
@@ -1656,7 +1660,7 @@ function openEvidence(){
   var u=String(state.evidenceUrl||"").trim();
   if(!/^https?:\/\//i.test(u)){toast("成果证据链接无效");return}
   var unknown=!/^(https?:\/\/)?(docs\.qq\.com|github\.com|gitee\.com|drive\.google\.com|example\.com)(\/|$)/i.test(u);
-  modal('<h2>即将离开 CompMate</h2><p class="subtitle">该链接由用户提供，平台不对第三方内容真实性或安全性背书。</p>'+(unknown?'<div class="notice warn">当前为未知域名，请注意防范钓鱼、付款诱导和个人信息泄露。</div>':'')+'<div class="roleBox" style="margin-top:10px">'+e(u)+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();toast(\'已确认外链风险；正式产品将打开新页面\')">继续前往</button></div>');
+  modal('<h2>即将离开 GDUTmate</h2><p class="subtitle">该链接由用户提供，平台不对第三方内容真实性或安全性背书。</p>'+(unknown?'<div class="notice warn">当前为未知域名，请注意防范钓鱼、付款诱导和个人信息泄露。</div>':'')+'<div class="roleBox" style="margin-top:10px">'+e(u)+'</div><div class="modalFoot"><button class="btn secondary" onclick="closeModal()">返回</button><button class="btn primary" onclick="closeModal();toast(\'已确认外链风险；正式产品将打开新页面\')">继续前往</button></div>');
 }
 function saveProfile(){
   var name=String(byId("profileName").value||"").trim(),campus=String(byId("profileCampus").value||"").trim(),grade=String(byId("profileGrade").value||"").trim(),major=String(byId("profileMajor").value||"").trim(),tasks=String(byId("profileTasks").value||"").trim(),skills=String(byId("profileSkills").value||"").split(/[、,，]/).map(function(x){return x.trim()}).filter(Boolean),target=String(byId("profileTarget").value||"").trim(),collab=String(byId("profileCollab").value||"").trim();
