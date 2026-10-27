@@ -1933,3 +1933,5 @@ html,body{line-height:1.6}
   .gd-eventDates{gap:2px 5px}
   .gd-eventDates b{font-size:10.5px}
 }
+
+.gd-detailTeamName{font-size:12px;color:var(--blue);margin:6px 0 3px;font-weight:750}
