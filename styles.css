@@ -1935,3 +1935,41 @@ html,body{line-height:1.6}
 }
 
 .gd-detailTeamName{font-size:12px;color:var(--blue);margin:6px 0 3px;font-weight:750}
+
+/* GDUTmate homepage restore + calendar route */
+.gd-homeBrand{margin-bottom:15px}
+.gd-homeCoreWithCalendar{grid-template-columns:repeat(3,minmax(0,1fr))}
+.gd-homeCoreWithCalendar .gd-calendarEntry{background:#f8faff;border-color:#dce5f8}
+.gd-homeCoreWithCalendar .gd-calendarEntry:hover{background:#f1f5ff;border-color:#aabde5}
+.gd-homeRestoredStatus{grid-template-columns:minmax(0,.88fr) minmax(0,1.4fr);gap:16px}
+.gd-homeRestoredStatus .statusBoard,.gd-homeRestoredStatus .todoBoard{padding:21px;min-height:188px}
+.gd-homeRestoredStatus .todoBoard{display:flex;flex-direction:column;justify-content:center;background:linear-gradient(130deg,#f6f8ff,#fff)}
+.gd-homeRestoredStatus .todoBoard:hover{border-color:#aebee3;box-shadow:0 8px 25px rgba(29,61,119,.06)}
+.gd-homeRestoredStatus .todoBoard>b{font-size:20px;line-height:1.35;margin-top:13px}
+.gd-homeRestoredStatus .todoBoard p{font-size:13px;line-height:1.7;margin:8px 0 14px}
+.gd-homeRestoredStatus .todoBoard em{font-size:13px;font-weight:700}
+.gd-homeRestoredStatus .statusBoardHead h3{font-size:17px}
+.gd-homeRestoredStatus .statusNumbers{margin-top:22px}
+.gd-homeRestoredStatus .statusNumbers button{padding:16px 12px}
+.gd-homeRestoredStatus .statusNumbers b{font-size:25px}
+.gd-calendarPage{max-width:1280px;margin:0 auto}
+.gd-calendarPageHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}
+.gd-calendarPageHeader .btn{padding-left:0}
+.gd-calendarPageHeader p{font-size:13px;color:var(--muted);margin:0}
+.gd-calendarPage .gd-calendarPanel{margin:0}
+@media(max-width:1000px){
+ .gd-homeRestoredStatus{grid-template-columns:1fr}
+ .gd-homeRestoredStatus .statusBoard,.gd-homeRestoredStatus .todoBoard{min-height:unset}
+ .gd-homeRestoredStatus .todoBoard{min-height:165px}
+}
+@media(max-width:820px){
+ .gd-homeCoreWithCalendar{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .gd-homeCoreWithCalendar .gd-calendarEntry{grid-column:1/-1}
+ .gd-calendarPageHeader{align-items:flex-start;flex-direction:column}
+}
+@media(max-width:520px){
+ .gd-homeCoreWithCalendar{grid-template-columns:1fr}
+ .gd-homeCoreWithCalendar .gd-calendarEntry{grid-column:auto}
+ .gd-homeRestoredStatus .todoBoard>b{font-size:18px}
+ .gd-homeRestoredStatus .statusBoard,.gd-homeRestoredStatus .todoBoard{padding:17px}
+}
