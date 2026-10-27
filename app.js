@@ -334,11 +334,12 @@ function empty(a,b){return '<div class="panel empty"><h3>'+e(a)+'</h3><p>'+e(b)+
 function badges(arr){return arr.map(function(x){return '<span class="badge">'+e(x)+'</span>'}).join("")}
 
 function navIcon(r){return {home:"⌂",explore:"⌕",progress:"◎",profile:"○"}[r]||"•"}
-function title(){return {home:"首页",explore:"组队大厅",detail:"招募详情",candidate:"候选人详情",progress:"组队中心",profile:"我的",profileEdit:"编辑个人档案",publish:"发布 / 编辑招募",auth:"学校身份认证"}[state.route]||"GDUTmate"}
+function title(){return {home:"首页",explore:"组队大厅",calendar:"比赛日历",detail:"招募详情",candidate:"候选人详情",progress:"组队中心",profile:"我的",profileEdit:"编辑个人档案",publish:"发布 / 编辑招募",auth:"学校身份认证"}[state.route]||"GDUTmate"}
 function activeRoute(){
   if(state.route==="detail"||state.route==="candidate"||state.route==="explore")return"explore";
   if(state.route==="progress")return"progress";
   if(state.route==="profileEdit")return"profile";
+  if(state.route==="calendar")return"home";
   return state.route;
 }
 function navButton(r,label,count){
@@ -452,6 +453,7 @@ function render(){
   var p=byId("page");
   if(renderDemoPageState(p))return;
   if(state.route==="home")renderHome(p);
+  else if(state.route==="calendar")renderCalendar(p);
   else if(state.route==="explore")renderExplore(p);
   else if(state.route==="detail")renderDetail(p);
   else if(state.route==="candidate")renderCandidate(p);
@@ -517,20 +519,34 @@ function renderHome(p){
   var posts=recruits.filter(function(r){return !state.blockedRecruitIds[r.id]&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)}).slice(0,4);
   var peers=candidates.filter(function(c){return !state.blocked[c.id]}).slice(0,3);
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
-  var calendarEvents=getCompetitionCalendarEvents();
-  if(!state.calendarInitialized){
-    var nowKey=gdCalendarISO(new Date().getFullYear(),new Date().getMonth(),new Date().getDate());
-    var nearest=calendarEvents.filter(function(x){return x.end>=nowKey})[0]||calendarEvents[0];
-    if(nearest){var bits=nearest.start.split("-");state.calendarYear=Number(bits[0]);state.calendarMonth=Number(bits[1])-1;}
-    state.calendarInitialized=true;
-  }
-  p.innerHTML='<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>按比赛和招募岗位筛选</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>浏览同学的技能与组队意向</small><em>→</em></button></section>'+
-    homeCompetitionCalendar(calendarEvents)+
+  var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
+  var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
+  p.innerHTML=
+    '<section class="brandBanner compactBrand gd-homeBrand"><div class="brandBannerMark">G</div><div class="brandBannerCopy"><b>GDUTmate</b><span>让每一次竞赛，更快遇见合适的队友。</span></div><div class="brandBannerTrust">GDUT 校园试点 · 双向选择 · 联系方式授权</div></section>'+
+    '<section class="homeCoreEntry gd-homeCoreWithCalendar">'+
+      '<button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的具体任务</small><em>→</em></button>'+
+      '<button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button>'+
+      '<button class="gd-calendarEntry" onclick="go(\'calendar\')"><span>比赛日历</span><small>查看比赛开始与截止日期</small><em>→</em></button>'+
+    '</section>'+
     '<section class="gd-homeFeedGrid"><div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队伍招募帖子</h2><p>队伍名称、竞赛与招募岗位一目了然</p></div><button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">查看全部 →</button></div><div class="gd-homeFeedList">'+
     (posts.length?posts.map(homeTeamPost).join(""):'<div class="notice">暂无正在招募的队伍</div>')+'</div></div>'+
     '<div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队友展示</h2><p>具备组队意向的同学 · 示例资料</p></div><button class="btn text" onclick="state.mode=\'people\';go(\'explore\')">找队友 →</button></div><div class="gd-homeFeedList">'+
     peers.map(homePeerPost).join("")+'</div></div></section>'+
-    '<section class="gd-homeQuickStatus"><span>我的组队进度</span><button onclick="state.progressView=\'relations\';go(\'progress\')">待处理 <b>'+pending+'</b></button><button class="btn text" onclick="go(\'progress\')">进入组队中心 →</button></section>';
+    '<section class="homeStatusGrid gd-homeRestoredStatus">'+
+      '<article class="statusBoard"><div class="statusBoardHead"><h3>我的组队状态</h3></div><div class="statusNumbers"><button onclick="state.tab=\'pending\';go(\'progress\')"><b>'+pending+'</b><span>待处理</span></button><button onclick="state.tab=\'communication\';go(\'progress\')"><b>'+communicating+'</b><span>待沟通</span></button><button onclick="state.tab=\'confirming\';go(\'progress\')"><b>'+confirming+'</b><span>确认中</span></button></div></article>'+
+      homeNextActionCard()+
+    '</section>';
+}
+function renderCalendar(p){
+  var events=getCompetitionCalendarEvents();
+  if(!state.calendarInitialized){
+    var now=new Date(),todayKey=gdCalendarISO(now.getFullYear(),now.getMonth(),now.getDate());
+    var nearest=events.filter(function(x){return x.end>=todayKey})[0]||events[0];
+    if(nearest){var parts=nearest.start.split("-");state.calendarYear=Number(parts[0]);state.calendarMonth=Number(parts[1])-1;}
+    state.calendarInitialized=true;
+  }
+  p.innerHTML='<div class="gd-calendarPage"><div class="gd-calendarPageHeader"><button class="btn text" onclick="go(\'home\')">← 返回首页</button><p>查看比赛时间，点击比赛即可寻找正在招募的队伍。</p></div>'+
+    homeCompetitionCalendar(events)+'</div>';
 }
 function homeTeamPost(r){
   return '<article class="gd-teamPost" onclick="openRecruit('+r.id+')"><div class="gd-teamPostTop"><b>队伍名称：'+e(r.teamName||r.comp+"参赛队")+'</b><span class="status green">招募中</span></div>'+
