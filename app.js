@@ -513,32 +513,71 @@ function homeNextActionCard(){
   return '<article class="todoBoard" onclick="go(\'explore\')"><div class="statusBoardHead"><h3>继续寻找</h3></div><b>当前没有待处理关系</b><p>可以主动浏览招募或围绕现有缺口寻找队友。</p><em>进入寻找 →</em></article>';
 }
 function renderHome(p){
+  var posts=recruits.filter(function(r){return !state.blockedRecruitIds[r.id]&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)}).slice(0,4);
+  var peers=candidates.filter(function(c){return !state.blocked[c.id]}).slice(0,3);
   var pending=state.relationships.filter(function(x){return x.status==="pending"}).length;
-  var communicating=state.relationships.filter(function(x){return x.status==="communication"}).length;
-  var confirming=state.relationships.filter(function(x){return x.status==="confirming"}).length;
-  var recommended=recruits.filter(function(r){return !userAlreadyJoinedRecruit(r.id)&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)&&userMeetsRecruitHardRules(r).ok&&userAvailabilityOverlaps(r)&&remainingFor(r)>=r.role.hours&&userRecommendationQualified(r)}).slice(0,2);
-  var used=Math.max(0,currentWeekFormalUsed()+currentWeekReservedUsed());
-  var pct=state.total?Math.min(100,Math.round(used/state.total*100)):0;
-  var pendingAction=homeNextActionCard();
-
-  p.innerHTML=
-    '<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>浏览正在招募的具体任务</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>围绕具体缺口筛选候选人</small><em>→</em></button></section>'+
-    '<section class="homeWorkbench">'+
-      '<div class="smartRecommendPanel"><div class="smartPanelHead"><div><h2>可能适合你</h2><p>根据具体任务、项目周期可投入时间与参赛目标给出可解释推荐。</p></div><button class="btn text" onclick="go(\'explore\')">去寻找 →</button></div>'+
-      '<div class="smartRecommendList">'+(recommended.length?recommended.map(smartRecommendRow).join(""):'<div class="notice">暂无高质量推荐，可前往组队大厅主动筛选。</div>')+'</div></div>'+
-      '<aside class="competitionReminder"><div class="smartPanelHead compact"><div><h2>与你相关的竞赛节点</h2><p>只展示正在找队、沟通 / 确认中或你已发布招募的近期节点。</p></div></div>'+
-      '<div class="reminderTimeline">'+homeDeadlineRows()+'</div></aside>'+
-    '</section>'+
-    '<section class="homeStatusGrid">'+
-      '<article class="statusBoard"><div class="statusBoardHead"><h3>我的组队状态</h3></div><div class="statusNumbers"><button onclick="go(\'progress\')"><b>'+pending+'</b><span>待处理</span></button><button onclick="go(\'progress\')"><b>'+communicating+'</b><span>待沟通</span></button><button onclick="go(\'progress\')"><b>'+confirming+'</b><span>确认中</span></button></div></article>'+
-      '<article class="timeBoard"><div class="statusBoardHead"><h3>本周时间容量</h3></div><div class="timeBoardMain"><div><b>'+remainingLabel(remaining())+'</b><span>'+(remaining()<0?"已超额":"剩余可投入")+'</span></div><div class="miniTimeBar"><i style="width:'+pct+'%"></i></div><small>'+e(timeCapacityMeta())+'</small></div></article>'+
-      pendingAction+
-    '</section>';
+  p.innerHTML='<section class="homeCoreEntry"><button onclick="state.mode=\'teams\';go(\'explore\')"><span>找队伍</span><small>按比赛和招募岗位筛选</small><em>→</em></button><button onclick="state.mode=\'people\';go(\'explore\')"><span>找队友</span><small>浏览同学的技能与组队意向</small><em>→</em></button></section>'+
+    homeCompetitionCalendar(getCompetitionCalendarEvents())+
+    '<section class="gd-homeFeedGrid"><div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队伍招募帖子</h2><p>队伍名称、竞赛与招募岗位一目了然</p></div><button class="btn text" onclick="state.mode=\'teams\';go(\'explore\')">查看全部 →</button></div><div class="gd-homeFeedList">'+
+    (posts.length?posts.map(homeTeamPost).join(""):'<div class="notice">暂无正在招募的队伍</div>')+'</div></div>'+
+    '<div class="gd-homeFeedPanel"><div class="gd-homeFeedHead"><div><h2>队友展示</h2><p>具备组队意向的同学 · 示例资料</p></div><button class="btn text" onclick="state.mode=\'people\';go(\'explore\')">找队友 →</button></div><div class="gd-homeFeedList">'+
+    peers.map(homePeerPost).join("")+'</div></div></section>'+
+    '<section class="gd-homeQuickStatus"><span>我的组队进度</span><button onclick="state.progressView=\'relations\';go(\'progress\')">待处理 <b>'+pending+'</b></button><button class="btn text" onclick="go(\'progress\')">进入组队中心 →</button></section>';
 }
-function smartRecommendRow(r){
-  var reasons=userMatchReasons(r);
-  return '<article class="smartRecommendRow" onclick="openRecruit('+r.id+')"><div class="smartRecMain"><div class="smartRecMeta">'+e(r.comp)+' · '+e(r.campus)+'</div><b>'+e(r.title)+'</b><p>'+e(r.role.task)+'</p><div class="smartRecTags"><span>'+e(r.role.name)+'</span><span>'+r.role.hours+'h / 周</span></div></div>'+
-    '<div class="smartRecReason"><b>匹配：'+e(reasons.slice(0,2).join(" · ")||"建议查看详情")+'</b><small>'+e(r.target)+' · 剩余 '+roleFree(r)+' 个名额</small></div><span class="smartRecArrow">→</span></article>';
+function homeTeamPost(r){
+  return '<article class="gd-teamPost" onclick="openRecruit('+r.id+')"><div class="gd-teamPostTop"><b>队伍名称：'+e(r.teamName||r.comp+"参赛队")+'</b><span class="status green">招募中</span></div>'+
+    '<div class="gd-teamPostComp">'+e(r.comp)+' · '+e(r.campus)+'</div><h3>'+e(r.title)+'</h3><p>招募岗位：'+e(r.role.name)+' · '+e(r.role.task)+'</p>'+
+    '<div class="gd-teamPostFoot"><span>剩余 '+roleFree(r)+' 个名额</span><span>查看详情 →</span></div></article>';
+}
+function homePeerPost(c){
+  return '<article class="gd-peerPost" onclick="openCandidate('+c.id+')"><span class="gd-peerAvatar">'+e(c.name.charAt(0))+'</span><div><b>'+e(c.name)+'</b><small>'+e(c.campus)+' · '+e(c.major)+'</small><p>擅长：'+e(c.roles.join(" / "))+'</p></div><span class="gd-peerArrow">→</span></article>';
+}
+function getCompetitionCalendarEvents(){
+  var seen={},events=[];
+  allRecruitments().forEach(function(r){
+    var name=normalizeCompetitionName(r.comp);
+    if(!name||seen[name])return;
+    seen[name]=true;
+    var start=competitionInput(r,"start"),end=competitionInput(r,"end");
+    if(!start||!end)return;
+    var n=recruits.filter(function(x){return normalizeCompetitionName(x.comp)===name&&!state.blockedRecruitIds[x.id]&&x.status==="active"&&roleFree(x)>0&&!deadlinePassed(x)}).length;
+    events.push({name:name,start:start,end:end,recruiting:n});
+  });
+  return events.sort(function(x,y){return x.start.localeCompare(y.start)});
+}
+function gdCalendarISO(y,m,d){return y+"-"+String(m+1).padStart(2,"0")+"-"+String(d).padStart(2,"0");}
+function gdCalendarArg(s){return encodeURIComponent(s).replace(/'/g,"%27");}
+function gdCalendarGo(name){
+  state.mode="teams";
+  state.teamFilters={campus:false,time:false,active:true,award:false,category:"",competition:name,roleTask:"",schoolCampus:"",query:""};
+  state.teamFiltersExpanded=false;go("explore");
+}
+function shiftCompetitionCalendar(offset){
+  var next=new Date(state.calendarYear,state.calendarMonth+offset,1);
+  state.calendarYear=next.getFullYear();state.calendarMonth=next.getMonth();render();
+}
+function homeCompetitionCalendar(events){
+  var y=state.calendarYear,m=state.calendarMonth;
+  var first=(new Date(y,m,1).getDay()+6)%7,last=new Date(y,m+1,0).getDate();
+  var cells=["一","二","三","四","五","六","日"].map(function(x){return '<div class="gd-calDow">'+x+'</div>'}).join("");
+  for(var blank=0;blank<first;blank++)cells+='<div class="gd-calEmpty"></div>';
+  var today=new Date(),todayKey=gdCalendarISO(today.getFullYear(),today.getMonth(),today.getDate());
+  for(var d=1;d<=last;d++){
+    var key=gdCalendarISO(y,m,d);
+    var milestones=events.filter(function(x){return x.start===key||x.end===key});
+    var ongoing=events.some(function(x){return x.start<=key&&x.end>=key});
+    cells+='<div class="gd-calDay '+(key===todayKey?"today ":"")+(ongoing?"gd-ongoing":"")+'"><span>'+d+'</span>'+
+      milestones.map(function(x){var tag=x.start===key?"开始":"截止";return '<button class="gd-calMark" onclick="gdCalendarGo(decodeURIComponent(\''+gdCalendarArg(x.name)+'\'))" title="'+e(x.name)+' · '+tag+'">'+e(x.name)+' · '+tag+'</button>'}).join("")+'</div>';
+  }
+  var rows=events.map(function(x){
+    return '<button class="gd-eventRow" onclick="gdCalendarGo(decodeURIComponent(\''+gdCalendarArg(x.name)+'\'))"><span class="gd-eventName">'+e(x.name)+'</span>'+
+      '<span class="gd-eventDates"><small>开始日期</small><b>'+e(x.start)+'</b><small>截止日期</small><b>'+e(x.end)+'</b></span>'+
+      '<span class="gd-eventAvailability">'+(x.recruiting?"招募中 "+x.recruiting+" 个岗位":"暂无在招队伍")+' <i>→</i></span></button>';
+  }).join("");
+  return '<section class="gd-calendarPanel"><div class="gd-homeFeedHead"><div><h2>比赛日历</h2><p>点击比赛直接筛选对应的正在招募队伍</p></div><span class="gd-demoNote">演示日期 · 非官方赛程</span></div>'+
+    '<div class="gd-calendarColumns"><div class="gd-calendarMonth"><div class="gd-calendarToolbar"><b>'+y+' 年 '+(m+1)+' 月</b><div><button onclick="shiftCompetitionCalendar(-1)" aria-label="上个月">‹</button><button onclick="shiftCompetitionCalendar(1)" aria-label="下个月">›</button></div></div>'+
+    '<div class="gd-calendarGrid">'+cells+'</div></div><div class="gd-calendarAgenda"><div class="gd-agendaTitle">比赛时间一览 <small>开始 / 截止日期</small></div>'+
+    (rows||'<div class="notice">暂无比赛日程</div>')+'</div></div></section>';
 }
 function reminderRow(date,comp,label,sub,tone){
   return '<div class="reminderRow '+(tone||"")+'"><div class="reminderDate">'+date+'</div><div class="reminderLine"><span></span></div><div class="reminderContent"><b>'+e(comp)+'</b><strong>'+e(label)+'</strong><small>'+e(sub)+'</small></div></div>';
@@ -1972,6 +2011,8 @@ window.render=render;
 window.simulatePageState=simulatePageState;
 window.clearPageState=clearPageState;
 window.go=go;
+window.gdCalendarGo=gdCalendarGo;
+window.shiftCompetitionCalendar=shiftCompetitionCalendar;
 window.openRecruit=openRecruit;
 window.openCandidate=openCandidate;
 window.applyExploreFilters=applyExploreFilters;
