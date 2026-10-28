@@ -43,7 +43,64 @@ function openCandidate(id){if(state.route!=='candidate')state.returnRoute=state.
 function shell(){var titles={home:'首页',explore:'寻找',calendar:'比赛日历',detail:'招募详情',candidate:'队友资料',progress:'管理',profile:'我的',profileEdit:'编辑个人资料',publish:state.editing?'编辑招募':'发布招募'};
  var nav=[['home','首页','⌂'],['explore','寻找','⌕'],['progress','管理','◎'],['profile','我的','○']];
  byId('app').innerHTML='<div class="shell"><aside class="sidebar"><div class="brand"><div class="brandMark">G</div><div><div class="brandName">GDUTmate</div><div class="brandSub">大学生竞赛组队平台</div></div></div><nav class="nav">'+nav.map(function(n){return '<button class="navItem '+(state.route===n[0]?'active':'')+'" onclick="go(\''+n[0]+'\')"><span>'+n[2]+'</span><b>'+n[1]+'</b></button>'}).join('')+'</nav></aside><main class="main"><header class="topbar"><div><div class="eyebrow">GDUTmate</div><h1 class="pageTitle">'+titles[state.route]+'</h1></div><div class="topActions"><span class="demoDataPill">Demo · 示例数据</span>'+(state.route==='publish'?'':btn('发布招募','beginPublish()', 'primary'))+'</div></header><div id="page"></div></main></div><nav class="mobileNav">'+nav.map(function(n){return '<button class="mNav '+(state.route===n[0]?'active':'')+'" onclick="go(\''+n[0]+'\')"><b>'+n[2]+'</b><span>'+n[1]+'</span></button>'}).join('')+'</nav>'}
-function render(){shell();var routes={home:renderHome,calendar:renderCalendar,explore:renderExplore,detail:renderDetail,candidate:renderCandidate,progress:renderProgress,profile:renderProfile,profileEdit:renderProfileEdit,publish:renderPublish};(routes[state.route]||renderHome)(byId('page'))}
+
+/* Demo-only login gate. Production credentials must be verified by the backend. */
+var demoAuth={studentId:""};
+var DEMO_INITIAL_PASSWORD="123456";
+var DEMO_AUTH_SESSION="gdutmate-demo-auth-v1";
+var DEMO_PASSWORD_PREFIX="gdutmate-demo-password-v1:";
+try{demoAuth.studentId=sessionStorage.getItem(DEMO_AUTH_SESSION)||""}catch(err){}
+async function demoPasswordDigest(studentId,password){
+  var bytes=new TextEncoder().encode("GDUTmate-demo:"+studentId+":"+password);
+  var digest=await crypto.subtle.digest("SHA-256",bytes);
+  return Array.from(new Uint8Array(digest)).map(function(b){return b.toString(16).padStart(2,"0")}).join("");
+}
+function renderLogin(){
+  closeModal();
+  byId("app").innerHTML='<main style="min-height:100vh;display:grid;place-items:center;padding:24px"><section class="panel" style="width:100%;max-width:440px;padding:32px"><div class="brand" style="margin-bottom:24px"><div class="brandMark">G</div><div><div class="brandName">GDUTmate</div><div class="meta">大学生竞赛组队平台</div></div></div><h1 style="font-size:26px;margin:0 0 24px">学号登录</h1><form onsubmit="event.preventDefault();submitStudentLogin()"><div class="field" style="margin-bottom:18px"><label for="loginStudentId">学号</label><input class="input" id="loginStudentId" inputmode="numeric" autocomplete="username" maxlength="20" required placeholder="请输入学号"></div><div class="field" style="margin-bottom:24px"><label for="loginPassword">密码</label><input class="input" id="loginPassword" type="password" autocomplete="current-password" required placeholder="请输入密码"></div><p class="help">初始密码由后台统一设置，登录后可在“我的”中修改。</p><p class="help">Demo 统一初始密码：123456；学号使用 6–20 位数字。仅供演示，请勿输入真实密码。</p><button class="btn primary" id="loginSubmit" type="submit" style="width:100%;margin-top:16px">登录</button><p id="loginError" role="alert" style="color:var(--red);font-size:14px;min-height:22px;margin-bottom:0"></p></form></section></main>';
+}
+async function submitStudentLogin(){
+  var studentId=byId("loginStudentId").value.trim(),password=byId("loginPassword").value,error=byId("loginError"),submit=byId("loginSubmit");
+  if(submit.disabled)return;
+  if(!/^\d{6,20}$/.test(studentId)){error.textContent="请输入 6–20 位数字学号";return}
+  if(!password){error.textContent="请输入密码";return}
+  submit.disabled=true;error.textContent="";
+  try{
+    var saved=localStorage.getItem(DEMO_PASSWORD_PREFIX+studentId);
+    var valid=saved?(await demoPasswordDigest(studentId,password))===saved:password===DEMO_INITIAL_PASSWORD;
+    if(!valid){error.textContent="学号或密码错误";return}
+    sessionStorage.setItem(DEMO_AUTH_SESSION,studentId);
+    demoAuth.studentId=studentId;
+    byId("loginPassword").value="";
+    render();
+  }catch(err){error.textContent="登录失败，浏览器暂时无法保存登录信息，请重试"}
+  finally{submit.disabled=false}
+}
+function openChangePassword(){
+  if(!demoAuth.studentId){render();return}
+  modal('<h2>修改密码</h2><p class="subtitle">学号：'+e(demoAuth.studentId)+'</p><form onsubmit="event.preventDefault();saveChangedPassword()"><div class="field" style="margin-top:18px"><label for="currentPassword">当前密码</label><input class="input" id="currentPassword" type="password" autocomplete="current-password" required></div><div class="field" style="margin-top:18px"><label for="newPassword">新密码</label><input class="input" id="newPassword" type="password" autocomplete="new-password" minlength="6" maxlength="64" required><small class="help">6–64 位，不含空格。</small></div><div class="field" style="margin-top:18px"><label for="confirmPassword">确认新密码</label><input class="input" id="confirmPassword" type="password" autocomplete="new-password" minlength="6" maxlength="64" required></div><p class="help" style="margin-top:18px">演示版修改仅在当前浏览器生效，请勿使用真实密码。</p><p id="passwordError" role="alert" style="color:var(--red);font-size:14px"></p><div class="modalFoot">'+btn('取消','closeModal()')+'<button class="btn primary" id="passwordSubmit" type="submit">保存密码</button></div></form>');
+}
+async function saveChangedPassword(){
+  if(!demoAuth.studentId){closeModal();render();return}
+  var current=byId("currentPassword").value,next=byId("newPassword").value,confirm=byId("confirmPassword").value,error=byId("passwordError"),submit=byId("passwordSubmit");
+  if(submit.disabled)return;
+  if(!current){error.textContent="请输入当前密码";return}
+  if(next.length<6||next.length>64||/\s/.test(next)){error.textContent="新密码须为 6–64 位，且不含空格";return}
+  if(next!==confirm){error.textContent="两次输入的新密码不一致";return}
+  if(next===current){error.textContent="新密码不能与当前密码相同";return}
+  submit.disabled=true;error.textContent="";
+  try{
+    var id=demoAuth.studentId,saved=localStorage.getItem(DEMO_PASSWORD_PREFIX+id);
+    var valid=saved?(await demoPasswordDigest(id,current))===saved:current===DEMO_INITIAL_PASSWORD;
+    if(!valid){error.textContent="当前密码不正确";return}
+    localStorage.setItem(DEMO_PASSWORD_PREFIX+id,await demoPasswordDigest(id,next));
+    byId("currentPassword").value="";byId("newPassword").value="";byId("confirmPassword").value="";
+    closeModal();toast("密码已修改，下次登录请使用新密码");
+  }catch(err){error.textContent="密码未能保存，请重试"}
+  finally{submit.disabled=false}
+}
+
+function render(){if(!demoAuth.studentId){renderLogin();return}shell();var routes={home:renderHome,calendar:renderCalendar,explore:renderExplore,detail:renderDetail,candidate:renderCandidate,progress:renderProgress,profile:renderProfile,profileEdit:renderProfileEdit,publish:renderPublish};(routes[state.route]||renderHome)(byId('page'))}
 
 function renderHome(p){
   var posts=state.recruits.filter(function(r){return !state.blocked["r"+r.id]&&r.status==="active"&&roleFree(r)>0&&!deadlinePassed(r)}).slice(0,3);
@@ -190,7 +247,7 @@ function finishTeamAction(kind,id){if(kind==='dissolve'){var r=findRecruit(id);i
 /* Profile: its public fields are the teammate post. */
 function field(id,label,value,type,help){return '<div class="field"><label for="'+id+'">'+e(label)+'</label><input class="input" id="'+id+'" type="'+(type||'text')+'" value="'+e(value)+'"'+(type==='number'?' min="1" step="1"':'')+'>'+(help?'<small class="help">'+e(help)+'</small>':'')+'</div>'}
 function textarea(id,label,value,help){return '<div class="field full"><label for="'+id+'">'+e(label)+'</label><textarea class="textarea" id="'+id+'" maxlength="500">'+e(value)+'</textarea>'+(help?'<small class="help">'+e(help)+'</small>':'')+'</div>'}
-function renderProfile(p){var u=state.profile;p.innerHTML='<section class="panel"><h2>'+e(u.name)+'</h2><p>'+e(u.grade)+' · '+e(u.major)+'</p><div class="section kv"><div class="k">意向岗位</div><div>'+e(u.roles.join('、'))+'</div><div class="k">能力</div><div class="badges">'+badges(u.skills)+'</div><div class="k">相关经历</div><div>'+e(u.exp)+'</div><div class="k">联系方式</div><div>已填写 · 授权后可见</div></div><div class="actions">'+btn('编辑个人资料',"state.profileReturn='profile';go('profileEdit')",'primary')+'</div></section>'+myPost()+'<section class="panel"><h3>意见反馈</h3><p class="help">演示版反馈仅保存在当前浏览器，不会发送给管理员。</p>'+textarea('feedbackText','反馈内容','')+'<div class="actions">'+btn('保存反馈','saveFeedback()','primary')+'</div><div class="section">'+state.feedback.map(function(f){return '<p>'+e(f.text)+'</p>'}).join('')+'</div></section>'}
+function renderProfile(p){var u=state.profile;p.innerHTML='<section class="panel"><h2>'+e(u.name)+'</h2><p>'+e(u.grade)+' · '+e(u.major)+'</p><div class="section kv"><div class="k">意向岗位</div><div>'+e(u.roles.join('、'))+'</div><div class="k">能力</div><div class="badges">'+badges(u.skills)+'</div><div class="k">相关经历</div><div>'+e(u.exp)+'</div><div class="k">联系方式</div><div>已填写 · 授权后可见</div></div><div class="actions">'+btn('编辑个人资料',"state.profileReturn='profile';go('profileEdit')",'primary')+btn('修改密码','openChangePassword()')+'</div></section>'+myPost()+'<section class="panel"><h3>意见反馈</h3><p class="help">演示版反馈仅保存在当前浏览器，不会发送给管理员。</p>'+textarea('feedbackText','反馈内容','')+'<div class="actions">'+btn('保存反馈','saveFeedback()','primary')+'</div><div class="section">'+state.feedback.map(function(f){return '<p>'+e(f.text)+'</p>'}).join('')+'</div></section>'}
 function splitTags(v){return unique(String(v).split(/[、,，\n]/).map(function(x){return x.trim()}).filter(Boolean))}
 function renderProfileEdit(p){var u=state.profile;p.innerHTML='<form class="panel" onsubmit="event.preventDefault();saveProfile()"><div class="formGrid">'+field('profileName','显示名称',u.name)+field('profileGrade','年级',u.grade)+field('profileMajor','专业',u.major)+field('profileRoles','意向岗位',u.roles.join('、'))+field('profileSkills','能力标签',u.skills.join('、'))+field('profileContact','联系方式',u.contact)+textarea('profileExp','相关经历',u.exp)+'</div><label class="consent"><input id="postVisible" type="checkbox" '+(u.visible?'checked':'')+'>在找队友中展示我的帖子</label><div class="actions">'+btn('取消',"go(state.profileReturn||'profile')")+'<button class="btn primary" type="submit">保存</button></div></form>'}
 function saveProfile(){var name=byId('profileName').value.trim(),roles=splitTags(byId('profileRoles').value),skills=splitTags(byId('profileSkills').value),contact=byId('profileContact').value.trim();if(!name||!roles.length||!skills.length||!contact){toast('请填写显示名称、意向岗位、能力和联系方式');return}state.profile={name:name,grade:byId('profileGrade').value.trim(),major:byId('profileMajor').value.trim(),roles:roles,skills:skills,contact:contact,exp:byId('profileExp').value.trim(),visible:byId('postVisible').checked};persist();go(state.profileReturn||'profile');toast('个人资料与帖子已同步更新')}
