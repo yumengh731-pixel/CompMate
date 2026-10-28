@@ -255,7 +255,27 @@ function saveFeedback(){var text=byId('feedbackText').value.trim();if(!text){toa
 /* Recruitment publishing */
 function beginPublish(id,copyFrom){state.publishReturn=state.route==='publish'?state.publishReturn:state.route;state.editing=id||null;state.copyFrom=copyFrom||null;go('publish')}
 function publishBase(){return findRecruit(state.editing||state.copyFrom)||{comp:'',teamName:'',title:'',start:today(),end:'',deadline:'',competitionStart:'',competitionEnd:'',role:{name:'',skills:[],task:'',capacity:1}}}
-function renderPublish(p){var r=publishBase(),copy=!!state.copyFrom;p.innerHTML='<form class="panel mvpPublish" onsubmit="event.preventDefault();saveRecruit()"><div class="formGrid">'+field('pubTitle','招募标题',r.title,'text','简要说明招募方向。')+field('pubTeamName','队伍名称',r.teamName)+field('pubComp','竞赛名称',r.comp)+field('pubStart','项目开始日期',r.start,'date','包括可报名时间在内。')+field('pubEnd','项目结束日期',r.end,'date')+field('pubDeadline','报名截止时间',r.deadline,'datetime-local')+field('pubRole','招募岗位',copy?'':r.role.name)+field('pubSkills','能力要求',copy?'':r.role.skills.join('、'))+field('pubCap','招募人数',copy?1:r.role.capacity,'number')+textarea('pubTask','具体任务',copy?'':r.role.task,'说明该岗位需要完成的具体工作。')+'</div><div class="actions">'+btn('取消',"go(state.publishReturn||'home')")+btn('预览','previewRecruit()')+'<button class="btn primary" type="submit">'+(state.editing?'保存修改':'发布招募')+'</button></div></form>'}
+
+function publishCompetitionSelect(selected){
+  var values=unique(seedData.recruits.map(function(r){return r.comp}));
+  var categories=[
+    {label:"商赛",pattern:/商赛|商[业务]|市场|正大杯|经济|营销|贸易|金融|会计/},
+    {label:"电赛",pattern:/电子|电路|电赛|集成电路/},
+    {label:"机电结合",pattern:/机电|机器人|智能车|机械|工程训练/},
+    {label:"创新创业",pattern:/挑战杯|互联网|创新|创业/},
+    {label:"数学建模",pattern:/数学|建模/},
+    {label:"其他竞赛",pattern:/.*/}
+  ];
+  var groups=categories.map(function(c){return {label:c.label,values:[]}});
+  values.forEach(function(v){var index=categories.findIndex(function(c){return c.pattern.test(v)});groups[index].values.push(v)});
+
+  return '<div class="field"><label for="pubComp">竞赛名称</label><select class="select" id="pubComp" required><option value="">请选择竞赛</option>'+
+    groups.filter(function(g){return g.values.length}).map(function(g){
+      return '<optgroup label="'+e(g.label)+'">'+g.values.map(function(v){return '<option value="'+e(v)+'" '+(v===selected?'selected':'')+'>'+e(v)+'</option>'}).join('')+'</optgroup>';
+    }).join('')+'</select></div>';
+}
+
+function renderPublish(p){var r=publishBase(),copy=!!state.copyFrom;p.innerHTML='<form class="panel mvpPublish" onsubmit="event.preventDefault();saveRecruit()"><div class="formGrid">'+field('pubTitle','招募标题',r.title,'text','简要说明招募方向。')+field('pubTeamName','队伍名称',r.teamName)+publishCompetitionSelect(r.comp)+field('pubStart','项目开始日期',r.start,'date','包括可报名时间在内。')+field('pubEnd','项目结束日期',r.end,'date')+field('pubDeadline','报名截止时间',r.deadline,'datetime-local')+field('pubRole','招募岗位',copy?'':r.role.name)+field('pubSkills','能力要求',copy?'':r.role.skills.join('、'))+field('pubCap','招募人数',copy?1:r.role.capacity,'number')+textarea('pubTask','具体任务',copy?'':r.role.task,'说明该岗位需要完成的具体工作。')+'</div><div class="actions">'+btn('取消',"go(state.publishReturn||'home')")+btn('预览','previewRecruit()')+'<button class="btn primary" type="submit">'+(state.editing?'保存修改':'发布招募')+'</button></div></form>'}
 function readPublish(){return {title:byId('pubTitle').value.trim(),teamName:byId('pubTeamName').value.trim(),comp:normalizeCompetitionName(byId('pubComp').value),start:byId('pubStart').value,end:byId('pubEnd').value,deadline:byId('pubDeadline').value,role:{name:byId('pubRole').value.trim(),skills:splitTags(byId('pubSkills').value),capacity:Number(byId('pubCap').value),task:byId('pubTask').value.trim(),formal:0}}}
 function validateRecruit(d){if(!d.title||!d.teamName||!d.comp||!d.start||!d.end||!d.deadline||!d.role.name||!d.role.skills.length||!d.role.task)return '请填写全部字段';if(d.title.length>50)return '招募标题请控制在 50 字内';if(!Number.isInteger(d.role.capacity)||d.role.capacity<1)return '招募人数必须为正整数';if(d.start>d.end)return '项目开始日期不能晚于结束日期';if(d.deadline.slice(0,10)<d.start||d.deadline.slice(0,10)>d.end)return '报名截止时间须在项目时间段内';if(new Date(d.deadline).getTime()<=Date.now())return '报名截止时间必须晚于当前时间';return ''}
 function previewRecruit(){var d=readPublish(),err=validateRecruit(d);if(err){toast(err);return}modal('<h2>'+e(d.title)+'</h2><p>'+e(d.teamName)+' · '+e(d.comp)+'</p><p>'+e(periodText(d))+'</p><p>'+e(d.role.name)+' · '+d.role.capacity+' 人</p><div class="badges">'+badges(d.role.skills)+'</div><p>'+e(d.role.task)+'</p><div class="modalFoot">'+btn('返回编辑','closeModal()')+'</div>')}
