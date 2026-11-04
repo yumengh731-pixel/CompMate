@@ -2042,3 +2042,7 @@ body{font-size:16px}.btn,.input,.select,.textarea,.check,.tab{font-size:15px}.fi
 
 /* Collapsible search filters; retain each panel's open state while filtering. */
 .mvpFilterFold>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;font-size:16px;font-weight:650}.mvpFilterFold>summary::-webkit-details-marker{display:none}.mvpFilterFold>summary::after{content:"展开筛选 ＋";font-size:14px;font-weight:400;color:var(--muted)}.mvpFilterFold[open]>summary{margin-bottom:12px}.mvpFilterFold[open]>summary::after{content:"收起筛选 −"}.mvpFilterFold>summary:focus-visible{outline:3px solid #668cf1;outline-offset:3px}
+
+
+/* Unread messages in desktop and mobile navigation. */
+.notificationDot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#dc3545;vertical-align:middle;margin-left:6px;flex-shrink:0}
